@@ -7,6 +7,7 @@ import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-eng
 import { optionalAuth } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -368,9 +369,6 @@ const discoverSchema = z.object({
   query: z.string().min(1),
   maxResults: z.number().min(1).max(100).default(10),
 });
-
-import { discoveryLimiter, aiLimiter } from "../middleware/rate-limit.js";
-import { safeError } from "../lib/safe-error.js";
 
 router.post("/leads/discover", discoveryLimiter, async (req, res) => {
   const parsed = discoverSchema.safeParse(req.body);

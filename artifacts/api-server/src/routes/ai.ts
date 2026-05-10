@@ -120,7 +120,7 @@ router.patch("/ai/providers/:id", async (req, res) => {
     const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
     if (data.temperature !== undefined) update.temperature = data.temperature === null ? null : String(data.temperature);
 
-    const [provider] = await db.update(aiProviders).set(update as Partial<typeof aiProviders.$inferInsert>).where(eq(aiProviders.id, req.params.id)).returning();
+    const [provider] = await db.update(aiProviders).set(update as Partial<typeof aiProviders.$inferInsert>).where(eq(aiProviders.id, String(req.params.id))).returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err) {
@@ -130,7 +130,7 @@ router.patch("/ai/providers/:id", async (req, res) => {
 
 router.delete("/ai/providers/:id", async (req, res) => {
   try {
-    const [provider] = await db.delete(aiProviders).where(eq(aiProviders.id, req.params.id)).returning();
+    const [provider] = await db.delete(aiProviders).where(eq(aiProviders.id, String(req.params.id))).returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ deleted: true, name: provider.name });
   } catch (err) {
@@ -140,7 +140,7 @@ router.delete("/ai/providers/:id", async (req, res) => {
 
 router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) => {
   try {
-    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, req.params.id));
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, String(req.params.id)));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     if (!provider.apiKey && provider.providerType !== "ollama") {
       return res.json({ ok: false, error: "No API key configured for this provider" });
@@ -153,12 +153,12 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
 
 router.post("/ai/providers/:id/default", async (req, res) => {
   try {
-    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, req.params.id));
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, String(req.params.id)));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     if (!provider.isActive) return res.status(400).json({ error: "Cannot set inactive provider as default" });
 
     await db.update(aiProviders).set({ isDefault: false, updatedAt: new Date() });
-    await db.update(aiProviders).set({ isDefault: true, updatedAt: new Date() }).where(eq(aiProviders.id, req.params.id));
+    await db.update(aiProviders).set({ isDefault: true, updatedAt: new Date() }).where(eq(aiProviders.id, String(req.params.id)));
 
     return res.json({ success: true, providerId: req.params.id });
   } catch (err) {
