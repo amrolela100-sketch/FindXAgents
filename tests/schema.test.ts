@@ -11,7 +11,12 @@ describe("Database Schema Validations", () => {
 
   it("should define users table with an email index", () => {
     const config = getTableConfig(users);
-    expect(config.indexes.some((idx) => idx.name === "idx_users_email")).toBe(true);
+    // uniqueIndex() in drizzle-orm v0.45+ stores in indexes with config.unique = true
+    const allIndexNames = [
+      ...config.indexes.map((idx) => idx.config?.name ?? idx.name),
+      ...(config.uniqueConstraints ?? []).map((uc) => uc.name),
+    ];
+    expect(allIndexNames.some((name) => name === "idx_users_email")).toBe(true);
   });
 
   it("should define pipeline stages with unique names and orders", () => {
