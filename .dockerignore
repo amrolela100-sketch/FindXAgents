@@ -1,0 +1,8 @@
+node_modules/
+.git/
+.github/
+attached_assets/
+dist/
+build/
+.env
+.DS_Store

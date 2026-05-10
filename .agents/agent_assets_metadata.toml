@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "KLbjbjCZjIb081NmwzpDz"
+uri = "file://artifacts/findx-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"

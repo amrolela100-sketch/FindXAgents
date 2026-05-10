@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-findx_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-findx_super_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-findx_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-findx_user} -d ${POSTGRES_DB:-findx_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-findx_user}:${POSTGRES_PASSWORD:-findx_super_secret_password}@postgres:5432/${POSTGRES_DB:-findx_db}
+      - PORT=3000
+    env_file:
+      - artifacts/api-server/.env.example
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: artifacts/findx/Dockerfile
+      args:
+        # Pass the build-time env var so Vite embeds it into the bundle
+        - VITE_API_URL=/api
+    ports:
+      - "80:80"
+    env_file:
+      - artifacts/api-server/.env.example
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

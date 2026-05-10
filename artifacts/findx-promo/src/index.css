@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #4f46e5;
+  --color-accent: #818cf8;
+
+  --color-bg-dark: #020817;
+  --color-bg-slate: #0f172a;
+  --color-bg-card: #1e293b;
+
+  --color-emerald: #34d399;
+  --color-amber: #fbbf24;
+  --color-indigo: #818cf8;
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-bg-dark: var(--color-bg-dark);
+  --color-bg-slate: var(--color-bg-slate);
+  --color-bg-card: var(--color-bg-card);
+  --color-emerald: var(--color-emerald);
+  --color-amber: var(--color-amber);
+  --color-indigo: var(--color-indigo);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--color-bg-dark);
+  overflow: hidden;
+}

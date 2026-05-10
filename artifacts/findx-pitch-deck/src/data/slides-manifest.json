@@ -1,0 +1,82 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide01_Title.tsx",
+    "title": "FindX",
+    "description": "Title slide — AI-powered B2B prospecting for the Dutch market",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide02_Problem.tsx",
+    "title": "B2B Prospecting is Broken",
+    "description": "Three core pain points: fragmented data, generic outreach, no pipeline clarity",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide03_Solution.tsx",
+    "title": "One Platform. Total Control.",
+    "description": "FindX platform overview — four core capabilities",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide04_HowItWorks.tsx",
+    "title": "Three Steps",
+    "description": "Discover — Enrich — Reach Out: the FindX workflow",
+    "speakerNotes": ""
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide05_AIAgents.tsx",
+    "title": "Three Agents",
+    "description": "Research, Outreach, and Analysis agents working 24/7",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide06_Pipeline.tsx",
+    "title": "The Pipeline",
+    "description": "8-stage Kanban pipeline from New Lead to Closed Won",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide07_Outreach.tsx",
+    "title": "Personal at Scale",
+    "description": "AI-drafted personalized email sequences with full tracking",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide08_Traction.tsx",
+    "title": "The Numbers",
+    "description": "Pilot results — 3x reply rates, 60% faster, 200+ SMBs",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d0e1f2a3-b4c5-6789-defa-901234567890",
+    "position": 9,
+    "filepath": "src/pages/slides/Slide09_Pricing.tsx",
+    "title": "Transparent Pricing",
+    "description": "Three plans — Starter €149 / Growth €349 / Scale €749 — with ROI callout",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+    "position": 10,
+    "filepath": "src/pages/slides/Slide10_CTA.tsx",
+    "title": "Get in Touch",
+    "description": "Closing slide — hello@findx.nl",
+    "speakerNotes": ""
+  }
+]

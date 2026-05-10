@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/findx-promo/"
+title = "FindX Promo Video"
+version = "1.0.0"
+id = "artifacts/findx-promo"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/findx-promo/" ]
+localPort = 18663
+
+[services.development]
+run = "pnpm --filter @workspace/findx-promo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/findx-promo", "run", "build" ]
+publicDir = "artifacts/findx-promo/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18663"
+BASE_PATH = "/findx-promo/"

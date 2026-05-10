@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ADD COLUMN "is_tavily_enriched" boolean DEFAULT false NOT NULL;

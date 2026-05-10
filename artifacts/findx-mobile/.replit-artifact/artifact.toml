@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/findx-mobile/"
+title = "FindX Mobile"
+version = "1.0.0"
+id = "artifacts/findx-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/findx-mobile/" ]
+localPort = 24513
+
+[services.development]
+run = "pnpm --filter @workspace/findx-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/findx-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/findx-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "24513"
+BASE_PATH = "/findx-mobile/"

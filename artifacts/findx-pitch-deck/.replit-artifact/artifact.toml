@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/findx-pitch-deck/"
+title = "FindX Pitch Deck"
+version = "1.0.0"
+id = "artifacts/findx-pitch-deck"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/findx-pitch-deck/" ]
+localPort = 25845
+
+[services.development]
+run = "pnpm --filter @workspace/findx-pitch-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/findx-pitch-deck", "run", "build" ]
+publicDir = "artifacts/findx-pitch-deck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25845"
+BASE_PATH = "/findx-pitch-deck/"
