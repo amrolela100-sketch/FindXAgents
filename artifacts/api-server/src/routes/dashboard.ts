@@ -2,12 +2,12 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { leads, analyses, agentPipelineRuns } from "@workspace/db";
 import { sql, count, and, gte, isNull, isNotNull } from "drizzle-orm";
-import { optionalAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
-router.use(optionalAuth);
+router.use(requireAuth);
 
 router.get("/dashboard/stats", async (req, res) => {
   try {

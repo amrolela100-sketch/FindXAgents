@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion, type Variants } from "framer-motion";
-import { Activity, Building2, CheckCircle, Clock3, Loader2, RefreshCw, Shield, TrendingUp, Users, Zap, Lock, LogOut } from "lucide-react";
+import {
+  Activity, Building2, CheckCircle, Clock3, Loader2, RefreshCw,
+  Shield, TrendingUp, Users, Zap, Lock, LogOut, BarChart2,
+  UserCheck, UserX, Crown, Bot, Search,
+} from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useLang } from "../lib/lang-context";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type OwnerStats = {
   totalUsers: number;
@@ -13,91 +19,145 @@ type OwnerStats = {
   leadsContacted: number;
   leadsWon: number;
   conversionRate: number;
-  activeWorkspaces: number;
   onboardingCompleted: number;
-  recentRuns: Array<{
-    id: string;
-    query: string;
-    status: string;
-    createdAt: string;
-    leadsFound: number;
-  }>;
-  recentWorkspaces: Array<{
-    id: string;
-    name: string;
-    targetIndustry: string | null;
-    targetCity: string | null;
-    createdAt: string;
-  }>;
-  health: {
-    api: boolean;
-    auth: boolean;
-    database: boolean;
-    agents: boolean;
-  };
+  activeWorkspaces: number;
+  recentRuns: OwnerRun[];
+  recentWorkspaces: unknown[];
+  health: { api: boolean; auth: boolean; database: boolean; agents: boolean };
 };
+
+type OwnerUser = {
+  id: string;
+  email: string;
+  role: string;
+  isAdmin: boolean;
+  isOwner: boolean;
+  onboardingCompleted: boolean;
+  leadCount: number;
+  runCount: number;
+  createdAt: string;
+  lastActiveAt: string | null;
+};
+
+type OwnerRun = {
+  id: string;
+  userId: string | null;
+  query: string;
+  status: string;
+  leadsFound: number | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+// ─── Animations ───────────────────────────────────────────────────────────────
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
-  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] } }),
+  visible: (i = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.35, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] },
+  }),
 };
 
-async function apiGet<T>(path: string): Promise<T> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  const base = (import.meta.env.VITE_API_URL as string) || "/api";
-  const res = await fetch(`${base}${path}`, {
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-  });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json() as Promise<T>;
-}
+// ─── API helpers ─────────────────────────────────────────────────────────────
 
-async function apiPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const base = (import.meta.env.VITE_API_URL as string) || "/api";
   const res = await fetch(`${base}${path}`, {
-    method: "POST",
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
     },
-    body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error((err as { error?: string }).error ?? `API error ${res.status}`);
+  }
   return res.json() as Promise<T>;
 }
 
-function StatCard({ icon: Icon, label, value, trend }: { icon: typeof Users; label: string; value: number | string; trend: string }) {
+// ─── Small components ─────────────────────────────────────────────────────────
+
+function StatCard({
+  icon: Icon, label, value, sub, color = "bg-[#F0EDE6] text-[#1A1A1A]",
+}: {
+  icon: typeof Users; label: string; value: number | string; sub?: string; color?: string;
+}) {
   return (
     <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-5">
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg bg-[#F0EDE6]">
-          <Icon className="w-5 h-5 text-[#1A1A1A]" />
-        </div>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${color}`}>
+        <Icon className="w-4 h-4" />
       </div>
       <p className="text-3xl font-serif font-bold text-[#1A1A1A]">{value}</p>
       <p className="text-sm text-[#7A756D] mt-1">{label}</p>
-      <p className="text-xs text-emerald-600 font-medium mt-3">{trend}</p>
+      {sub && <p className="text-xs text-emerald-600 font-medium mt-2">{sub}</p>}
     </motion.div>
   );
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  completed: "bg-emerald-50 text-emerald-700",
+  running:   "bg-blue-50 text-blue-700",
+  queued:    "bg-amber-50 text-amber-700",
+  failed:    "bg-red-50 text-red-700",
+  cancelled: "bg-[#F0EDE6] text-[#7A756D]",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const cls = STATUS_COLORS[status] ?? "bg-[#F0EDE6] text-[#7A756D]";
+  return (
+    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${cls}`}>{status}</span>
+  );
+}
+
+function fmt(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+type Tab = "overview" | "users" | "runs";
+
 export default function OwnerDashboardPage() {
   const { t } = useLang();
-  const [data, setData] = useState<OwnerStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [password, setPassword] = useState("");
-  const [unlocked, setUnlocked] = useState(() => localStorage.getItem("owner_unlocked") === "true");
 
-  const load = async () => {
+  const [unlocked, setUnlocked] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("owner_unlocked") === "true",
+  );
+  const [password, setPassword] = useState("");
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
+
+  const [tab, setTab] = useState<Tab>("overview");
+  const [stats, setStats] = useState<OwnerStats | null>(null);
+  const [users, setUsers] = useState<OwnerUser[]>([]);
+  const [runs, setRuns] = useState<OwnerRun[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+
+  // ── load data ──────────────────────────────────────────────────────────────
+
+  const loadAll = async () => {
     setLoading(true);
     setError(null);
     try {
-      const stats = await apiGet<OwnerStats>("/owner/dashboard");
-      setData(stats);
+      const [s, u, r] = await Promise.all([
+        apiFetch<OwnerStats>("/owner/dashboard"),
+        apiFetch<{ users: OwnerUser[] }>("/owner/users"),
+        apiFetch<{ runs: OwnerRun[] }>("/owner/runs?pageSize=50"),
+      ]);
+      setStats(s);
+      setUsers(u.users);
+      setRuns(r.runs);
     } catch (err) {
       if (err instanceof Error && err.message.includes("401")) {
         setUnlocked(false);
@@ -110,19 +170,27 @@ export default function OwnerDashboardPage() {
   };
 
   useEffect(() => {
-    if (unlocked) load();
+    if (unlocked) loadAll();
   }, [unlocked]);
 
+  // ── unlock ─────────────────────────────────────────────────────────────────
+
   const handleUnlock = async () => {
-    setError(null);
+    if (!password) return;
+    setUnlocking(true);
+    setUnlockError(null);
     try {
-      await apiPost<{ unlocked: boolean }>("/owner/unlock", { password });
+      await apiFetch<{ unlocked: boolean }>("/owner/unlock", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      });
       setUnlocked(true);
       localStorage.setItem("owner_unlocked", "true");
       setPassword("");
-      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unlock failed");
+      setUnlockError(err instanceof Error ? err.message : "Unlock failed");
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -130,39 +198,58 @@ export default function OwnerDashboardPage() {
     setUnlocked(false);
     localStorage.removeItem("owner_unlocked");
     setPassword("");
-    setData(null);
+    setStats(null);
+    setUsers([]);
+    setRuns([]);
   };
+
+  // ── lock screen ────────────────────────────────────────────────────────────
 
   if (!unlocked) {
     return (
       <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-4"
+        >
           <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-[#7A756D]" />
-            <p className="text-sm font-semibold text-[#1A1A1A]">{t("ownerAccess")}</p>
+            <div className="p-2 rounded-lg bg-[#F0EDE6]">
+              <Lock className="w-4 h-4 text-[#1A1A1A]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">Owner Access</p>
+              <p className="text-xs text-[#7A756D]">Full platform control</p>
+            </div>
           </div>
-          <p className="text-sm text-[#7A756D]">{t("ownerPageNote")}</p>
+          <p className="text-sm text-[#7A756D]">
+            This area is restricted to the platform owner. Enter your owner password to continue.
+          </p>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
-            placeholder={t("password")}
+            placeholder="Owner password"
             className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10"
           />
           <button
             onClick={handleUnlock}
-            className="w-full bg-[#1A1A1A] text-white rounded-xl py-2.5 text-sm font-medium hover:bg-[#2A2A2A] transition"
+            disabled={unlocking || !password}
+            className="w-full bg-[#1A1A1A] text-white rounded-xl py-2.5 text-sm font-medium hover:bg-[#2A2A2A] transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {t("unlock")}
+            {unlocking && <Loader2 className="w-4 h-4 animate-spin" />}
+            Unlock
           </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-        </div>
+          {unlockError && <p className="text-xs text-red-600">{unlockError}</p>}
+        </motion.div>
       </div>
     );
   }
 
-  if (loading) {
+  // ── loading / error ────────────────────────────────────────────────────────
+
+  if (loading && !stats) {
     return (
       <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-[#7A756D]" />
@@ -170,102 +257,308 @@ export default function OwnerDashboardPage() {
     );
   }
 
-  if (error || !data) {
+  if (error && !stats) {
     return (
       <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
         <div className="text-center space-y-3">
           <Shield className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="font-semibold text-[#1A1A1A]">{error ?? t("noData")}</p>
-          <button onClick={() => load()} className="text-sm text-[#7A756D] hover:text-[#1A1A1A] underline">
-            {t("tryAgain")}
+          <p className="font-semibold text-[#1A1A1A]">{error}</p>
+          <button onClick={loadAll} className="text-sm text-[#7A756D] hover:text-[#1A1A1A] underline">
+            Try again
           </button>
         </div>
       </div>
     );
   }
 
+  // ── filtered users ─────────────────────────────────────────────────────────
+
+  const filteredUsers = users.filter(
+    (u) => !userSearch || u.email.toLowerCase().includes(userSearch.toLowerCase()),
+  );
+
+  // ── main UI ────────────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-[#F7F5F0] p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+
+        {/* ── Header ── */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Building2 className="w-4 h-4 text-[#7A756D]" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#7A756D]">{t("ownerDashboard")}</span>
+              <Crown className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#7A756D]">
+                Owner Dashboard
+              </span>
             </div>
-            <h1 className="text-2xl font-serif font-bold text-[#1A1A1A]">{t("projectOverview")}</h1>
-            <p className="text-sm text-[#7A756D] mt-0.5">{t("allDetails")}</p>
+            <h1 className="text-2xl font-serif font-bold text-[#1A1A1A]">Platform Overview</h1>
+            <p className="text-sm text-[#7A756D] mt-0.5">Full control and visibility across all users and activity.</p>
           </div>
-          <button onClick={load} className="flex items-center gap-1.5 text-sm text-[#7A756D] border border-[#E5E3D9] bg-white px-3 py-2 rounded-xl hover:bg-[#F7F5F0] transition">
-            <RefreshCw className="w-3.5 h-3.5" />
-            {t("refresh")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadAll}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-sm text-[#7A756D] border border-[#E5E3D9] bg-white px-3 py-2 rounded-xl hover:bg-[#F7F5F0] transition disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            <button
+              onClick={handleLock}
+              className="flex items-center gap-1.5 text-sm text-[#7A756D] border border-[#E5E3D9] bg-white px-3 py-2 rounded-xl hover:bg-[#F7F5F0] transition"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Lock
+            </button>
+          </div>
         </motion.div>
 
-        <button
-          onClick={handleLock}
-          className="inline-flex items-center gap-2 text-sm text-[#7A756D] border border-[#E5E3D9] bg-white px-3 py-2 rounded-xl hover:bg-[#F7F5F0] transition w-fit"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          {t("lockOwnerAccess")}
-        </button>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={Users} label={t("users")} value={data.totalUsers} trend={`${data.onboardingCompleted} ${t("onboarded")}`} />
-          <StatCard icon={TrendingUp} label={t("leads")} value={data.totalLeads} trend={`${data.leadsThisWeek} ${t("thisWeek")}`} />
-          <StatCard icon={Zap} label={t("runs")} value={data.totalRuns} trend={`${data.leadsContacted} ${t("contacted")}`} />
-          <StatCard icon={Activity} label={t("conversion")} value={`${data.conversionRate}%`} trend={`${data.leadsWon} ${t("wins")}`} />
+        {/* ── Tabs ── */}
+        <div className="flex gap-1 bg-[#F0EDE6] p-1 rounded-xl w-fit">
+          {(["overview", "users", "runs"] as Tab[]).map((tb) => (
+            <button
+              key={tb}
+              onClick={() => setTab(tb)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
+                tab === tb ? "bg-white text-[#1A1A1A] shadow-sm" : "text-[#7A756D] hover:text-[#1A1A1A]"
+              }`}
+            >
+              {tb === "overview" && <BarChart2 className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />}
+              {tb === "users" && <Users className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />}
+              {tb === "runs" && <Bot className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />}
+              {tb.charAt(0).toUpperCase() + tb.slice(1)}
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <motion.div variants={fadeUp} className="lg:col-span-2 bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-4">
-            <p className="font-semibold text-[#1A1A1A]">{t("platformHealth")}</p>
-            {[
-              ["API", data.health.api],
-              ["Auth", data.health.auth],
-              ["Database", data.health.database],
-              ["Agents", data.health.agents],
-            ].map(([label, ok]) => (
-              <div key={String(label)} className="flex items-center justify-between py-2 border-b border-[#F0EDE6] last:border-0">
-                <span className="text-sm text-[#4A4540]">{label}</span>
-                <span className={`text-xs font-medium flex items-center gap-1.5 ${ok ? "text-emerald-600" : "text-amber-600"}`}>
-                  {ok ? <CheckCircle className="w-4 h-4" /> : <Clock3 className="w-4 h-4" />}
-                  {ok ? "OK" : t("needsAttention")}
-                </span>
-              </div>
-            ))}
-          </motion.div>
+        {/* ════════════════════ OVERVIEW TAB ════════════════════ */}
+        {tab === "overview" && stats && (
+          <motion.div initial="hidden" animate="visible" className="space-y-6">
 
-          <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-4">
-            <p className="font-semibold text-[#1A1A1A]">{t("recentWorkspaces")}</p>
-            <div className="space-y-3">
-              {data.recentWorkspaces.map((ws) => (
-                <div key={ws.id} className="border border-[#F0EDE6] rounded-xl p-3">
-                  <p className="text-sm font-medium text-[#1A1A1A]">{ws.name}</p>
-                  <p className="text-xs text-[#7A756D] mt-1">{ws.targetIndustry ?? t("allIndustries")} · {ws.targetCity ?? t("allNL")}</p>
-                </div>
-              ))}
+            {/* Stat grid */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard icon={Users}     label="Total users"      value={stats.totalUsers}
+                sub={`${stats.onboardingCompleted} onboarded`}
+                color="bg-blue-50 text-blue-600" />
+              <StatCard icon={TrendingUp} label="Total leads"     value={stats.totalLeads}
+                sub={`${stats.leadsThisWeek} this week`}
+                color="bg-emerald-50 text-emerald-600" />
+              <StatCard icon={Zap}        label="Agent runs"      value={stats.totalRuns}
+                sub={`${stats.leadsContacted} contacted`}
+                color="bg-violet-50 text-violet-600" />
+              <StatCard icon={Activity}  label="Conversion rate"  value={`${stats.conversionRate}%`}
+                sub={`${stats.leadsWon} won`}
+                color="bg-amber-50 text-amber-600" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Health */}
+              <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-3">
+                <p className="font-semibold text-[#1A1A1A]">Platform Health</p>
+                {(["api", "auth", "database", "agents"] as const).map((key) => (
+                  <div key={key} className="flex items-center justify-between py-2 border-b border-[#F0EDE6] last:border-0">
+                    <span className="text-sm text-[#4A4540] capitalize">{key}</span>
+                    <span className={`text-xs font-medium flex items-center gap-1.5 ${stats.health[key] ? "text-emerald-600" : "text-amber-600"}`}>
+                      {stats.health[key]
+                        ? <><CheckCircle className="w-4 h-4" /> Operational</>
+                        : <><Clock3 className="w-4 h-4" /> Needs attention</>}
+                    </span>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Funnel */}
+              <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-3">
+                <p className="font-semibold text-[#1A1A1A]">Lead Funnel</p>
+                {[
+                  { label: "Discovered",  value: stats.totalLeads,     color: "bg-[#1A1A1A]" },
+                  { label: "Analyzed",    value: stats.leadsAnalyzed,   color: "bg-blue-500" },
+                  { label: "Contacted",   value: stats.leadsContacted,  color: "bg-violet-500" },
+                  { label: "Won",         value: stats.leadsWon,        color: "bg-emerald-500" },
+                ].map(({ label, value, color }) => {
+                  const pct = stats.totalLeads > 0 ? Math.round((value / stats.totalLeads) * 100) : 0;
+                  return (
+                    <div key={label}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-[#4A4540]">{label}</span>
+                        <span className="font-medium text-[#1A1A1A]">{value} <span className="text-[#7A756D] font-normal">({pct}%)</span></span>
+                      </div>
+                      <div className="h-2 bg-[#F0EDE6] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${color} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </div>
+
+            {/* Recent runs */}
+            <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#F0EDE6]">
+                <p className="font-semibold text-[#1A1A1A]">Latest Pipeline Runs</p>
+              </div>
+              <div className="divide-y divide-[#F0EDE6]">
+                {stats.recentRuns.length === 0 && (
+                  <p className="px-6 py-8 text-sm text-center text-[#7A756D]">No runs yet.</p>
+                )}
+                {stats.recentRuns.map((run) => (
+                  <div key={run.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#1A1A1A] truncate">{run.query}</p>
+                      <p className="text-xs text-[#7A756D] mt-0.5">
+                        {fmt(run.createdAt)} · {run.leadsFound ?? 0} leads found
+                      </p>
+                    </div>
+                    <StatusBadge status={run.status} />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ════════════════════ USERS TAB ════════════════════ */}
+        {tab === "users" && (
+          <motion.div initial="hidden" animate="visible" className="space-y-4">
+
+            {/* Search + summary */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A756D]" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Search by email…"
+                  className="w-full pl-9 pr-3 py-2 border border-[#E5E3D9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 bg-white"
+                />
+              </div>
+              <div className="flex items-center gap-3 text-sm text-[#7A756D]">
+                <span className="flex items-center gap-1"><UserCheck className="w-4 h-4 text-emerald-500" /> {users.filter(u => u.onboardingCompleted).length} onboarded</span>
+                <span className="flex items-center gap-1"><UserX className="w-4 h-4 text-amber-500" /> {users.filter(u => !u.onboardingCompleted).length} pending</span>
+              </div>
+            </div>
+
+            <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
+                <p className="font-semibold text-[#1A1A1A]">{filteredUsers.length} users</p>
+                <span className="text-xs text-[#7A756D]">sorted by registration date</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#F0EDE6] bg-[#FAFAF7]">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">User</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Role</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Leads</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Runs</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Onboarded</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Registered</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Last active</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F0EDE6]">
+                    {filteredUsers.length === 0 && (
+                      <tr><td colSpan={7} className="px-6 py-10 text-center text-[#7A756D]">No users found.</td></tr>
+                    )}
+                    {filteredUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-[#FAFAF7] transition-colors">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-[#F0EDE6] flex items-center justify-center text-xs font-semibold text-[#1A1A1A] flex-shrink-0">
+                              {u.email[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium text-[#1A1A1A] text-xs leading-tight truncate max-w-[200px]">{u.email}</p>
+                              <p className="text-[10px] text-[#BDBDB0] font-mono">{u.id.slice(0, 8)}…</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {u.isOwner && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                                <Crown className="w-3 h-3" /> Owner
+                              </span>
+                            )}
+                            {u.isAdmin && !u.isOwner && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">
+                                <Shield className="w-3 h-3" /> Admin
+                              </span>
+                            )}
+                            {!u.isOwner && !u.isAdmin && (
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#F0EDE6] text-[#7A756D]">User</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="font-semibold text-[#1A1A1A]">{u.leadCount}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="font-semibold text-[#1A1A1A]">{u.runCount}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.onboardingCompleted
+                            ? <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
+                            : <span className="flex items-center gap-1 text-xs text-amber-600 font-medium"><Clock3 className="w-3.5 h-3.5" /> Pending</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-xs text-[#7A756D]">{fmt(u.createdAt)}</td>
+                        <td className="px-4 py-3 text-xs text-[#7A756D]">{fmt(u.lastActiveAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ════════════════════ RUNS TAB ════════════════════ */}
+        {tab === "runs" && (
+          <motion.div initial="hidden" animate="visible" variants={fadeUp}
+            className="bg-white border border-[#E5E3D9] rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
+              <p className="font-semibold text-[#1A1A1A]">{runs.length} pipeline runs</p>
+              <span className="text-xs text-[#7A756D]">All users · latest 50</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#F0EDE6] bg-[#FAFAF7]">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Query</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Leads</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Started</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Completed</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A756D] uppercase tracking-wider">User ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F0EDE6]">
+                  {runs.length === 0 && (
+                    <tr><td colSpan={6} className="px-6 py-10 text-center text-[#7A756D]">No runs yet.</td></tr>
+                  )}
+                  {runs.map((run) => (
+                    <tr key={run.id} className="hover:bg-[#FAFAF7] transition-colors">
+                      <td className="px-6 py-3">
+                        <p className="font-medium text-[#1A1A1A] truncate max-w-[260px]">{run.query}</p>
+                        <p className="text-[10px] text-[#BDBDB0] font-mono mt-0.5">{run.id.slice(0, 8)}…</p>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={run.status} /></td>
+                      <td className="px-4 py-3 text-center font-semibold text-[#1A1A1A]">{run.leadsFound ?? 0}</td>
+                      <td className="px-4 py-3 text-xs text-[#7A756D]">{fmt(run.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-[#7A756D]">{fmt(run.completedAt)}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-[#BDBDB0]">{run.userId ? run.userId.slice(0, 8) + "…" : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </motion.div>
-        </div>
+        )}
 
-        <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
-            <p className="font-semibold text-[#1A1A1A]">{t("recentRuns")}</p>
-            <span className="text-xs text-[#7A756D]">{t("latestPipelineActivity")}</span>
-          </div>
-          <div className="divide-y divide-[#F0EDE6]">
-            {data.recentRuns.map((run) => (
-              <div key={run.id} className="px-6 py-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#1A1A1A] truncate">{run.query}</p>
-                  <p className="text-xs text-[#7A756D]">{new Date(run.createdAt).toLocaleString()} · {run.leadsFound} {t("leads")}</p>
-                </div>
-                <span className="text-xs font-medium text-[#7A756D] border border-[#E5E3D9] rounded-full px-2.5 py-1">{run.status}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </div>
   );
