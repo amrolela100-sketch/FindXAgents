@@ -45,6 +45,7 @@ export function useCounterAnimation(
     if (!el || animatedRef.current) return;
     animatedRef.current = true;
 
+    const node = el; // stable non-null reference for the closure
     const start = performance.now();
     function update(time: number) {
       const elapsed = time - start;
@@ -52,7 +53,7 @@ export function useCounterAnimation(
       // ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = eased * target;
-      el.textContent = isFloat
+      node.textContent = isFloat
         ? current.toFixed(1) + "%"
         : Math.floor(current).toLocaleString();
       if (progress < 1) requestAnimationFrame(update);

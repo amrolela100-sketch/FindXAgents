@@ -23,13 +23,14 @@ function useAnimatedCounter(
     const numericTarget = parseFloat(rawStr.replace("%", ""));
     const isFloat = isPct || numericTarget % 1 !== 0;
 
+    const node = el; // stable non-null reference for the closure
     const start = performance.now();
     function update(time: number) {
       const elapsed = time - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
       const current = eased * numericTarget;
-      el.textContent = isPct
+      node.textContent = isPct
         ? current.toFixed(1) + "%"
         : isFloat
         ? current.toFixed(1)
