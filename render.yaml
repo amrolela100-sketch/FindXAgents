@@ -1,0 +1,69 @@
+services:
+  # ─── Backend API ────────────────────────────────────────────────────────────
+  - type: web
+    name: findx-api
+    runtime: node
+    region: frankfurt          # closest to Netherlands (target market)
+    plan: free
+
+    rootDir: .                 # root of repo — needed for pnpm monorepo
+    buildCommand: npm install -g pnpm && pnpm install && pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps ./artifacts/api-server/dist/index.mjs
+
+    healthCheckPath: /api/healthz
+
+    envVars:
+      # ── Required ──────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: "3000"
+
+      - key: DATABASE_URL
+        sync: false            # ← set manually in Render dashboard
+
+      - key: SUPABASE_URL
+        sync: false
+
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # ── Owner / Admin access ──────────────────────────────────────────────
+      - key: OWNER_EMAIL
+        sync: false            # your email address
+
+      - key: OWNER_PASSWORD
+        sync: false            # strong secondary password for /owner panel
+
+      - key: ADMIN_EMAILS
+        sync: false            # comma-separated admin emails
+
+      # ── Frontend origin (CORS) ────────────────────────────────────────────
+      - key: FRONTEND_URL
+        sync: false            # e.g. https://findx.vercel.app
+
+      # ── AI & Search (optional but recommended) ───────────────────────────
+      - key: OPENROUTER_API_KEY
+        sync: false
+
+      - key: GEMINI_API_KEY
+        sync: false
+
+      - key: TAVILY_API_KEY
+        sync: false
+
+      # ── Lead discovery ─────────────────────────────────────────────────────
+      - key: KVK_API_KEY
+        sync: false
+
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+
+      # ── Email sending ──────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+
+      # ── Skip DB migrations on every deploy (run once manually) ────────────
+      - key: SKIP_MIGRATIONS
+        value: "false"         # set to "true" after first successful deploy
