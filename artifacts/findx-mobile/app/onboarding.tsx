@@ -23,6 +23,7 @@ const INDUSTRIES = ["SaaS", "Fintech", "E-commerce", "Logistics", "Marketing", "
 const CITIES = ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven", "All of Netherlands"];
 
 interface OnboardingData {
+  [key: string]: unknown;
   companyName: string;
   companyWebsite: string;
   industry: string;

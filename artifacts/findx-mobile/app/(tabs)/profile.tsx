@@ -16,7 +16,7 @@ import {
   type Workspace, type AdminStats, type AdminUser,
 } from "@/lib/api";
 
-const ADMIN_EMAILS = (process.env.EXPO_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS = (process.env.EXPO_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
 
 function SectionHeader({ label }: { label: string }) {
   const colors = useColors();
