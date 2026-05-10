@@ -4,6 +4,7 @@ import { telegramSettings } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get("/telegram/settings", async (_req, res) => {
     if (!settings) return res.json({ configured: false, chatId: undefined });
     return res.json({ configured: !!settings.botToken, chatId: settings.chatId });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -36,7 +37,7 @@ router.post("/telegram/settings", async (req, res) => {
     }
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to save settings" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -69,7 +70,7 @@ router.delete("/telegram/settings", async (_req, res) => {
     if (!result.length) return res.status(404).json({ error: "Settings not found" });
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

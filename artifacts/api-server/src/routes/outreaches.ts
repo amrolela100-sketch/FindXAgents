@@ -22,7 +22,7 @@ router.get("/outreaches", async (req, res) => {
 
     return res.json({ outreaches: rows, page, pageSize });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -58,7 +58,7 @@ router.get("/outreaches/export", async (req, res) => {
     res.header("Content-Disposition", "attachment; filename=findx-outreaches.csv");
     return res.send(csv);
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Export failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -78,11 +78,12 @@ router.get("/outreaches/:id", async (req, res) => {
     if (!outreach) return res.status(404).json({ error: "Outreach not found" });
     return res.json({ outreach });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
 import { sanitizeString } from "../lib/sanitize.js";
+import { safeError } from "../lib/safe-error.js";
 
 router.patch("/outreaches/:id", async (req, res) => {
   try {
@@ -110,7 +111,7 @@ router.patch("/outreaches/:id", async (req, res) => {
     if (!outreach) return res.status(404).json({ error: "Outreach not found" });
     return res.json({ outreach });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update outreach" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -129,7 +130,7 @@ router.post("/outreaches/:id/schedule", async (req, res) => {
     const [updated] = await db.update(outreaches).set({ scheduledAt: sendDate, status: "scheduled", updatedAt: new Date() }).where(eq(outreaches.id, req.params.id)).returning();
     return res.json({ success: true, outreach: updated });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -142,7 +143,7 @@ router.delete("/outreaches/:id/schedule", async (req, res) => {
     const [updated] = await db.update(outreaches).set({ scheduledAt: null, status: "approved", updatedAt: new Date() }).where(eq(outreaches.id, req.params.id)).returning();
     return res.json({ success: true, outreach: updated });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

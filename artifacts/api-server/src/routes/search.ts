@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { db, searchConfigs } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -75,7 +76,7 @@ router.post("/search", async (req, res) => {
       total: data.results.length,
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Search failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -96,7 +97,7 @@ router.get("/search/config", async (_req, res) => {
     if (process.env.TAVILY_API_KEY) return res.json({ configured: true, provider: "tavily", source: "env" });
     return res.json({ configured: false, provider: "tavily" });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -117,7 +118,7 @@ router.put("/search/config", async (req, res) => {
     }
     return res.json({ configured: true, provider: parsed.data.provider, source: "db" });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -126,7 +127,7 @@ router.delete("/search/config", async (_req, res) => {
     await db.delete(searchConfigs).where(eq(searchConfigs.id, "default"));
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

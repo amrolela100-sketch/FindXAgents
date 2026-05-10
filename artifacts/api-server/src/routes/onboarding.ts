@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get("/onboarding/status", async (req, res) => {
       data: user.onboardingData,
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -46,7 +47,7 @@ router.post("/onboarding/complete", async (req, res) => {
 
     return res.json({ completed: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

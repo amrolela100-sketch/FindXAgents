@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { db, users, agentPipelineRuns, leads } from "@workspace/db";
 import { count, sql } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 const OWNER_EMAIL = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
@@ -73,7 +74,7 @@ router.get("/owner/dashboard", async (req, res) => {
       health: { api: true, auth: true, database: true, agents: totalRuns > 0 },
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

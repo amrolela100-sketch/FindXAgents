@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/auth";
 import { db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { safeError } from "../lib/safe-error.js";
 
 export interface Workspace {
   id: string;
@@ -41,7 +42,7 @@ router.get("/workspaces", async (req, res) => {
     const activeId = (meta.activeWorkspaceId as string | undefined) ?? null;
     return res.json({ workspaces, activeId });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -71,7 +72,7 @@ router.post("/workspaces", async (req, res) => {
 
     return res.status(201).json({ workspace: newWs, activeId });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -92,7 +93,7 @@ router.put("/workspaces/:id", async (req, res) => {
     await setUserMeta(req.user!.userId, { ...meta, workspaces });
     return res.json({ workspace: workspaces[idx] });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -106,7 +107,7 @@ router.post("/workspaces/:id/switch", async (req, res) => {
     await setUserMeta(req.user!.userId, { ...meta, activeWorkspaceId: ws.id });
     return res.json({ activeId: ws.id, workspace: ws });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -124,7 +125,7 @@ router.delete("/workspaces/:id", async (req, res) => {
     await setUserMeta(req.user!.userId, { ...meta, workspaces, activeWorkspaceId: activeId });
     return res.json({ deleted: true, activeId: activeId ?? null });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

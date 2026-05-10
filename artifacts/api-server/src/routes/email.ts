@@ -4,6 +4,7 @@ import { emailProviderTokens, smtpConfigs, emailSettings, resendConfigs } from "
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.get("/email/provider/status", async (_req, res) => {
 
     return res.json({ provider, configured, connected, email });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -62,7 +63,7 @@ router.post("/email/gmail/disconnect", async (_req, res) => {
     await db.delete(emailProviderTokens).where(eq(emailProviderTokens.provider, "gmail"));
     return res.json({ disconnected: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -94,7 +95,7 @@ router.get("/email/settings", async (_req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -112,7 +113,7 @@ router.put("/email/settings", async (req, res) => {
     }
     return res.json({ defaultProvider: parsed.data.defaultProvider });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -122,7 +123,7 @@ router.get("/email/smtp/config", async (_req, res) => {
     if (!config) return res.json({ configured: false });
     return res.json({ configured: true, host: config.host, port: config.port, secure: config.secure, user: config.user, fromEmail: config.fromEmail, fromName: config.fromName });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -149,7 +150,7 @@ router.put("/email/smtp/config", async (req, res) => {
     }
     return res.json({ configured: true, host: config!.host, port: config!.port, secure: config!.secure, user: config!.user, fromEmail: config!.fromEmail, fromName: config!.fromName });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -158,7 +159,7 @@ router.delete("/email/smtp/config", async (_req, res) => {
     await db.delete(smtpConfigs).where(eq(smtpConfigs.id, "default"));
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -190,7 +191,7 @@ router.post("/email/send", async (req, res) => {
     const result = await sendViaResend(parsed.data);
     return res.json({ success: true, id: result.id });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to send email" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -205,7 +206,7 @@ router.get("/email/resend/config", async (_req, res) => {
     }
     return res.json({ configured: false });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -227,7 +228,7 @@ router.put("/email/resend/config", async (req, res) => {
     }
     return res.json({ configured: true, fromEmail: config!.fromEmail, source: "db" });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -236,7 +237,7 @@ router.delete("/email/resend/config", async (_req, res) => {
     await db.delete(resendConfigs).where(eq(resendConfigs.id, "default"));
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

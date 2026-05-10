@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { leads, analyses, agentPipelineRuns } from "@workspace/db";
 import { sql, count, and, gte, isNull, isNotNull } from "drizzle-orm";
 import { optionalAuth } from "../middleware/auth";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.get("/dashboard/stats", async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    safeError(res, err, "Internal server error");
   }
 });
 
@@ -107,7 +108,7 @@ router.get("/leads/score-distribution", async (req, res) => {
       totalScored: Number(agg?.totalScored ?? 0),
     });
   } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    safeError(res, err, "Internal server error");
   }
 });
 

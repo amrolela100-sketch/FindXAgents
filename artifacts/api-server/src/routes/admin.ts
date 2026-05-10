@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { db, users, leads, agentPipelineRuns } from "@workspace/db";
 import { count, sql, eq } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.get("/admin/stats", async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -71,7 +72,7 @@ router.get("/admin/users", async (req, res) => {
 
     return res.json({ users: formattedUsers });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { leads, pipelineStages } from "@workspace/db";
 import { count, sql } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/pipeline", async (_req, res) => {
       statusCounts: statusCountsRaw.map((r: { status: string; count: number }) => ({ status: r.status, _count: Number(r.count) })),
     });
   } catch (err) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    safeError(res, err, "Internal server error");
   }
 });
 

@@ -4,6 +4,7 @@ import { pushTokens } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.post("/notifications/register", requireAuth, async (req, res) => {
 
     return res.json({ registered: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -52,7 +53,7 @@ router.delete("/notifications/unregister", requireAuth, async (req, res) => {
       .where(and(eq(pushTokens.userId, userId), eq(pushTokens.token, parsed.data.token)));
     return res.json({ unregistered: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

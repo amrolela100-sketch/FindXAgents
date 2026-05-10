@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { analyses } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get("/analyses/:id", async (req, res) => {
     if (!analysis) return res.status(404).json({ error: "Analysis not found" });
     return res.json({ analysis });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

@@ -17,6 +17,7 @@ function isAdmin(email: string): boolean {
 // ─── Pipeline Runs ────────────────────────────────────────────────────────────
 
 import { AgentRunner } from "../lib/agent-runner.js";
+import { safeError } from "../lib/safe-error.js";
 
 router.post("/agents/run", async (req, res) => {
   const schema = z.object({
@@ -41,7 +42,7 @@ router.post("/agents/run", async (req, res) => {
 
     return res.status(202).json({ runId: run.id, status: "queued", run });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to start pipeline" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -102,7 +103,7 @@ router.get("/agents/runs", async (req, res) => {
       .limit(50);
     return res.json({ runs });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -126,7 +127,7 @@ router.get("/agents/runs/:id", async (req, res) => {
     if (!checkRunOwnership(run, req, res)) return;
     return res.json({ run });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -136,7 +137,7 @@ router.get("/agents/runs/:id/emails", async (req, res) => {
     if (!run || !checkRunOwnership(run, req, res)) return;
     return res.json({ emails: [] });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -166,7 +167,7 @@ router.get("/agents/runs/:id/logs", async (req, res) => {
       .orderBy(asc(agentLogs.createdAt));
     return res.json({ logs: rows });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -184,7 +185,7 @@ router.post("/agents/runs/:id/cancel", async (req, res) => {
       .returning();
     return res.json({ run: updated });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -230,7 +231,7 @@ router.get("/agents/logs", async (req, res) => {
 
     return res.json({ logs: rows, total: Number(totalResult[0]?.count ?? 0), page, pageSize });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -254,7 +255,7 @@ router.get("/agents/logs/:logId", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Log not found" });
     return res.json({ log: row });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -308,7 +309,7 @@ router.get("/agents", async (req, res) => {
     const enriched = rows.map((a) => ({ ...a, _count: { skills: skillCountMap.get(a.id) ?? 0, logs: logCountMap.get(a.id) ?? 0 } }));
     return res.json({ agents: enriched });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -324,7 +325,7 @@ router.get("/agents/name/:name", async (req, res) => {
 
     return res.json({ agent: { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } } });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -357,7 +358,7 @@ router.patch("/agents/name/:name", async (req, res) => {
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -373,7 +374,7 @@ router.get("/agents/:id", async (req, res) => {
 
     return res.json({ agent: { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } } });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -404,9 +405,9 @@ router.post("/agents", async (req, res) => {
     const [agent] = await db.insert(agents).values(data as typeof agents.$inferInsert).returning();
     return res.status(201).json({ agent });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to create agent";
+    const msg = err instanceof Error ? err.message : "";
     if (msg.includes("unique") || msg.includes("duplicate")) return res.status(409).json({ error: "Agent name already exists" });
-    return res.status(500).json({ error: msg });
+    return safeError(res, err, "Failed to create agent");
   }
 });
 
@@ -439,7 +440,7 @@ router.patch("/agents/:id", async (req, res) => {
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update agent" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -449,7 +450,7 @@ router.delete("/agents/:id", async (req, res) => {
     if (!result.length) return res.status(404).json({ error: "Agent not found" });
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -463,7 +464,7 @@ router.patch("/agents/:id/toggle", async (req, res) => {
     const [updated] = await db.update(agents).set({ isActive: !agent.isActive, updatedAt: new Date() }).where(eq(agents.id, req.params.id)).returning();
     return res.json({ agent: updated });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -476,7 +477,7 @@ router.get("/agents/:id/skills", async (req, res) => {
     const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, req.params.id)).orderBy(asc(agentSkills.sortOrder));
     return res.json({ skills });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -499,9 +500,9 @@ router.post("/agents/:id/skills", async (req, res) => {
     const [skill] = await db.insert(agentSkills).values({ ...parsed.data, agentId: req.params.id }).returning();
     return res.status(201).json({ skill });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to create skill";
+    const msg = err instanceof Error ? err.message : "";
     if (msg.includes("unique") || msg.includes("duplicate")) return res.status(409).json({ error: "Skill name already exists" });
-    return res.status(500).json({ error: msg });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -525,7 +526,7 @@ router.patch("/agents/:agentId/skills/:skillId", async (req, res) => {
     if (!skill) return res.status(404).json({ error: "Skill not found" });
     return res.json({ skill });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -537,7 +538,7 @@ router.delete("/agents/:agentId/skills/:skillId", async (req, res) => {
     if (!result.length) return res.status(404).json({ error: "Skill not found" });
     return res.json({ deleted: true });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -615,7 +616,7 @@ router.post("/agents/seed", async (_req, res) => {
 
     return res.json({ seeded: true, stages: stagesSeeded, agents: agentsSeeded });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Seed failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

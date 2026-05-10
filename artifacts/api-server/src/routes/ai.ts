@@ -4,8 +4,13 @@ import { aiProviders } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
+import { requireAuth } from "../middleware/auth.js";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
+
+// All AI provider endpoints require authentication
+router.use(requireAuth);
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 function isAdmin(email: string): boolean {
@@ -73,7 +78,7 @@ router.get("/ai/providers", async (_req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -105,7 +110,7 @@ router.post("/ai/providers", async (req, res) => {
     }).returning();
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create provider" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -119,7 +124,7 @@ router.patch("/ai/providers/:id", async (req, res) => {
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update provider" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -129,7 +134,7 @@ router.delete("/ai/providers/:id", async (req, res) => {
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ deleted: true, name: provider.name });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -142,7 +147,7 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
     }
     return res.json({ ok: true, model: provider.model });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -157,7 +162,7 @@ router.post("/ai/providers/:id/default", async (req, res) => {
 
     return res.json({ success: true, providerId: req.params.id });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -193,7 +198,7 @@ router.post("/ai/providers/seed-from-env", async (req, res) => {
 
     return res.json({ seeded: results });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Seed failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 

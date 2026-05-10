@@ -6,6 +6,7 @@ import { z } from "zod";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-engine";
 import { optionalAuth } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
+import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 
 const router = Router();
 
@@ -61,7 +62,7 @@ router.post("/leads", async (req, res) => {
     }).returning();
     return res.status(201).json({ lead });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create lead" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -122,7 +123,7 @@ router.get("/leads", async (req, res) => {
 
     return res.json({ leads: enrichedLeads, total: Number(totalResult[0]?.count ?? 0), page, pageSize });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -369,6 +370,7 @@ const discoverSchema = z.object({
 });
 
 import { discoveryLimiter, aiLimiter } from "../middleware/rate-limit.js";
+import { safeError } from "../lib/safe-error.js";
 
 router.post("/leads/discover", discoveryLimiter, async (req, res) => {
   const parsed = discoverSchema.safeParse(req.body);
@@ -392,7 +394,7 @@ router.post("/leads/discover", discoveryLimiter, async (req, res) => {
       runId: run.id
     });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to queue discovery" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -406,7 +408,7 @@ router.post("/leads/bulk/analyze", aiLimiter, async (req, res) => {
   return res.json({ queued: leadIds.length, message: "Analysis queued. Configure AI provider to run analysis." });
 });
 
-router.post("/leads/bulk/outreach", async (req, res) => {
+router.post("/leads/bulk/outreach", aiLimiter, async (req, res) => {
   const schema = z.object({ leadIds: z.array(z.string().uuid()).min(1).max(100) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "leadIds must be an array of UUIDs (max 100)", details: parsed.error.flatten() });
@@ -507,7 +509,7 @@ router.post("/leads/import", async (req, res) => {
 
     return res.json({ created: created.length, skipped, errors });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Import failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -532,16 +534,26 @@ router.get("/leads/export", async (req, res) => {
       .limit(500);
 
     const headers = ["id", "businessName", "city", "industry", "website", "phone", "email", "status", "source", "discoveredAt"];
+    // CSV cell sanitizer: prevents formula injection (=, +, -, @) and wraps values with commas/quotes
+    const csvCell = (val: unknown): string => {
+      let str = val == null ? "" : String(val);
+      if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`; // formula injection prevention
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
     const csv = [
       headers.join(","),
-      ...rows.map((l: Record<string, unknown>) => headers.map((h) => JSON.stringify(l[h] ?? "")).join(",")),
+      ...rows.map((l: Record<string, unknown>) => headers.map((h) => csvCell(l[h])).join(",")),
     ].join("\n");
 
     res.header("Content-Type", "text/csv; charset=utf-8");
     res.header("Content-Disposition", "attachment; filename=findx-leads.csv");
     return res.send(csv);
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Export failed" });
+    logger.error(err, "CSV export failed");
+    return res.status(500).json({ error: "Export failed" });
   }
 });
 
@@ -573,7 +585,7 @@ router.get("/leads/:id", async (req, res) => {
 
     return res.json({ lead: { ...lead, analyses: leadAnalyses, outreaches: leadOutreaches } });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -608,7 +620,7 @@ router.patch("/leads/:id", async (req, res) => {
     const [lead] = await db.update(leads).set(updateData as Partial<typeof leads.$inferInsert>).where(eq(leads.id, req.params.id)).returning();
     return res.json({ lead });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update lead" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -622,7 +634,7 @@ router.get("/leads/:id/enrich", async (req, res) => {
     
     return res.status(202).json({ message: "Enrichment queued." });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -674,7 +686,7 @@ router.post("/leads/:id/analyze", async (req, res) => {
     return res.json({ analysis, score: result.score, summary: result.summary });
   } catch (err) {
     await db.update(leads).set({ status: "discovered", updatedAt: new Date() }).where(eq(leads.id, req.params.id)).catch((err) => logger.error({ err }, "Failed to reset lead status after analysis error"));
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Analysis failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -686,7 +698,7 @@ router.get("/leads/:id/analyses", async (req, res) => {
     const rows = await db.select().from(analyses).where(eq(analyses.leadId, req.params.id)).orderBy(desc(analyses.analyzedAt));
     return res.json({ analyses: rows });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -754,7 +766,7 @@ router.post("/leads/:id/outreach/generate", async (req, res) => {
 
     return res.json({ outreach });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Outreach generation failed" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -766,7 +778,7 @@ router.get("/leads/:id/outreaches", async (req, res) => {
     const rows = await db.select().from(outreaches).where(eq(outreaches.leadId, req.params.id)).orderBy(desc(outreaches.createdAt));
     return res.json({ outreaches: rows });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
@@ -781,7 +793,7 @@ router.post("/leads/:id/outreach/send", async (req, res) => {
     if (!outreach) return res.status(404).json({ error: "Outreach not found for this lead" });
     return res.status(202).json({ message: "Send queued. Configure email provider to send outreach.", outreachId });
   } catch (err) {
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Internal error" });
+    return safeError(res, err, "Internal server error");
   }
 });
 
