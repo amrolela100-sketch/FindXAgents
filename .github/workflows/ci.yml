@@ -7,23 +7,52 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # ── Typecheck & Tests ────────────────────────────────────────────────────────
   test:
+    name: Typecheck & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
-      
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        
+        run: pnpm install --no-frozen-lockfile
+
       - name: Run Typecheck
         run: pnpm run typecheck
-        
+
       - name: Run Tests
         run: pnpm test
+
+  # ── Build Verification ───────────────────────────────────────────────────────
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build API Server (Render)
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Build Frontend (Vercel)
+        run: pnpm --filter @workspace/findx run build
