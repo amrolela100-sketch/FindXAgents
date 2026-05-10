@@ -3,6 +3,21 @@ import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini } from "./ai-engine.js";
 import { logger } from "./logger.js";
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function getDomain(url?: string): string | null {
   if (!url) return null;
   try {
@@ -170,7 +185,7 @@ export class AgentRunner {
       if (!lead) continue;
 
       try {
-        const result = await analyzeLeadWithGemini(lead);
+        const result = await withRetry(() => analyzeLeadWithGemini(lead), 3, 1000);
         await db.insert(analyses).values({
           leadId: lead.id,
           type: "gemini_digital",

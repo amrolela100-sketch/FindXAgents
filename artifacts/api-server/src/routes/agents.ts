@@ -47,17 +47,10 @@ router.get("/agents/runs/:id/logs/stream", async (req, res) => {
   res.flushHeaders();
 
   const runId = req.params.id;
-  let lastLogId = "";
+  const sentLogIds = new Set<string>();
 
   const interval = setInterval(async () => {
     try {
-      const conditions = [eq(agentLogs.pipelineRunId, runId)];
-      if (lastLogId) {
-        // Simple way: just sort by createdAt and id, but since we don't have id > lastLogId natively in uuid,
-        // we can fetch logs created in the last 10 seconds and dedup on the client, or just fetch all and filter by known IDs.
-        // For simplicity, we'll fetch all logs and only send new ones.
-      }
-      
       const logs = await db.select({
         id: agentLogs.id,
         phase: agentLogs.phase,
@@ -68,12 +61,12 @@ router.get("/agents/runs/:id/logs/stream", async (req, res) => {
         .where(eq(agentLogs.pipelineRunId, runId))
         .orderBy(asc(agentLogs.createdAt));
 
-      const newLogs = lastLogId ? logs.slice(logs.findIndex(l => l.id === lastLogId) + 1) : logs;
+      const newLogs = logs.filter(l => !sentLogIds.has(l.id));
       
       if (newLogs.length > 0) {
         for (const log of newLogs) {
           res.write(`data: ${JSON.stringify(log)}\n\n`);
-          lastLogId = log.id;
+          sentLogIds.add(log.id);
         }
       }
 

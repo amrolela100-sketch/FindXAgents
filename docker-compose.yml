@@ -27,7 +27,7 @@ services:
       - DATABASE_URL=postgres://${POSTGRES_USER:-findx_user}:${POSTGRES_PASSWORD:-findx_super_secret_password}@postgres:5432/${POSTGRES_DB:-findx_db}
       - PORT=3000
     env_file:
-      - artifacts/api-server/.env.example
+      - artifacts/api-server/.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
     ports:
       - "80:80"
     env_file:
-      - artifacts/api-server/.env.example
+      - artifacts/findx/.env
     depends_on:
       - api
 
