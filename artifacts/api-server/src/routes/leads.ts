@@ -4,14 +4,14 @@ import { leads, analyses, outreaches } from "@workspace/db";
 import { eq, and, ilike, sql, desc, count, isNotNull, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-engine";
-import { optionalAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
-router.use(optionalAuth);
+router.use(requireAuth);
 
 // ─── Lead CRUD ────────────────────────────────────────────────────────────────
 
@@ -422,7 +422,10 @@ router.patch("/leads/bulk/status", async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
 
   const { leadIds, status } = parsed.data;
-  await db.update(leads).set({ status, updatedAt: new Date() }).where(inArray(leads.id, leadIds));
+  // Security: scope update to the authenticated user's leads only (prevents IDOR)
+  await db.update(leads)
+    .set({ status, updatedAt: new Date() })
+    .where(and(inArray(leads.id, leadIds), eq(leads.userId, req.user!.userId)));
   return res.json({ updated: leadIds.length, status });
 });
 
@@ -430,6 +433,11 @@ router.post("/leads/import", async (req, res) => {
   const { csv: csvText, skipDuplicates = true } = req.body as { csv?: string; skipDuplicates?: boolean };
   if (!csvText || typeof csvText !== "string") {
     return res.status(400).json({ error: "Missing 'csv' field with CSV text content" });
+  }
+  // Security: reject oversized CSV payloads to prevent DoS (max 5 MB)
+  const MAX_CSV_BYTES = 5 * 1024 * 1024;
+  if (Buffer.byteLength(csvText, "utf8") > MAX_CSV_BYTES) {
+    return res.status(413).json({ error: "CSV payload too large. Maximum allowed size is 5 MB." });
   }
 
   try {

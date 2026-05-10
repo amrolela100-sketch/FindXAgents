@@ -4,9 +4,13 @@ import { emailProviderTokens, smtpConfigs, emailSettings, resendConfigs } from "
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
+import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
+
+// Security: all email configuration endpoints require authentication
+router.use(requireAuth);
 
 router.get("/email/provider/status", async (_req, res) => {
   try {
@@ -121,7 +125,9 @@ router.get("/email/smtp/config", async (_req, res) => {
   try {
     const [config] = await db.select().from(smtpConfigs).where(eq(smtpConfigs.id, "default"));
     if (!config) return res.json({ configured: false });
-    return res.json({ configured: true, host: config.host, port: config.port, secure: config.secure, user: config.user, fromEmail: config.fromEmail, fromName: config.fromName });
+    // Security: mask SMTP username to avoid credential exposure
+    const maskedUser = config.user ? `${config.user.slice(0, 3)}${"*".repeat(Math.max(4, config.user.length - 3))}` : null;
+    return res.json({ configured: true, host: config.host, port: config.port, secure: config.secure, user: maskedUser, fromEmail: config.fromEmail, fromName: config.fromName });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

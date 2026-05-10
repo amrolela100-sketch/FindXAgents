@@ -3,11 +3,11 @@ import { db } from "@workspace/db";
 import { agents, agentSkills, agentLogs, agentPipelineRuns, pipelineStages, leads } from "@workspace/db";
 import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { optionalAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.use(optionalAuth);
+router.use(requireAuth);
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 function isAdmin(email: string): boolean {
@@ -445,6 +445,10 @@ router.patch("/agents/:id", async (req, res) => {
 });
 
 router.delete("/agents/:id", async (req, res) => {
+  // Security: only admins can delete agents (prevents IDOR / unauthorized deletion)
+  if (!req.user || !isAdmin(req.user.email)) {
+    return res.status(403).json({ error: "Forbidden — admin only" });
+  }
   try {
     const result = await db.delete(agents).where(eq(agents.id, req.params.id)).returning();
     if (!result.length) return res.status(404).json({ error: "Agent not found" });

@@ -1,10 +1,46 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { outreaches } from "@workspace/db";
+import { outreaches, leads } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { z } from "zod";
+import { sanitizeString } from "../lib/sanitize.js";
+import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
+
+/**
+ * Ownership check for outreaches.
+ * An outreach is owned by the user who owns its parent lead.
+ * Outreaches whose lead has userId = null (legacy) are accessible to anyone.
+ * Returns false and writes a 404 response when access is denied.
+ */
+async function checkOutreachOwnership(
+  outreachId: string,
+  req: Request,
+  res: Response,
+): Promise<{ outreach: typeof outreaches.$inferSelect } | null> {
+  const [row] = await db
+    .select({ outreach: outreaches, leadUserId: leads.userId })
+    .from(outreaches)
+    .leftJoin(leads, eq(outreaches.leadId, leads.id))
+    .where(eq(outreaches.id, outreachId))
+    .limit(1);
+
+  if (!row) {
+    res.status(404).json({ error: "Outreach not found" });
+    return null;
+  }
+
+  const ownerId = row.leadUserId ?? null;
+  const requesterId = req.user?.userId ?? null;
+
+  if (ownerId !== null && ownerId !== requesterId) {
+    res.status(404).json({ error: "Outreach not found" });
+    return null;
+  }
+
+  return { outreach: row.outreach };
+}
 
 router.get("/outreaches", async (req, res) => {
   try {
@@ -74,19 +110,21 @@ router.post("/webhooks/resend", async (_req, res) => {
 
 router.get("/outreaches/:id", async (req, res) => {
   try {
-    const [outreach] = await db.select().from(outreaches).where(eq(outreaches.id, req.params.id));
-    if (!outreach) return res.status(404).json({ error: "Outreach not found" });
-    return res.json({ outreach });
+    // Security: verify ownership before returning data (prevents IDOR)
+    const result = await checkOutreachOwnership(req.params.id, req, res);
+    if (!result) return;
+    return res.json({ outreach: result.outreach });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
 
-import { sanitizeString } from "../lib/sanitize.js";
-import { safeError } from "../lib/safe-error.js";
-
 router.patch("/outreaches/:id", async (req, res) => {
   try {
+    // Security: verify ownership before updating (prevents IDOR)
+    const existing = await checkOutreachOwnership(req.params.id, req, res);
+    if (!existing) return;
+
     const { subject, body, status } = req.body as { subject?: string; body?: string; status?: string };
     const update: Record<string, unknown> = { updatedAt: new Date() };
     const ALLOWED_STATUSES = ["draft", "approved", "sent", "saved", "pending_approval"];
@@ -96,7 +134,7 @@ router.patch("/outreaches/:id", async (req, res) => {
       }
       update.status = status;
     }
-    
+
     // Sanitize user inputs
     if (subject) {
       const sanitizedSubject = sanitizeString(subject);
@@ -117,8 +155,9 @@ router.patch("/outreaches/:id", async (req, res) => {
 
 router.post("/outreaches/:id/schedule", async (req, res) => {
   try {
-    const [outreach] = await db.select().from(outreaches).where(eq(outreaches.id, req.params.id));
-    if (!outreach) return res.status(404).json({ error: "Outreach not found" });
+    // Security: verify ownership before scheduling (prevents IDOR)
+    const existing = await checkOutreachOwnership(req.params.id, req, res);
+    if (!existing) return;
 
     const { sendAt } = req.body as { sendAt?: string };
     if (!sendAt) return res.status(400).json({ error: "sendAt is required" });
@@ -136,9 +175,11 @@ router.post("/outreaches/:id/schedule", async (req, res) => {
 
 router.delete("/outreaches/:id/schedule", async (req, res) => {
   try {
-    const [outreach] = await db.select().from(outreaches).where(eq(outreaches.id, req.params.id));
-    if (!outreach) return res.status(404).json({ error: "Outreach not found" });
-    if (outreach.status !== "scheduled") return res.status(400).json({ error: "Outreach is not scheduled" });
+    // Security: verify ownership before unscheduling (prevents IDOR)
+    const existing = await checkOutreachOwnership(req.params.id, req, res);
+    if (!existing) return;
+
+    if (existing.outreach.status !== "scheduled") return res.status(400).json({ error: "Outreach is not scheduled" });
 
     const [updated] = await db.update(outreaches).set({ scheduledAt: null, status: "approved", updatedAt: new Date() }).where(eq(outreaches.id, req.params.id)).returning();
     return res.json({ success: true, outreach: updated });

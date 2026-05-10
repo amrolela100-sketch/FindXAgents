@@ -49,8 +49,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
     return res.status(401).json({ error: "Unauthorized — invalid or expired session" });
   } catch (error: any) {
+    // Security: log the full error internally but never expose internal details to clients
     logger.error({ error }, "requireAuth failure");
-    return res.status(401).json({ error: "Authentication failed: " + error.message });
+    return res.status(401).json({ error: "Authentication failed" });
   }
 }
 
