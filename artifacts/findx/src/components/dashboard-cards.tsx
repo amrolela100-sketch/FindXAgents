@@ -1,7 +1,66 @@
+import { useRef, useEffect, useCallback } from "react";
 import { Database, Search, Mail, TrendingUp } from "lucide-react";
 import { getDashboardStats } from "../lib/api";
 import type { DashboardStats } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
+
+/* ─── Animated counter hook (inline, self-contained per card) ─── */
+function useAnimatedCounter(
+  target: number | string,
+  duration = 1800
+): React.RefObject<HTMLSpanElement | null> {
+  const elRef = useRef<HTMLSpanElement | null>(null);
+  const animatedRef = useRef(false);
+
+  const runAnimation = useCallback(() => {
+    const el = elRef.current;
+    if (!el || animatedRef.current) return;
+    animatedRef.current = true;
+
+    // Handle percentage strings like "7.3%"
+    const rawStr = String(target);
+    const isPct = rawStr.endsWith("%");
+    const numericTarget = parseFloat(rawStr.replace("%", ""));
+    const isFloat = isPct || numericTarget % 1 !== 0;
+
+    const start = performance.now();
+    function update(time: number) {
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const current = eased * numericTarget;
+      el.textContent = isPct
+        ? current.toFixed(1) + "%"
+        : isFloat
+        ? current.toFixed(1)
+        : Math.floor(current).toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }, [target, duration]);
+
+  useEffect(() => {
+    animatedRef.current = false;
+    const el = elRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            runAnimation();
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [runAnimation]);
+
+  return elRef;
+}
 
 interface CardConfig {
   label: string;
@@ -61,13 +120,74 @@ function SkeletonCard() {
   );
 }
 
-export function DashboardCards() {
-  const { data, isLoading } = usePolling(
-    () => getDashboardStats(),
-    15_000,
-  );
+function KpiCard({
+  card,
+  stats,
+  index,
+}: {
+  card: CardConfig;
+  stats: DashboardStats;
+  index: number;
+}) {
+  const Icon = card.icon;
+  const value = card.getValue(stats);
+  const trend = card.getTrend(stats);
+  const isPositive =
+    trend.startsWith("+") ||
+    trend.includes("won") ||
+    trend.includes("responded");
 
+  const counterRef = useAnimatedCounter(value);
+
+  return (
+    <div
+      className="reveal-item bg-white border border-[#E5E3D9] rounded-xl p-5 lift-card kpi-card"
+      style={{ transitionDelay: `${index * 80}ms` }}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="p-2 rounded-lg bg-[#F0EDE6]">
+          <Icon className="w-5 h-5 text-[#1A1A1A]" />
+        </div>
+      </div>
+      <p className="text-3xl font-serif font-bold text-[#1A1A1A]">
+        <span ref={counterRef}>{value}</span>
+      </p>
+      <p className="text-sm text-[#7A756D] mt-1">{card.label}</p>
+      <p
+        className={`text-xs mt-3 font-medium ${
+          isPositive ? "text-emerald-600" : "text-red-500"
+        }`}
+      >
+        {trend}
+      </p>
+    </div>
+  );
+}
+
+export function DashboardCards() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { data, isLoading } = usePolling(() => getDashboardStats(), 15_000);
   const stats = data?.stats ?? null;
+
+  /* Scroll reveal for cards */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll<HTMLElement>(".reveal-item");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    items.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [stats]);
 
   if (isLoading || !stats) {
     return (
@@ -80,36 +200,10 @@ export function DashboardCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {CARDS.map((card) => {
-        const Icon = card.icon;
-        const value = card.getValue(stats);
-        const trend = card.getTrend(stats);
-        const isPositive =
-          trend.startsWith("+") || trend.includes("won") || trend.includes("responded");
-
-        return (
-          <div
-            key={card.label}
-            className="bg-white border border-[#E5E3D9] rounded-xl p-5"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg bg-[#F0EDE6]">
-                <Icon className="w-5 h-5 text-[#1A1A1A]" />
-              </div>
-            </div>
-            <p className="text-3xl font-serif font-bold text-[#1A1A1A]">{value}</p>
-            <p className="text-sm text-[#7A756D] mt-1">{card.label}</p>
-            <p
-              className={`text-xs mt-3 font-medium ${
-                isPositive ? "text-emerald-600" : "text-red-500"
-              }`}
-            >
-              {trend}
-            </p>
-          </div>
-        );
-      })}
+    <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {CARDS.map((card, i) => (
+        <KpiCard key={card.label} card={card} stats={stats} index={i} />
+      ))}
     </div>
   );
 }

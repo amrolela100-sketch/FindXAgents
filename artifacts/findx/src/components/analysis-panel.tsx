@@ -1,7 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, FileText, AlertTriangle, Info, CheckCircle, Loader2, AlertCircle, TrendingDown, Users, Globe, Zap, Building2, ExternalLink } from "lucide-react";
 import type { Lead, Analysis } from "../lib/types";
 import { triggerAnalysis } from "../lib/api";
+
+/* ── Inline typewriter hook ── */
+function useTypewriter(text: string, speed = 18, active = true) {
+  const [display, setDisplay] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!active || !text) { setDisplay(text || ""); setDone(true); return; }
+    setDisplay(""); setDone(false);
+    let i = 0; let cancelled = false;
+    function type() {
+      if (cancelled) return;
+      if (i < text.length) { setDisplay(text.slice(0, i + 1)); i++; setTimeout(type, speed); }
+      else setDone(true);
+    }
+    type();
+    return () => { cancelled = true; };
+  }, [text, speed, active]);
+  return { display, done };
+}
+
+/* ── Typed text line ── */
+function TypedLine({ text, delay = 0 }: { text: string; delay?: number }) {
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setActive(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  const { display, done } = useTypewriter(text, 14, active);
+  return (
+    <span className={done ? "" : "typing-cursor"}>
+      {display}
+    </span>
+  );
+}
 
 export function AnalysisPanel({ lead, onLeadUpdated }: { lead: Lead; onLeadUpdated: () => void }) {
   const [triggering, setTriggering] = useState(false);
@@ -134,7 +168,9 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
                   <span className="text-sm font-medium text-slate-200">{gap.service}</span>
                   {needBadge(gap.need)}
                 </div>
-                <p className="text-xs text-slate-400">{gap.reasoning}</p>
+                <p className="text-xs text-slate-400">
+                  <TypedLine text={gap.reasoning} delay={i * 400} />
+                </p>
                 {gap.estimatedRevenueImpact && (
                   <p className="text-xs text-emerald-400 font-medium mt-1">&euro; {gap.estimatedRevenueImpact}</p>
                 )}
@@ -218,7 +254,9 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
           <div className="space-y-1">
             {(opportunities as Array<{ title: string; impact?: string }>).slice(0, 5).map((o, i) => (
               <div key={i} className="text-sm text-slate-300">
-                <span className="font-medium">{o.title}</span>
+                <span className="font-medium">
+                  <TypedLine text={o.title} delay={i * 300} />
+                </span>
                 {o.impact && <span className="text-xs text-slate-500 ml-2">({o.impact})</span>}
               </div>
             ))}

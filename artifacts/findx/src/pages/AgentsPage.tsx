@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link } from "wouter";
 import {
   Bot, Search, Loader2, AlertTriangle, CheckCircle2, Mail,
@@ -393,10 +393,14 @@ export default function AgentsPage() {
                         <span className="text-sm font-semibold text-[#1A1A1A] truncate">{run.query}</span>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-xs text-[#7A756D]">{new Date(run.createdAt).toLocaleString()}</span>
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ring-1 ring-inset ${style.bg} ${style.text} ${style.border}`}>
-                            {run.status === "running"   && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {run.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
-                            {run.status === "failed"    && <AlertTriangle className="w-3 h-3" />}
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ring-1 ring-inset ${style.bg} ${style.text} ${style.border}`}>
+                            {run.status === "running" ? (
+                              <span className="status-dot-active w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                            ) : run.status === "completed" ? (
+                              <CheckCircle2 className="w-3 h-3" />
+                            ) : run.status === "failed" ? (
+                              <AlertTriangle className="w-3 h-3" />
+                            ) : null}
                             {style.label}
                           </span>
                           {run.status === "running" && (
@@ -458,7 +462,7 @@ export default function AgentsPage() {
             <div className="grid gap-4">
               {sortedAgents.map((agent) => (
                 <Link key={agent.id} href={`/agents/${agent.name}`}
-                  className="block bg-white border border-[#E5E3D9] rounded-xl p-5 hover:border-[#C4C0B8] transition-colors group">
+                  className="block bg-white border border-[#E5E3D9] rounded-xl p-5 lift-card reveal-item group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-[#F0EDE6] flex items-center justify-center group-hover:bg-[#E8E4DC] transition-colors">
@@ -469,8 +473,18 @@ export default function AgentsPage() {
                         <p className="text-xs text-[#7A756D]">Order: {agent.pipelineOrder}</p>
                       </div>
                     </div>
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${agent.isActive ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-50 text-gray-500 border border-gray-200"}`}>
-                      {agent.isActive ? "Active" : "Inactive"}
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${agent.isActive ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-50 text-gray-500 border border-gray-200"}`}>
+                      {agent.isActive ? (
+                        <>
+                          <span className="status-dot-active w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />
+                          Inactive
+                        </>
+                      )}
                     </span>
                   </div>
                   {agent.description && (

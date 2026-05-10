@@ -30,7 +30,7 @@ export function LeadCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg border border-[#E5E3D9] border-l-[3px] ${STATUS_BORDER[lead.status]} p-3.5 cursor-pointer transition-all duration-150 hover:border-[#C4C0B8] hover:-translate-y-0.5 ${
+      className={`bg-white rounded-lg border border-[#E5E3D9] border-l-[3px] ${STATUS_BORDER[lead.status]} p-3.5 cursor-pointer lift-card ${
         isDragging ? "opacity-70 rotate-1 shadow-md" : ""
       } ${showActivity ? "ring-1 ring-blue-200" : ""}`}
     >
