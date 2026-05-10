@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { telegramSettings } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { integrationTestLimiter } from "../middleware/rate-limit.js";
 
 const router = Router();
 
@@ -17,8 +18,9 @@ router.get("/telegram/settings", async (_req, res) => {
 });
 
 const telegramSchema = z.object({
-  botToken: z.string().min(1),
-  chatId: z.string().min(1),
+  // Telegram bot tokens follow the format: <bot_id>:<token> e.g. 123456789:AABBccDDeeFF...
+  botToken: z.string().regex(/^\d{8,12}:[A-Za-z0-9_-]{35}$/, "Invalid bot token format"),
+  chatId: z.string().min(1).max(50).regex(/^-?\d+$/, "Chat ID must be a numeric value"),
 });
 
 router.post("/telegram/settings", async (req, res) => {
@@ -38,7 +40,7 @@ router.post("/telegram/settings", async (req, res) => {
   }
 });
 
-router.post("/telegram/test", async (req, res) => {
+router.post("/telegram/test", integrationTestLimiter, async (req, res) => {
   const parsed = telegramSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
 

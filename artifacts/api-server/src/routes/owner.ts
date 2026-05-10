@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { timingSafeEqual } from "crypto";
 import { requireAuth } from "../middleware/auth";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { db, users, agentPipelineRuns, leads } from "@workspace/db";
@@ -19,7 +20,11 @@ router.post("/owner/unlock", async (req, res) => {
   if (!isOwner(email)) return res.status(403).json({ error: "Forbidden" });
   if (!OWNER_PASSWORD) return res.status(503).json({ error: "Owner password not configured" });
   const password = String(req.body?.password ?? "");
-  if (password !== OWNER_PASSWORD) return res.status(401).json({ error: "Incorrect password" });
+  // Use timing-safe comparison to prevent timing attacks
+  const passwordMatch =
+    password.length === OWNER_PASSWORD.length &&
+    timingSafeEqual(Buffer.from(password), Buffer.from(OWNER_PASSWORD));
+  if (!passwordMatch) return res.status(401).json({ error: "Incorrect password" });
   return res.json({ unlocked: true });
 });
 

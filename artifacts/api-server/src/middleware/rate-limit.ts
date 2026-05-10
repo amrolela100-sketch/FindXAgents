@@ -4,31 +4,43 @@ import rateLimit from "express-rate-limit";
 // import { RedisStore } from "rate-limit-redis";
 
 export const globalLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // Limit each IP to 100 requests per `window`
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: {
-    error: "Too many requests, please try again later.",
-  },
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
 });
 
 export const authLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // Limit each IP to 5 auth requests per `window`
+  windowMs: 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    error: "Too many authentication attempts, please try again after a minute.",
-  },
+  message: { error: "Too many authentication attempts, please try again after a minute." },
 });
 
 export const discoveryLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // Limit each IP to 10 discovery requests per hour
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    error: "Discovery limit reached. Please try again after an hour.",
-  },
+  message: { error: "Discovery limit reached. Please try again after an hour." },
+});
+
+// Protects bulk AI operations — max 20 per hour per IP
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "AI operation limit reached. Please try again after an hour." },
+});
+
+// Protects Telegram & external integration test endpoints — max 5 per minute per IP
+export const integrationTestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many test requests. Please wait a minute before retrying." },
 });

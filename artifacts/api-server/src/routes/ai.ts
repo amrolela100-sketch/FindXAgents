@@ -3,8 +3,14 @@ import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
+import { integrationTestLimiter } from "../middleware/rate-limit.js";
 
 const router = Router();
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+function isAdmin(email: string): boolean {
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
 
 const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?: string }> = {
   openai: { defaultModel: "gpt-4o", defaultBaseUrl: "https://api.openai.com/v1" },
@@ -127,7 +133,7 @@ router.delete("/ai/providers/:id", async (req, res) => {
   }
 });
 
-router.post("/ai/providers/:id/test", async (req, res) => {
+router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) => {
   try {
     const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, req.params.id));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
@@ -159,7 +165,10 @@ router.get("/ai/providers/defaults", (_req, res) => {
   return res.json({ defaults: PROVIDER_DEFAULTS });
 });
 
-router.post("/ai/providers/seed-from-env", async (_req, res) => {
+router.post("/ai/providers/seed-from-env", async (req, res) => {
+  if (!isAdmin(req.user!.email)) {
+    return res.status(403).json({ error: "Forbidden — admin only" });
+  }
   try {
     const results: string[] = [];
 

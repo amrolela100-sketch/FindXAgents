@@ -368,7 +368,7 @@ const discoverSchema = z.object({
   maxResults: z.number().min(1).max(100).default(10),
 });
 
-import { discoveryLimiter } from "../middleware/rate-limit.js";
+import { discoveryLimiter, aiLimiter } from "../middleware/rate-limit.js";
 
 router.post("/leads/discover", discoveryLimiter, async (req, res) => {
   const parsed = discoverSchema.safeParse(req.body);
@@ -396,7 +396,7 @@ router.post("/leads/discover", discoveryLimiter, async (req, res) => {
   }
 });
 
-router.post("/leads/bulk/analyze", async (req, res) => {
+router.post("/leads/bulk/analyze", aiLimiter, async (req, res) => {
   const schema = z.object({ leadIds: z.array(z.string().uuid()).min(1).max(100) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "leadIds must be an array of UUIDs (max 100)", details: parsed.error.flatten() });
@@ -464,12 +464,15 @@ router.post("/leads/import", async (req, res) => {
       const row: Record<string, string> = {};
       headers.forEach((h, idx) => { row[h] = parts[idx] ?? ""; });
 
-      const businessName = row.businessName || row.business_name || row.name;
-      const city = row.city || row.City;
-      if (!businessName || !city) {
+      const rawBusinessName = row.businessName || row.business_name || row.name;
+      const rawCity = row.city || row.City;
+      if (!rawBusinessName || !rawCity) {
         errors.push({ row: i + 1, message: "Missing businessName or city" });
         continue;
       }
+      // Sanitize CSV fields to prevent injection
+      const businessName = sanitizeString(rawBusinessName) || rawBusinessName;
+      const city = sanitizeString(rawCity) || rawCity;
 
       try {
         if (skipDuplicates) {
@@ -481,19 +484,20 @@ router.post("/leads/import", async (req, res) => {
           if (existing.length > 0) { skipped++; continue; }
         }
 
-        const website = row.website || undefined;
+        const website = (row.website && validateWebsiteUrl(row.website)) ? row.website : undefined;
+        const email = (row.email && validateEmail(row.email)) ? row.email : undefined;
         await db.insert(leads).values({
           userId: req.user?.userId ?? null,
           businessName,
           city,
-          address: row.address || undefined,
-          industry: row.industry || undefined,
+          address: sanitizeString(row.address),
+          industry: sanitizeString(row.industry),
           website,
           hasWebsite: !!website,
-          phone: row.phone || undefined,
-          email: row.email || undefined,
-          kvkNumber: row.kvkNumber || row.kvk_number || undefined,
-          source: row.source || "import",
+          phone: sanitizeString(row.phone),
+          email,
+          kvkNumber: sanitizeString(row.kvkNumber || row.kvk_number),
+          source: sanitizeString(row.source) || "import",
         });
         created.push(i);
       } catch (rowErr) {
@@ -525,7 +529,7 @@ router.get("/leads/export", async (req, res) => {
     const rows = await db.select().from(leads)
       .where(conditions.length > 0 ? and(...(conditions as [ReturnType<typeof ilike>, ...ReturnType<typeof ilike>[]])) : undefined)
       .orderBy(desc(leads.discoveredAt))
-      .limit(5000);
+      .limit(500);
 
     const headers = ["id", "businessName", "city", "industry", "website", "phone", "email", "status", "source", "discoveredAt"];
     const csv = [

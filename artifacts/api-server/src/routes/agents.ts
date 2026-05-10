@@ -9,6 +9,11 @@ const router = Router();
 
 router.use(optionalAuth);
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+function isAdmin(email: string): boolean {
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
 // ─── Pipeline Runs ────────────────────────────────────────────────────────────
 
 import { AgentRunner } from "../lib/agent-runner.js";
@@ -17,7 +22,7 @@ router.post("/agents/run", async (req, res) => {
   const schema = z.object({
     query: z.string().min(2).max(500),
     sync: z.boolean().default(false),
-    maxResults: z.number().int().min(1).max(500).optional(),
+    maxResults: z.number().int().min(1).max(50).optional(),
     language: z.enum(["en", "nl", "ar"]).default("en"),
   });
   const parsed = schema.safeParse(req.body);
@@ -449,6 +454,9 @@ router.delete("/agents/:id", async (req, res) => {
 });
 
 router.patch("/agents/:id/toggle", async (req, res) => {
+  if (!req.user || !isAdmin(req.user.email)) {
+    return res.status(403).json({ error: "Forbidden — admin only" });
+  }
   try {
     const [agent] = await db.select().from(agents).where(eq(agents.id, req.params.id));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
