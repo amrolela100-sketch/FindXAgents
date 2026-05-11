@@ -1,8 +1,23 @@
 import OpenAI from "openai";
+import { db } from "@workspace/db";
+import { aiProviders } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-function getClient() {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
+async function getOpenRouterKey(): Promise<string> {
+  try {
+    const [cfg] = await db.select({ apiKey: aiProviders.apiKey, model: aiProviders.model })
+      .from(aiProviders)
+      .where(eq(aiProviders.providerType, "openrouter"))
+      .limit(1);
+    if (cfg?.apiKey) return cfg.apiKey;
+  } catch { /* fall through */ }
+  const envKey = process.env.OPENROUTER_API_KEY;
+  if (!envKey) throw new Error("OPENROUTER_API_KEY not set and no DB provider found");
+  return envKey;
+}
+
+async function getClient() {
+  const apiKey = await getOpenRouterKey();
   return new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey,
@@ -46,7 +61,7 @@ export interface OutreachResult {
 }
 
 export async function analyzeLeadWithGemini(lead: LeadForAnalysis): Promise<AnalysisResult> {
-  const client = getClient();
+  const client = await getClient();
 
   const prompt = `You are a B2B sales analyst for FindX, a global AI-powered prospecting platform. Analyze this business lead for digital improvement potential.
 
@@ -107,7 +122,7 @@ export async function generateOutreachWithGemini(
   analysis: AnalysisResult,
   language: SupportedLanguage = "en"
 ): Promise<OutreachResult> {
-  const client = getClient();
+  const client = await getClient();
 
   const langInstruction = LANG_INSTRUCTIONS[language] ?? LANG_INSTRUCTIONS.en;
 

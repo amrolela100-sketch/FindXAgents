@@ -1,10 +1,9 @@
-import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches } from "@workspace/db";
+import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders } from "@workspace/db";
 import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { logger } from "./logger.js";
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
-  let lastError: unknown;
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {  let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await fn();
@@ -16,6 +15,30 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): 
     }
   }
   throw lastError;
+}
+
+/** Resolve Tavily API key — DB config takes priority over env var */
+async function getTavilyKey(): Promise<string | null> {
+  try {
+    const [cfg] = await db.select({ apiKey: searchConfigs.apiKey })
+      .from(searchConfigs)
+      .where(eq(searchConfigs.id, "default"))
+      .limit(1);
+    if (cfg?.apiKey) return cfg.apiKey;
+  } catch { /* fall through */ }
+  return process.env.TAVILY_API_KEY ?? null;
+}
+
+/** Resolve OpenRouter API key — DB config takes priority over env var */
+async function getOpenRouterKey(): Promise<string | null> {
+  try {
+    const [cfg] = await db.select({ apiKey: aiProviders.apiKey })
+      .from(aiProviders)
+      .where(eq(aiProviders.providerType, "openrouter"))
+      .limit(1);
+    if (cfg?.apiKey) return cfg.apiKey;
+  } catch { /* fall through */ }
+  return process.env.OPENROUTER_API_KEY ?? null;
 }
 
 function getDomain(url?: string): string | null {
@@ -114,7 +137,7 @@ export class AgentRunner {
   private async skillDiscoverWeb(agentId: string, query: string, maxResults: number, userId: string | null): Promise<string[]> {
     const kvkKey = process.env.KVK_API_KEY;
     const googleKey = process.env.GOOGLE_MAPS_API_KEY;
-    const tavilyKey = process.env.TAVILY_API_KEY;
+    const tavilyKey = await getTavilyKey();
     let items: any[] = [];
 
     // 1. Try Tavily (global, Arabic-friendly web search)
