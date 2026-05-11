@@ -11,6 +11,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import AdminPage from "./pages/AdminPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { useLang } from "./lib/lang-context";
@@ -114,6 +115,13 @@ function AuthGuard() {
 }
 
 export default function App() {
+  const [location] = useLocation();
+
+  // Handle OAuth callback before any auth check
+  if (location === "/auth/callback" || window.location.pathname.includes("/auth/callback")) {
+    return <AuthCallbackPage />;
+  }
+
   return (
     <>
       {!isEnvValid && (
