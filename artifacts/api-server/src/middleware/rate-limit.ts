@@ -8,85 +8,92 @@
  * When REDIS_URL is absent:
  *   → Falls back to MemoryStore (express-rate-limit default) — fine for
  *     local dev and single-instance deployments.
- *
- * Usage is identical either way — no changes needed in route files.
  */
 
-import rateLimit, { type Options } from "express-rate-limit";
-import { RedisStore } from "rate-limit-redis";
+import rateLimit from "express-rate-limit";
+import { RedisStore, type RedisReply } from "rate-limit-redis";
 import { getRedisClient } from "../lib/redis.js";
 import { logger } from "../lib/logger.js";
 
+/** Shared options type — plain object, no Omit gymnastics */
+interface LimiterConfig {
+  windowMs: number;
+  max: number;
+  standardHeaders: boolean;
+  legacyHeaders: boolean;
+  message: { error: string };
+  keyGenerator?: (req: any) => string;
+}
+
 /**
- * Build a rateLimit Options object, auto-selecting RedisStore or MemoryStore.
+ * Build a rateLimit middleware, auto-selecting RedisStore or MemoryStore.
  */
-function makeOptions(base: Omit<Options, "store">): Options {
+function makeLimiter(config: LimiterConfig) {
   const redis = getRedisClient();
 
   if (redis) {
-    logger.info(`rate-limit: using RedisStore`);
-    return {
-      ...base,
+    return rateLimit({
+      ...config,
       store: new RedisStore({
-        // ioredis client — rate-limit-redis accepts it via sendCommand wrapper
-        sendCommand: (...args: string[]) => redis.call(...args) as any,
-        // Prefix keeps rate-limit keys distinct from other Redis data
+        // ioredis sendCommand signature: (command: string, ...args: string[])
+        sendCommand: (command: string, ...args: string[]) =>
+          redis.call(command, ...args) as Promise<RedisReply>,
         prefix: "rl:",
       }),
-    };
+    });
   }
 
-  // Dev / no-Redis fallback
+  // Dev / no-Redis fallback — MemoryStore (default)
   logger.warn("rate-limit: REDIS_URL not set — using MemoryStore (single-instance only)");
-  return base as Options;
+  return rateLimit(config);
 }
 
 /** 100 req / min — applied to all /api/* routes */
-export const globalLimiter = rateLimit(makeOptions({
+export const globalLimiter = makeLimiter({
   windowMs:       60 * 1_000,
   max:            100,
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many requests, please try again later." },
   keyGenerator:   (req) => req.ip ?? "unknown",
-}));
+});
 
 /** 5 req / min — login / auth endpoints */
-export const authLimiter = rateLimit(makeOptions({
+export const authLimiter = makeLimiter({
   windowMs:       60 * 1_000,
   max:            5,
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many authentication attempts, please try again after a minute." },
   keyGenerator:   (req) => req.ip ?? "unknown",
-}));
+});
 
 /** 10 req / hr — lead discovery (Tavily + AI) */
-export const discoveryLimiter = rateLimit(makeOptions({
+export const discoveryLimiter = makeLimiter({
   windowMs:       60 * 60 * 1_000,
   max:            10,
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Discovery limit reached. Please try again after an hour." },
-  keyGenerator:   (req) => (req as any).user?.userId ?? req.ip ?? "unknown",
-}));
+  keyGenerator:   (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 /** 20 req / hr — bulk AI analyze / outreach */
-export const aiLimiter = rateLimit(makeOptions({
+export const aiLimiter = makeLimiter({
   windowMs:       60 * 60 * 1_000,
   max:            20,
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "AI operation limit reached. Please try again after an hour." },
-  keyGenerator:   (req) => (req as any).user?.userId ?? req.ip ?? "unknown",
-}));
+  keyGenerator:   (req) => req.user?.userId ?? req.ip ?? "unknown",
+});
 
 /** 5 req / min — Telegram & integration test endpoints */
-export const integrationTestLimiter = rateLimit(makeOptions({
+export const integrationTestLimiter = makeLimiter({
   windowMs:       60 * 1_000,
   max:            5,
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many test requests. Please wait a minute before retrying." },
   keyGenerator:   (req) => req.ip ?? "unknown",
-}));
+});
