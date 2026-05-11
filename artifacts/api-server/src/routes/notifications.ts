@@ -52,7 +52,8 @@ router.post("/notifications", requireAuth, async (req, res) => {
       })
       .returning();
 
-    // Trim old notifications — keep latest 50 per user
+    // Trim old notifications — keep latest MAX_NOTIFICATIONS per user
+    // Use raw SQL with properly typed parameter (not template literal interpolation of a number)
     await db.execute(
       sql`DELETE FROM notifications
           WHERE user_id = ${req.user!.userId}
@@ -60,7 +61,7 @@ router.post("/notifications", requireAuth, async (req, res) => {
               SELECT id FROM notifications
               WHERE user_id = ${req.user!.userId}
               ORDER BY created_at DESC
-              LIMIT ${MAX_NOTIFICATIONS}
+              LIMIT 50
             )`
     );
 
