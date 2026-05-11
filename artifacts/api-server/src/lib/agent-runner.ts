@@ -54,7 +54,24 @@ export class AgentRunner {
       if (!agent) {
         [agent] = await db.select().from(agents).limit(1);
       }
-      if (!agent) throw new Error("No agent available to run pipeline");
+      if (!agent) {
+        // Auto-create a default agent if none exists
+        const [created] = await db.insert(agents).values({
+          name: "research",
+          displayName: "Research Agent",
+          description: "Discovers and qualifies business leads",
+          role: "research",
+          icon: "Search",
+          model: "google/gemini-2.5-flash",
+          maxIterations: 15,
+          maxTokens: 4096,
+          systemPrompt: "You are a B2B research agent that discovers and qualifies business leads.",
+          toolNames: ["web_search", "kvk_search", "save_lead"],
+          pipelineOrder: 1,
+          isActive: true,
+        }).returning();
+        agent = created;
+      }
 
       const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, agent.id));
       
