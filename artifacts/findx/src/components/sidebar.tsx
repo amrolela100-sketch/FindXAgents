@@ -5,11 +5,13 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Bot, GitBranch, Users, Building2,
   Layers, Settings, ShieldCheck, LogOut, HelpCircle,
-  Menu, X, ChevronRight, Zap
+  Menu, X, ChevronRight, Zap, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 
 interface SidebarProps {
   isAdmin: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 type NavItem = {
@@ -43,10 +45,7 @@ function NavLink({
 }) {
   return (
     <Link href={href}>
-      <a
-        onClick={onClick}
-        className={`nav-link ${active ? "active" : ""}`}
-      >
+      <a onClick={onClick} className={`nav-link ${active ? "active" : ""}`}>
         <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
         <span className="flex-1">{label}</span>
         {active && <ChevronRight className="w-3 h-3 opacity-40" />}
@@ -55,15 +54,42 @@ function NavLink({
   );
 }
 
+function NavLinkIcon({
+  href,
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  href: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link href={href}>
+      <a
+        onClick={onClick}
+        title={label}
+        className={`nav-link justify-center !px-0 ${active ? "active" : ""}`}
+      >
+        <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
+      </a>
+    </Link>
+  );
+}
+
 function SidebarContent({
   isAdmin,
   onClose,
+  collapsed = false,
 }: {
   isAdmin: boolean;
   onClose?: () => void;
+  collapsed?: boolean;
 }) {
-  const { user, logout } = useLang === null ? { user: null, logout: () => {} } : { user: null, logout: () => {} };
-  const { t, isRtl } = useLang();
+  const { t } = useLang();
   const { user: authUser, logout: authLogout } = useAuth();
   const [location] = useLocation();
 
@@ -73,54 +99,88 @@ function SidebarContent({
   const initial = (authUser?.email ?? "U")[0].toUpperCase();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="px-4 py-5 mb-1">
+      <div className={`py-5 mb-1 ${collapsed ? "flex justify-center px-0" : "px-4"}`}>
         <Link href="/">
           <a onClick={onClose} className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
               <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
-            <div>
-              <span className="text-base font-bold tracking-tight" style={{ color: "var(--text)" }}>
-                FindX
-              </span>
-              <p className="text-[10px] leading-none" style={{ color: "var(--text-subtle)" }}>
-                Warm Intelligence
-              </p>
-            </div>
+            {!collapsed && (
+              <div>
+                <span className="text-base font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                  FindX
+                </span>
+                <p className="text-[10px] leading-none" style={{ color: "var(--text-subtle)" }}>
+                  Warm Intelligence
+                </p>
+              </div>
+            )}
           </a>
         </Link>
       </div>
 
-      {/* Upgrade */}
-      <div className="px-3 mb-4">
-        <button className="w-full btn btn-primary text-xs py-2 shadow-sm">
-          ✦ {t.nav.upgrade}
-        </button>
-      </div>
+      {/* Upgrade button */}
+      {collapsed ? (
+        <div className="flex justify-center mb-4 px-1">
+          <button
+            className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center shadow-sm text-white text-xs font-bold"
+            title={t.nav.upgrade}
+          >
+            ✦
+          </button>
+        </div>
+      ) : (
+        <div className="px-3 mb-4">
+          <button className="w-full btn btn-primary text-xs py-2 shadow-sm">
+            ✦ {t.nav.upgrade}
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
-      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, icon, labelKey }) => (
-          <NavLink
-            key={href}
-            href={href}
-            icon={icon}
-            label={t.nav[labelKey] as string}
-            active={isActive(href)}
-            onClick={onClose}
-          />
-        ))}
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto ${collapsed ? "px-1" : "px-2"}`}>
+        {NAV_ITEMS.map(({ href, icon, labelKey }) =>
+          collapsed ? (
+            <NavLinkIcon
+              key={href}
+              href={href}
+              icon={icon}
+              label={t.nav[labelKey] as string}
+              active={isActive(href)}
+              onClick={onClose}
+            />
+          ) : (
+            <NavLink
+              key={href}
+              href={href}
+              icon={icon}
+              label={t.nav[labelKey] as string}
+              active={isActive(href)}
+              onClick={onClose}
+            />
+          )
+        )}
 
         {isAdmin && (
-          <NavLink
-            href="/admin"
-            icon={ShieldCheck}
-            label={t.nav.admin}
-            active={isActive("/admin")}
-            onClick={onClose}
-          />
+          collapsed ? (
+            <NavLinkIcon
+              href="/admin"
+              icon={ShieldCheck}
+              label={t.nav.admin}
+              active={isActive("/admin")}
+              onClick={onClose}
+            />
+          ) : (
+            <NavLink
+              href="/admin"
+              icon={ShieldCheck}
+              label={t.nav.admin}
+              active={isActive("/admin")}
+              onClick={onClose}
+            />
+          )
         )}
       </nav>
 
@@ -128,48 +188,74 @@ function SidebarContent({
       <div className="mx-4 my-3" style={{ borderTop: "1px solid var(--border)" }} />
 
       {/* Footer */}
-      <div className="px-2 pb-4 space-y-0.5">
-        <a
-          href="mailto:support@findx.nl"
-          className="nav-link"
-        >
-          <HelpCircle className="w-4 h-4" strokeWidth={2} />
-          <span>{t.nav.help}</span>
-        </a>
-
-        <button
-          onClick={() => authLogout()}
-          className="nav-link w-full text-left"
-        >
-          <LogOut className="w-4 h-4" strokeWidth={2} />
-          <span>{t.nav.signout}</span>
-        </button>
-
-        {/* User chip */}
-        {authUser && (
-          <div
-            className="flex items-center gap-2.5 px-3 py-2.5 mt-2 rounded-xl"
-            style={{ background: "var(--bg-subtle)" }}
-          >
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-              style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+      <div className={`pb-4 space-y-0.5 ${collapsed ? "px-1" : "px-2"}`}>
+        {collapsed ? (
+          <>
+            <a
+              href="mailto:support@findx.nl"
+              className="nav-link justify-center !px-0"
+              title={t.nav.help}
             >
-              {initial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
-                {authUser.email}
-              </p>
-            </div>
-          </div>
+              <HelpCircle className="w-4 h-4" strokeWidth={2} />
+            </a>
+            <button
+              onClick={() => authLogout()}
+              className="nav-link justify-center !px-0 w-full"
+              title={t.nav.signout}
+            >
+              <LogOut className="w-4 h-4" strokeWidth={2} />
+            </button>
+            {authUser && (
+              <div className="flex justify-center mt-2">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                  style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+                  title={authUser.email}
+                >
+                  {initial}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <a href="mailto:support@findx.nl" className="nav-link">
+              <HelpCircle className="w-4 h-4" strokeWidth={2} />
+              <span>{t.nav.help}</span>
+            </a>
+            <button
+              onClick={() => authLogout()}
+              className="nav-link w-full text-left"
+            >
+              <LogOut className="w-4 h-4" strokeWidth={2} />
+              <span>{t.nav.signout}</span>
+            </button>
+            {authUser && (
+              <div
+                className="flex items-center gap-2.5 px-3 py-2.5 mt-2 rounded-xl"
+                style={{ background: "var(--bg-subtle)" }}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+                >
+                  {initial}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
+                    {authUser.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-export function Sidebar({ isAdmin }: SidebarProps) {
+export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: SidebarProps) {
   const { isRtl } = useLang();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location] = useLocation();
@@ -177,7 +263,7 @@ export function Sidebar({ isAdmin }: SidebarProps) {
   // Close on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
 
-  // Lock scroll when open
+  // Lock scroll when mobile drawer open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -187,19 +273,37 @@ export function Sidebar({ isAdmin }: SidebarProps) {
     background: "var(--surface)",
     borderRight: isRtl ? "none" : "1px solid var(--border)",
     borderLeft: isRtl ? "1px solid var(--border)" : "none",
+    transition: "width 0.3s ease",
   };
 
   return (
     <>
-      {/* ── DESKTOP ── */}
+      {/* ── DESKTOP SIDEBAR ── */}
       <aside
-        className={`hidden md:block fixed top-0 h-full w-60 z-20`}
+        className={`hidden md:flex flex-col fixed top-0 h-full z-20 ${collapsed ? "w-16" : "w-60"}`}
         style={{
           ...sidebarStyle,
           [isRtl ? "right" : "left"]: 0,
         }}
       >
-        <SidebarContent isAdmin={isAdmin} />
+        <SidebarContent isAdmin={isAdmin} collapsed={collapsed} />
+
+        {/* Collapse toggle button */}
+        <button
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-6 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-30 border"
+          style={{
+            background: "var(--surface)",
+            borderColor: "var(--border)",
+            color: "var(--text-subtle)",
+          }}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed
+            ? <PanelLeftOpen className="w-3 h-3" />
+            : <PanelLeftClose className="w-3 h-3" />
+          }
+        </button>
       </aside>
 
       {/* ── MOBILE TOP BAR ── */}

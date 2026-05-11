@@ -19,6 +19,7 @@ import { LangProvider, useLang } from "./lib/lang-context";
 import { ThemeProvider } from "./lib/theme-context";
 import { CommandPalette } from "./components/command-palette";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { env, isEnvValid, envErrors } from "./lib/env";
 
@@ -53,6 +54,8 @@ function AuthGuard() {
     return <LandingPage />;
   }
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const isAdmin =
     ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) ||
     user.role === "admin";
@@ -64,10 +67,18 @@ function AuthGuard() {
         className="min-h-screen"
         style={{ background: "var(--bg)" }}
       >
-        <Sidebar isAdmin={isAdmin} />
+        <Sidebar
+          isAdmin={isAdmin}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(v => !v)}
+        />
 
         {/* Main area — offset by sidebar on desktop */}
-        <div className={isRtl ? "md:mr-60" : "md:ml-60"}>
+        <div className={
+          isRtl
+            ? (sidebarCollapsed ? "md:mr-16" : "md:mr-60")
+            : (sidebarCollapsed ? "md:ml-16" : "md:ml-60")
+        } style={{ transition: "margin 0.3s ease" }}>
           <ErrorBoundary key={location}>
             <Switch>
               <Route path="/"            component={HomePage} />
