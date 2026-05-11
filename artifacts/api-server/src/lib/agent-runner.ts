@@ -46,46 +46,41 @@ async function logToDB(agentId: string, runId: string, phase: string, level: str
 }
 
 /**
- * Extract real companies from a directory page using Tavily's content.
- * When Tavily returns a designrush/sortlist/etc. page, parse listed company names + URLs from the snippet.
+ * Validate that a business name looks like a real company name and not
+ * scraped garbage text from a LinkedIn page, directory, or social profile.
+ *
+ * Returns true if the name is valid, false if it should be rejected.
  */
-function extractCompaniesFromDirectoryContent(content: string, directoryUrl: string): Array<{ businessName: string; website?: string }> {
-  const results: Array<{ businessName: string; website?: string }> = [];
+function isValidBusinessName(name: string): boolean {
+  if (!name || name.length < 3 || name.length > 120) return false;
 
-  // Common patterns in directory snippets:
-  // "1. Agency Name - agencysite.com"
-  // "Agency Name (agencysite.com)"
-  // "Visit agencysite.com"
-  const lines = content.split(/\n|\.(?=\s+\d+\.)/).map(l => l.trim()).filter(Boolean);
+  // Reject names containing URLs or HTTP
+  if (/https?:\/\//i.test(name)) return false;
 
-  for (const line of lines) {
-    // Skip lines that are clearly navigation/meta
-    if (line.length < 5 || line.length > 200) continue;
-    if (/^(see more|view all|filter|sort by|load more|next page)/i.test(line)) continue;
+  // Reject purely numeric names
+  if (/^\d+$/.test(name)) return false;
 
-    // Extract URL if present
-    const urlMatch = line.match(/https?:\/\/[^\s,)]+/);
-    const website = urlMatch ? urlMatch[0].replace(/[,)]+$/, "") : undefined;
+  // Reject LinkedIn / social profile noise
+  if (/\bN\/A\b/i.test(name)) return false;
+  if (/\b(connections?|followers?|following)\b/i.test(name)) return false;
+  if (/^#/.test(name)) return false;  // Markdown headings like "# Wasan Sulaiman"
 
-    // Skip if the extracted website is itself a directory
-    if (website && isDirectoryUrl(website)) continue;
+  // Reject standalone country names / ISO codes that look like "Netherlands, NL"
+  const countryOrRegionPattern = /^[A-Z][a-z]+(,\s*[A-Z]{2,3})?$/;
+  const knownGeoNoise = /^(Netherlands|Germany|France|Belgium|United Kingdom|United States|Nederland|España|Italia|Polska|Sverige|Danmark|Norge|Suomi|Österreich|Schweiz|Portugal|Türkiye|India|China|Japan|Brazil|Australia|Canada|Mexico|Argentina|Colombia|Chile|Peru|Nigeria|Kenya|South Africa|Egypt|Morocco|Algeria|Tunisia|UAE|Saudi Arabia|Qatar|Kuwait|Bahrain|Jordan|Lebanon|Iraq|Iran|Pakistan|Bangladesh|Sri Lanka|Malaysia|Singapore|Thailand|Vietnam|Philippines|Indonesia|NL|DE|FR|BE|GB|US|ES|IT|PL|SE|DK|NO|FI|AT|CH|PT|TR|IN|CN|JP|BR|AU|CA|MX|AR|CO|CL|PE|NG|KE|ZA|EG|MA|DZ|TN|AE|SA|QA|KW|BH|JO|LB|IQ|IR|PK|BD|LK|MY|SG|TH|VN|PH|ID)\b/i;
+  if (knownGeoNoise.test(name.trim())) return false;
 
-    // Extract name: strip numbering, bullets, URLs
-    let name = line
-      .replace(/^\d+\.\s*/, "")
-      .replace(/^[-•*]\s*/, "")
-      .replace(/https?:\/\/[^\s,)]+/g, "")
-      .replace(/\s*\(.*?\)\s*$/, "")
-      .replace(/\s*[-–|].*$/, "")
-      .trim();
+  // Reject names that look like social profile metadata
+  if (/^\d+\s+(connections?|followers?|views?|likes?|posts?|comments?)$/i.test(name)) return false;
 
-    // Must be a meaningful name
-    if (name.length > 3 && name.length < 100 && /[a-zA-Z\u0600-\u06FF]/.test(name)) {
-      results.push({ businessName: name, website });
-    }
-  }
+  // Reject single words that are clearly not company names (common LinkedIn noise)
+  const socialNoise = /^(About|Experience|Education|Skills|Recommendations|Accomplishments|Following|Followers|Connect|Message|More|Send|View|See|Show|Hide|Like|Share|Comment|Repost|Report|Save|Apply|Easy Apply|LinkedIn|Twitter|Facebook|Instagram|YouTube|TikTok|WhatsApp|Telegram|Email|Phone|Website|Contact|Profile|Page|Group|Event|Job|Article|Post|Photo|Video|Document|Link|Hashtag|Mention|Tag|Location|Date|Time|Year|Month|Day|Hour|Minute|Second)$/i;
+  if (socialNoise.test(name.trim())) return false;
 
-  return results.slice(0, 5); // max 5 per directory page
+  // Must contain at least one letter (not just punctuation/numbers)
+  if (!/[a-zA-Z\u0600-\u06FF\u4e00-\u9fff]/.test(name)) return false;
+
+  return true;
 }
 
 export class AgentRunner {
@@ -184,46 +179,43 @@ export class AgentRunner {
           await logToDB(agentId, this.runId, "discover-web", "info", `Tavily returned ${rawResults.length} raw results`);
 
           let directCount = 0;
-          let extractedFromDir = 0;
 
           for (const r of rawResults) {
             if (isDirectoryUrl(r.url)) {
+              // Skip directory pages entirely — they produce garbage leads
               directCount++;
-              // Try to extract real companies listed in the directory page content
-              if (r.content) {
-                const extracted = extractCompaniesFromDirectoryContent(r.content, r.url);
-                for (const co of extracted) {
-                  items.push({
-                    businessName: co.businessName,
-                    city: "—",
-                    website: co.website,
-                    industry: query,
-                    tavilyData: `Extracted from directory: ${r.url}\n${r.content?.slice(0, 300)}`,
-                    source: "tavily_extracted",
-                  });
-                  extractedFromDir++;
-                }
-              }
-            } else {
-              // Direct result — real company website
-              const title = r.title
-                ?.replace(/ - .*$/, "")
-                .replace(/ \| .*$/, "")
-                .replace(/ – .*$/, "")
-                .trim();
-              items.push({
-                businessName: title || getDomain(r.url) || r.url,
-                city: "—",
-                website: r.url,
-                industry: query,
-                tavilyData: r.content?.slice(0, 500),
-                source: "tavily",
-              });
+              continue;
             }
+
+            // Direct result — real company website
+            const title = r.title
+              ?.replace(/ - .*$/, "")
+              .replace(/ \| .*$/, "")
+              .replace(/ – .*$/, "")
+              .trim();
+
+            const name = title || getDomain(r.url) || r.url;
+
+            // Validate name before accepting
+            if (!isValidBusinessName(name)) {
+              await logToDB(agentId, this.runId, "discover-web", "warn",
+                `Rejected fake name: "${name}" (from ${r.url})`
+              );
+              continue;
+            }
+
+            items.push({
+              businessName: name,
+              city: "—",
+              website: r.url,
+              industry: query,
+              tavilyData: r.content?.slice(0, 500),
+              source: "tavily",
+            });
           }
 
           await logToDB(agentId, this.runId, "discover-web", "info",
-            `Filtered: ${directCount} directory pages (extracted ${extractedFromDir} companies), ${items.length - extractedFromDir} direct results. Total: ${items.length}`
+            `Filtered: ${directCount} directory pages skipped. ${items.length} valid direct results. Total: ${items.length}`
           );
         } else {
           const errText = await res.text();
@@ -280,13 +272,8 @@ export class AgentRunner {
     }
 
     // ── 4. Deduplicate & save ──────────────────────────────────────────────
-    // Remove items with no business name or name is a URL/domain only
-    items = items.filter(item =>
-      item.businessName &&
-      item.businessName.length > 2 &&
-      !item.businessName.includes("http") &&
-      !/^\d+$/.test(item.businessName)
-    );
+    // Final validation pass — reject any remaining garbage names
+    items = items.filter(item => isValidBusinessName(item.businessName));
 
     const insertedIds: string[] = [];
     let added = 0;
@@ -339,6 +326,60 @@ export class AgentRunner {
     return insertedIds;
   }
 
+  /**
+   * Attempt a Tavily follow-up search to find the official website for a lead
+   * that has no website URL. Returns the found URL or null.
+   */
+  private async findWebsiteForLead(agentId: string, businessName: string, industry?: string | null): Promise<string | null> {
+    const tavilyKey = await getTavilyKey();
+    if (!tavilyKey) return null;
+
+    try {
+      const searchQuery = `"${businessName}" official website${industry ? ` ${industry}` : ""}`;
+      const res = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: tavilyKey,
+          query: searchQuery,
+          search_depth: "basic",
+          max_results: 5,
+        }),
+      });
+
+      if (!res.ok) return null;
+
+      const data: any = await res.json();
+      const results: any[] = data.results || [];
+
+      for (const r of results) {
+        if (!r.url) continue;
+        if (isDirectoryUrl(r.url)) continue;
+
+        // Check that the result is likely the company's own site, not news/press
+        const domain = getDomain(r.url);
+        if (!domain) continue;
+
+        // Skip social media and generic platforms
+        const skipDomains = ["linkedin.com", "facebook.com", "twitter.com", "x.com", "instagram.com",
+          "youtube.com", "wikipedia.org", "trustpilot.com", "glassdoor.com", "indeed.com",
+          "bloomberg.com", "crunchbase.com", "zoominfo.com", "dnb.com"];
+        if (skipDomains.some(d => domain.includes(d))) continue;
+
+        await logToDB(agentId, this.runId, "qualify-ai", "info",
+          `Follow-up search found website for "${businessName}": ${r.url}`
+        );
+        return r.url;
+      }
+    } catch (e: any) {
+      await logToDB(agentId, this.runId, "qualify-ai", "warn",
+        `Follow-up website search failed for "${businessName}": ${e.message}`
+      );
+    }
+
+    return null;
+  }
+
   private async skillQualifyAi(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     if (leadIds.length === 0) return;
 
@@ -349,26 +390,46 @@ export class AgentRunner {
       const [lead] = await db.select().from(leads).where(eq(leads.id, id));
       if (!lead) continue;
 
+      // ── Follow-up website search for leads with no URL ───────────────────
+      let resolvedWebsite = lead.website;
+      if (!resolvedWebsite) {
+        await logToDB(agentId, this.runId, "qualify-ai", "info",
+          `${lead.businessName} has no website — attempting follow-up search...`
+        );
+        const found = await this.findWebsiteForLead(agentId, lead.businessName, lead.industry);
+        if (found) {
+          resolvedWebsite = found;
+          // Persist the discovered website back to the lead
+          await db.update(leads).set({ website: found, hasWebsite: true, updatedAt: new Date() }).where(eq(leads.id, id));
+        } else {
+          await logToDB(agentId, this.runId, "qualify-ai", "info",
+            `No website found for "${lead.businessName}" — will score as no-website opportunity`
+          );
+        }
+      }
+
       // ── Real website scrape ──────────────────────────────────────────────
       let scrapedData: ScrapedWebsite | undefined;
-      if (lead.website) {
+      if (resolvedWebsite) {
         try {
-          await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping website: ${lead.website}`);
-          scrapedData = await scrapeWebsite(lead.website, 10000);
+          await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping website: ${resolvedWebsite}`);
+          scrapedData = await scrapeWebsite(resolvedWebsite, 10000);
           await logToDB(agentId, this.runId, "qualify-ai", "info",
             `Scraped ${lead.businessName}: reachable=${scrapedData.reachable}, https=${scrapedData.isHttps}, ` +
             `emails=${scrapedData.emailAddresses.length}, phones=${scrapedData.phoneNumbers.length}, ` +
             `social=${Object.keys(scrapedData.socialLinks).length}, loadTime=${scrapedData.loadTimeMs}ms`
           );
         } catch (e: any) {
-          await logToDB(agentId, this.runId, "qualify-ai", "warn", `Scrape failed for ${lead.website}: ${e.message}`);
+          await logToDB(agentId, this.runId, "qualify-ai", "warn", `Scrape failed for ${resolvedWebsite}: ${e.message}`);
         }
-      } else {
-        await logToDB(agentId, this.runId, "qualify-ai", "info", `${lead.businessName} has no website — scoring as 90`);
       }
 
       try {
-        const result = await withRetry(() => analyzeLeadWithGemini(lead as any, scrapedData), 3, 1000);
+        // Pass the resolved website URL (may have been enriched via follow-up search)
+        const leadForAnalysis = resolvedWebsite !== lead.website
+          ? { ...lead, website: resolvedWebsite }
+          : lead;
+        const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData), 3, 1000);
 
         await db.insert(analyses).values({
           leadId: lead.id,
