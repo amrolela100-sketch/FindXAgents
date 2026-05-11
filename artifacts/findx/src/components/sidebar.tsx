@@ -2,204 +2,258 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "../lib/auth-context";
 import { useLang } from "../lib/lang-context";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Search, LayoutGrid, Lightbulb, Building2, Layers, Settings, ShieldCheck, LogOut, HelpCircle, ChevronUp } from "lucide-react";
+import {
+  LayoutDashboard, Bot, GitBranch, Users, Building2,
+  Layers, Settings, ShieldCheck, LogOut, HelpCircle,
+  Menu, X, ChevronRight, Zap
+} from "lucide-react";
 
 interface SidebarProps {
   isAdmin: boolean;
 }
 
-const NAV_ITEMS = [
-  { href: "/",          label: "Dashboard",      Icon: Home },
-  { href: "/agents",    label: "AI Agents",       Icon: Search },
-  { href: "/pipeline",  label: "Pipeline",        Icon: LayoutGrid },
-  { href: "/leads",     label: "Leads",           Icon: Lightbulb },
-  { href: "/clients",   label: "Clients",         Icon: Building2 },
-  { href: "/workspaces",label: "Workspaces",      Icon: Layers },
-  { href: "/settings",  label: "Settings",        Icon: Settings },
+type NavItem = {
+  href: string;
+  icon: typeof LayoutDashboard;
+  labelKey: keyof typeof import("../lib/i18n/en").en.nav;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/",           icon: LayoutDashboard, labelKey: "dashboard"  },
+  { href: "/agents",     icon: Bot,             labelKey: "agents"     },
+  { href: "/pipeline",   icon: GitBranch,       labelKey: "pipeline"   },
+  { href: "/leads",      icon: Users,           labelKey: "leads"      },
+  { href: "/clients",    icon: Building2,       labelKey: "clients"    },
+  { href: "/workspaces", icon: Layers,          labelKey: "workspaces" },
+  { href: "/settings",   icon: Settings,        labelKey: "settings"   },
 ];
 
 function NavLink({
   href,
+  icon: Icon,
   label,
-  Icon,
-  isActive,
+  active,
   onClick,
 }: {
   href: string;
+  icon: typeof LayoutDashboard;
   label: string;
-  Icon: typeof Home;
-  isActive: boolean;
+  active: boolean;
   onClick?: () => void;
 }) {
   return (
     <Link href={href}>
       <a
         onClick={onClick}
-        className={`flex items-center gap-3 py-2.5 px-4 rounded-xl transition-all duration-200 cursor-pointer select-none ${
-          isActive
-            ? "bg-primary-container text-on-primary-container font-semibold"
-            : "text-on-surface-variant hover:bg-surface-variant hover:text-on-surface"
-        }`}
+        className={`nav-link ${active ? "active" : ""}`}
       >
-        <Icon className="w-4 h-4 flex-shrink-0" />
-        <span className="text-sm">{label}</span>
+        <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
+        <span className="flex-1">{label}</span>
+        {active && <ChevronRight className="w-3 h-3 opacity-40" />}
       </a>
     </Link>
   );
 }
 
-export function Sidebar({ isAdmin }: SidebarProps) {
-  const { user, logout } = useAuth();
-  const { isRtl } = useLang();
+function SidebarContent({
+  isAdmin,
+  onClose,
+}: {
+  isAdmin: boolean;
+  onClose?: () => void;
+}) {
+  const { user, logout } = useLang === null ? { user: null, logout: () => {} } : { user: null, logout: () => {} };
+  const { t, isRtl } = useLang();
+  const { user: authUser, logout: authLogout } = useAuth();
   const [location] = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location]);
-
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
-  const userInitial = (user?.email ?? "U")[0].toUpperCase();
+  const initial = (authUser?.email ?? "U")[0].toUpperCase();
 
-  const navContent = (
-    <>
+  return (
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="mb-6 px-4">
+      <div className="px-4 py-5 mb-1">
         <Link href="/">
-          <a onClick={() => setMobileOpen(false)}>
-            <h1 className="text-xl font-bold text-primary tracking-tight">FindX</h1>
-            <p className="text-xs text-on-surface-variant mt-0.5">Warm Intelligence</p>
+          <a onClick={onClose} className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <span className="text-base font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                FindX
+              </span>
+              <p className="text-[10px] leading-none" style={{ color: "var(--text-subtle)" }}>
+                Warm Intelligence
+              </p>
+            </div>
           </a>
         </Link>
       </div>
 
-      {/* Upgrade CTA */}
-      <div className="mb-5 px-2">
-        <button className="w-full bg-primary-container text-on-primary-container py-2.5 rounded-xl text-xs font-semibold tracking-wide hover:opacity-90 transition-opacity shadow-sm">
-          ✦ Upgrade to Gold
+      {/* Upgrade */}
+      <div className="px-3 mb-4">
+        <button className="w-full btn btn-primary text-xs py-2 shadow-sm">
+          ✦ {t.nav.upgrade}
         </button>
       </div>
 
-      {/* Nav Links */}
-      <nav className="flex-1 flex flex-col gap-0.5 px-2">
-        {NAV_ITEMS.map(({ href, label, Icon }) => (
+      {/* Nav */}
+      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
+        {NAV_ITEMS.map(({ href, icon, labelKey }) => (
           <NavLink
             key={href}
             href={href}
-            label={label}
-            Icon={Icon}
-            isActive={isActive(href)}
-            onClick={() => setMobileOpen(false)}
+            icon={icon}
+            label={t.nav[labelKey] as string}
+            active={isActive(href)}
+            onClick={onClose}
           />
         ))}
 
         {isAdmin && (
           <NavLink
             href="/admin"
-            label="Admin"
-            Icon={ShieldCheck}
-            isActive={isActive("/admin")}
-            onClick={() => setMobileOpen(false)}
+            icon={ShieldCheck}
+            label={t.nav.admin}
+            active={isActive("/admin")}
+            onClick={onClose}
           />
         )}
       </nav>
 
+      {/* Divider */}
+      <div className="mx-4 my-3" style={{ borderTop: "1px solid var(--border)" }} />
+
       {/* Footer */}
-      <div className="mt-auto px-2 flex flex-col gap-0.5">
-        <a className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors cursor-pointer text-sm">
-          <HelpCircle className="w-4 h-4" />
-          Help
-        </a>
-        <button
-          onClick={() => logout()}
-          className="flex items-center gap-3 py-2.5 px-4 rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors w-full text-left text-sm"
+      <div className="px-2 pb-4 space-y-0.5">
+        <a
+          href="mailto:support@findx.nl"
+          className="nav-link"
         >
-          <LogOut className="w-4 h-4" />
-          Logout
+          <HelpCircle className="w-4 h-4" strokeWidth={2} />
+          <span>{t.nav.help}</span>
+        </a>
+
+        <button
+          onClick={() => authLogout()}
+          className="nav-link w-full text-left"
+        >
+          <LogOut className="w-4 h-4" strokeWidth={2} />
+          <span>{t.nav.signout}</span>
         </button>
 
         {/* User chip */}
-        {user && (
-          <div className="flex items-center gap-3 px-4 py-3 mt-2 rounded-xl bg-surface-container-high">
-            <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold flex-shrink-0">
-              {userInitial}
+        {authUser && (
+          <div
+            className="flex items-center gap-2.5 px-3 py-2.5 mt-2 rounded-xl"
+            style={{ background: "var(--bg-subtle)" }}
+          >
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+            >
+              {initial}
             </div>
-            <div className="overflow-hidden flex-1">
-              <p className="text-xs text-on-surface truncate">{user.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
+                {authUser.email}
+              </p>
             </div>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
+}
+
+export function Sidebar({ isAdmin }: SidebarProps) {
+  const { isRtl } = useLang();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [location] = useLocation();
+
+  // Close on route change
+  useEffect(() => { setMobileOpen(false); }, [location]);
+
+  // Lock scroll when open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const sidebarStyle: React.CSSProperties = {
+    background: "var(--surface)",
+    borderRight: isRtl ? "none" : "1px solid var(--border)",
+    borderLeft: isRtl ? "1px solid var(--border)" : "none",
+  };
 
   return (
     <>
-      {/* ── Desktop Sidebar ── */}
+      {/* ── DESKTOP ── */}
       <aside
-        className={`hidden md:flex flex-col fixed ${isRtl ? "right-0" : "left-0"} top-0 h-full w-64 bg-surface-container border-r border-outline-variant py-6 z-20 shadow-sm`}
+        className={`hidden md:block fixed top-0 h-full w-60 z-20`}
+        style={{
+          ...sidebarStyle,
+          [isRtl ? "right" : "left"]: 0,
+        }}
       >
-        {navContent}
+        <SidebarContent isAdmin={isAdmin} />
       </aside>
 
-      {/* ── Mobile Top Bar ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface-container border-b border-outline-variant flex items-center justify-between px-4 z-30 shadow-sm">
+      {/* ── MOBILE TOP BAR ── */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30"
+        style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+      >
         <Link href="/">
-          <a className="font-bold text-primary text-lg tracking-tight">FindX</a>
+          <a className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
+              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
+          </a>
         </Link>
         <button
           onClick={() => setMobileOpen(true)}
+          className="btn btn-ghost p-2"
           aria-label="Open menu"
-          className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
       </div>
 
-      {/* ── Mobile Drawer Backdrop ── */}
+      {/* Mobile spacer */}
+      <div className="md:hidden h-14" />
+
+      {/* ── MOBILE BACKDROP ── */}
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          className="md:hidden fixed inset-0 z-40"
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* ── Mobile Drawer ── */}
+      {/* ── MOBILE DRAWER ── */}
       <div
-        className={`md:hidden fixed top-0 ${isRtl ? "right-0" : "left-0"} h-full w-72 bg-surface-container z-50 flex flex-col py-6 shadow-2xl transition-transform duration-300 ${
-          mobileOpen
-            ? "translate-x-0"
-            : isRtl
-            ? "translate-x-full"
-            : "-translate-x-full"
-        }`}
+        className="md:hidden fixed top-0 h-full w-72 z-50 transition-transform duration-300"
+        style={{
+          ...sidebarStyle,
+          [isRtl ? "right" : "left"]: 0,
+          transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)",
+        }}
       >
-        {/* Close button */}
         <button
           onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 btn btn-ghost p-1.5 z-10"
           aria-label="Close menu"
-          className="absolute top-4 right-4 p-2 rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
-        {navContent}
+        <SidebarContent isAdmin={isAdmin} onClose={() => setMobileOpen(false)} />
       </div>
-
-      {/* ── Mobile Bottom Spacer (so content doesn't hide under top bar) ── */}
-      <div className="md:hidden h-14" />
     </>
   );
 }

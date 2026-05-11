@@ -5,19 +5,22 @@ interface PageShellProps {
   children: ReactNode;
   title?: string;
   subtitle?: string;
-  /** If true, don't add padding (page handles its own layout) */
+  actions?: ReactNode;
+  /** Full bleed — page manages its own padding */
   noPadding?: boolean;
 }
 
-/**
- * Wraps authenticated pages with the shared TopBar + proper bg.
- * The <Sidebar> is rendered by App.tsx so no need to add it here.
- */
-export function PageShell({ children, title, subtitle, noPadding }: PageShellProps) {
+export function PageShell({ children, title, subtitle, actions, noPadding }: PageShellProps) {
   return (
-    <div className="flex flex-col h-screen bg-surface text-on-surface overflow-hidden">
-      <TopBar title={title} subtitle={subtitle} />
-      <main className={`flex-1 overflow-y-auto ${noPadding ? "" : "px-margin-mobile md:px-margin-desktop py-gutter"}`}>
+    <div
+      className="flex flex-col min-h-screen"
+      style={{ background: "var(--bg)" }}
+    >
+      <TopBar title={title} subtitle={subtitle} actions={actions} />
+      <main
+        className={`flex-1 ${noPadding ? "" : "px-5 md:px-8 py-6"}`}
+        style={{ color: "var(--text)" }}
+      >
         {children}
       </main>
     </div>

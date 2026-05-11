@@ -2,124 +2,118 @@ import { useState } from "react";
 import { PageShell } from "../components/page-shell";
 import { KanbanBoard } from "../components/kanban-board";
 import { LeadDetailPanel } from "../components/lead-detail-panel";
+import { useLang } from "../lib/lang-context";
 import type { Lead } from "../lib/types";
 import { getLeads, runAgentPipeline } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
-import { Zap, RefreshCw, Activity } from "lucide-react";
+import { Zap, Activity, RefreshCw } from "lucide-react";
 
 export default function PipelinePage() {
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const { t } = useLang();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
+  const [maxResults, setMaxResults] = useState(10);
+  const [lang, setLang] = useState<"nl" | "en">("nl");
+  const [running, setRunning] = useState(false);
 
-  const { data, refresh } = useRealtimeData(
-    () => getLeads({ pageSize: 500 }),
-    ["leads", "pipeline"],
-    20_000
-  );
+  const { data, refresh } = useRealtimeData(() => getLeads({ pageSize: 500 }), ["leads", "pipeline"], 20_000);
   const leads = data?.leads ?? [];
 
-  const statusCounts = {
-    discovered: leads.filter((l) => l.status === "discovered").length,
-    analyzing: leads.filter((l) => l.status === "analyzing").length,
-    analyzed: leads.filter((l) => l.status === "analyzed").length,
-    contacting: leads.filter((l) => l.status === "contacting").length,
-    responded: leads.filter((l) => l.status === "responded").length,
-    qualified: leads.filter((l) => l.status === "qualified").length,
-    won: leads.filter((l) => l.status === "won").length,
-    lost: leads.filter((l) => l.status === "lost").length,
-  };
-
-  async function handleRunPipeline() {
+  async function handleRun() {
     if (!query.trim()) return;
-    setIsRunning(true);
-    try {
-      await runAgentPipeline({ query, maxResults: 20, language: "nl" });
-      setQuery("");
-      // refresh will pick up changes via polling
-    } catch {
-      // handled in api.ts
-    } finally {
-      setIsRunning(false);
-    }
+    setRunning(true);
+    try { await runAgentPipeline({ query: query.trim(), maxResults, language: lang }); setQuery(""); } catch {}
+    finally { setRunning(false); }
   }
 
+  const statusCounts: Record<string, number> = {};
+  leads.forEach((l) => { statusCounts[l.status] = (statusCounts[l.status] ?? 0) + 1; });
+
+  const STATUS_BADGES = [
+    { key: "discovered", label: t.leads.status.discovered, color: "#6B7280" },
+    { key: "analyzing",  label: t.leads.status.analyzing,  color: "#D97706" },
+    { key: "analyzed",   label: t.leads.status.analyzed,   color: "#6366F1" },
+    { key: "contacting", label: t.leads.status.contacting, color: "#2563EB" },
+    { key: "responded",  label: t.leads.status.responded,  color: "#F59E0B" },
+    { key: "qualified",  label: t.leads.status.qualified,  color: "#9333EA" },
+    { key: "won",        label: t.leads.status.won,        color: "#059669" },
+    { key: "lost",       label: t.leads.status.lost,       color: "#DC2626" },
+  ];
+
+  const runBar = (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleRun()}
+        placeholder={t.pipeline.placeholder}
+        className="input text-xs py-1.5 w-56"
+      />
+      <select
+        value={maxResults}
+        onChange={(e) => setMaxResults(Number(e.target.value))}
+        className="input text-xs py-1.5 w-20"
+      >
+        {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <select
+        value={lang}
+        onChange={(e) => setLang(e.target.value as "nl" | "en")}
+        className="input text-xs py-1.5 w-24"
+      >
+        <option value="nl">🇳🇱 {t.agents.dutch}</option>
+        <option value="en">🇬🇧 {t.agents.english}</option>
+      </select>
+      <button
+        onClick={handleRun}
+        disabled={running || !query.trim()}
+        className="btn btn-primary text-xs px-3 py-1.5 gap-1.5"
+      >
+        {running ? <Activity className="w-3.5 h-3.5 animate-pulse" /> : <Zap className="w-3.5 h-3.5" />}
+        {running ? t.pipeline.running : t.pipeline.runPipeline}
+      </button>
+      <button onClick={refresh} className="btn btn-ghost px-2 py-1.5" title={t.pipeline.refresh}>
+        <RefreshCw className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
   return (
-    <PageShell
-      title="Pipeline"
-      subtitle={`${leads.length} leads across all stages`}
-    >
-      {/* Pipeline Summary Bar */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        {[
-          { label: "New", key: "discovered", color: "bg-slate-100 text-slate-700" },
-          { label: "Analyzing", key: "analyzing", color: "bg-yellow-100 text-yellow-700" },
-          { label: "Analyzed", key: "analyzed", color: "bg-indigo-100 text-indigo-700" },
-          { label: "Contacted", key: "contacting", color: "bg-blue-100 text-blue-700" },
-          { label: "Responded", key: "responded", color: "bg-amber-100 text-amber-700" },
-          { label: "Qualified", key: "qualified", color: "bg-purple-100 text-purple-700" },
-          { label: "Won", key: "won", color: "bg-emerald-100 text-emerald-700" },
-          { label: "Lost", key: "lost", color: "bg-red-100 text-red-700" },
-        ].map((s) => (
+    <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads`} actions={runBar}>
+      {/* Status summary */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {STATUS_BADGES.map((s) => (
           <span
             key={s.key}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.color}`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+            style={{
+              background: `${s.color}18`,
+              color: s.color,
+              border: `1px solid ${s.color}30`,
+            }}
           >
             {s.label}
-            <span className="font-bold">{statusCounts[s.key as keyof typeof statusCounts]}</span>
+            <span className="font-bold">{statusCounts[s.key] ?? 0}</span>
           </span>
         ))}
       </div>
 
-      {/* Run Pipeline */}
-      <div className="flex gap-3 mb-6">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleRunPipeline()}
-          placeholder='Run AI pipeline — e.g. "IT consultancy Amsterdam"'
-          className="flex-1 px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-        <button
-          onClick={handleRunPipeline}
-          disabled={isRunning || !query.trim()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+      {/* Kanban */}
+      {leads.length === 0 ? (
+        <div
+          className="flex flex-col items-center justify-center py-24 rounded-2xl"
+          style={{ border: "2px dashed var(--border)", background: "var(--bg-subtle)" }}
         >
-          {isRunning ? (
-            <>
-              <Activity className="w-4 h-4 animate-pulse" />
-              Running...
-            </>
-          ) : (
-            <>
-              <Zap className="w-4 h-4" />
-              Run Pipeline
-            </>
-          )}
-        </button>
-        <button
-          onClick={refresh}
-          className="p-2.5 border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
+          <Zap className="w-10 h-10 mb-3 opacity-20" style={{ color: "var(--text-muted)" }} />
+          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t.pipeline.noLeads}</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-subtle)" }}>{t.pipeline.noLeadsHint}</p>
+        </div>
+      ) : (
+        <KanbanBoard leads={leads} onSelectLead={(l: Lead) => setSelectedId(l.id)} onLeadMoved={refresh} />
+      )}
 
-      {/* Kanban Board */}
-      <KanbanBoard
-        leads={leads}
-        onSelectLead={(lead: Lead) => setSelectedLeadId(lead.id)}
-        onLeadMoved={refresh}
-      />
-
-      {/* Detail Panel */}
-      <LeadDetailPanel
-        leadId={selectedLeadId}
-        onClose={() => setSelectedLeadId(null)}
-        onLeadUpdated={refresh}
-      />
+      <LeadDetailPanel leadId={selectedId} onClose={() => setSelectedId(null)} onLeadUpdated={refresh} />
     </PageShell>
   );
 }

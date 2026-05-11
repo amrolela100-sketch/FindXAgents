@@ -1,0 +1,212 @@
+export const en = {
+  /* ── Nav ── */
+  nav: {
+    dashboard:  "Dashboard",
+    agents:     "AI Agents",
+    pipeline:   "Pipeline",
+    leads:      "Leads",
+    clients:    "Clients",
+    workspaces: "Workspaces",
+    settings:   "Settings",
+    admin:      "Admin",
+    upgrade:    "Upgrade to Pro",
+    signout:    "Sign out",
+    help:       "Help & Support",
+  },
+
+  /* ── Auth ── */
+  auth: {
+    welcome:        "Welcome to FindX",
+    tagline:        "AI-powered B2B prospecting for the Netherlands market",
+    signInGoogle:   "Continue with Google",
+    signingIn:      "Signing in…",
+    orContinueWith: "or continue with",
+    privacyNote:    "By signing in you agree to our Terms of Service and Privacy Policy.",
+    backToHome:     "Back to home",
+  },
+
+  /* ── Landing ── */
+  landing: {
+    heroTitle:    "Find your next client,\nautomatically.",
+    heroSubtitle: "FindX uses AI to discover, analyze, and reach out to high-probability leads in the Netherlands — while you focus on closing.",
+    getStarted:   "Get started free",
+    learnMore:    "See how it works",
+    features: {
+      discover:  { title: "Discover",  desc: "AI finds businesses matching your ICP from KVK and web data." },
+      analyze:   { title: "Analyze",   desc: "Score and rank leads by conversion probability." },
+      outreach:  { title: "Outreach",  desc: "Generate personalized emails and send them in one click." },
+    },
+    stats: {
+      leads:      "leads discovered",
+      accuracy:   "analysis accuracy",
+      timeSaved:  "hours saved / week",
+    },
+  },
+
+  /* ── Dashboard ── */
+  dashboard: {
+    title:          "Dashboard",
+    subtitle:       "Your prospecting intelligence, live.",
+    totalLeads:     "Total Leads",
+    analyzed:       "Analyzed",
+    contacted:      "Contacted",
+    conversion:     "Conversion",
+    thisWeek:       "this week",
+    noNewLeads:     "No new leads this week",
+    ofTotal:        "of total",
+    responded:      "responded",
+    wonDeals:       "won deals",
+    leadScores:     "Lead Scores",
+    avgScore:       "Avg",
+    hot:            "Hot",
+    warm:           "Warm",
+    cold:           "Cold",
+    unscored:       "Unscored",
+    convFunnel:     "Conversion Funnel",
+    recentRuns:     "Recent Runs",
+    viewAll:        "View all",
+    noRuns:         "No pipeline runs yet",
+    startFirst:     "Start your first run →",
+    recentActivity: "Recent Activity",
+    runningPipeline:"AI Pipeline is running",
+    view:           "View",
+  },
+
+  /* ── Leads ── */
+  leads: {
+    title:       "Leads",
+    discover:    "Discover",
+    discovering: "Discovering…",
+    importCsv:   "Import CSV",
+    export:      "Export",
+    list:        "List",
+    kanban:      "Kanban",
+    search:      "Search leads…",
+    allStatuses: "All statuses",
+    noLeads:     "No leads found",
+    noLeadsHint: "Start by clicking Discover or Import CSV",
+    score:       "Score",
+    website:     "Website",
+    none:        "None",
+    status: {
+      discovered: "New",
+      analyzing:  "Analyzing",
+      analyzed:   "Analyzed",
+      contacting: "Contacted",
+      responded:  "Responded",
+      qualified:  "Qualified",
+      won:        "Won",
+      lost:       "Lost",
+    },
+  },
+
+  /* ── Pipeline ── */
+  pipeline: {
+    title:        "Pipeline",
+    runPipeline:  "Run Pipeline",
+    running:      "Running…",
+    placeholder:  'e.g. "IT consultancy Amsterdam"',
+    maxResults:   "Max results",
+    emailLang:    "Email language",
+    refresh:      "Refresh",
+    noLeads:      "Your pipeline is empty",
+    noLeadsHint:  "Run the AI pipeline above to discover leads",
+  },
+
+  /* ── Agents ── */
+  agents: {
+    title:         "AI Agents",
+    subtitle:      "Discovery → Analysis → Outreach",
+    runPipeline:   "Run Pipeline",
+    starting:      "Starting…",
+    placeholder:   'Search query — e.g. "Marketing agencies Utrecht"',
+    maxResults:    "Max results",
+    emailLang:     "Email language",
+    activeAgents:  "Active Agents",
+    pipelineRuns:  "Pipeline Runs",
+    noRuns:        "No pipeline runs yet",
+    noRunsHint:    "Enter a query and click Run Pipeline",
+    liveBanner:    "Pipeline running",
+    step:          "Step",
+    model:         "Model",
+    dutch:         "Dutch",
+    english:       "English",
+    active:        "Active",
+  },
+
+  /* ── Clients ── */
+  clients: {
+    title:       "Clients",
+    subtitle:    "Active client relationships",
+    search:      "Search by name, city or industry…",
+    noClients:   "No clients yet",
+    noClientsHint:"Leads with Won, Qualified or Responded status appear here",
+    noMatch:     "No clients match your search",
+    noMatchHint: "Try a different search term",
+    won:         "Won",
+    qualified:   "Qualified",
+    responded:   "Responded",
+    score:       "Score",
+    updated:     "Updated",
+  },
+
+  /* ── Settings ── */
+  settings: {
+    title: "Settings",
+  },
+
+  /* ── Common ── */
+  common: {
+    loading:   "Loading…",
+    error:     "Something went wrong",
+    retry:     "Try again",
+    save:      "Save",
+    cancel:    "Cancel",
+    delete:    "Delete",
+    edit:      "Edit",
+    close:     "Close",
+    confirm:   "Confirm",
+    back:      "Back",
+    next:      "Next",
+    done:      "Done",
+    search:    "Search…",
+    filter:    "Filter",
+    sort:      "Sort",
+    actions:   "Actions",
+    status:    "Status",
+    date:      "Date",
+    name:      "Name",
+    email:     "Email",
+    website:   "Website",
+    phone:     "Phone",
+    city:      "City",
+    industry:  "Industry",
+    noData:    "No data available",
+  },
+
+  /* ── Command palette ── */
+  cmd: {
+    placeholder:  "Search leads, run pipeline, navigate…",
+    noResults:    "No results found",
+    tip:          "Press Esc to close",
+    sections: {
+      navigate:   "Navigate",
+      leads:      "Leads",
+      actions:    "Actions",
+    },
+    actions: {
+      goHome:      "Go to Dashboard",
+      goLeads:     "Go to Leads",
+      goPipeline:  "Go to Pipeline",
+      goAgents:    "Go to AI Agents",
+      goClients:   "Go to Clients",
+      goSettings:  "Go to Settings",
+      runPipeline: "Run AI Pipeline",
+      newLead:     "Add new lead",
+      toggleDark:  "Toggle dark mode",
+      toggleLang:  "Switch language",
+    },
+  },
+} as const;
+
+export type Translations = typeof en;

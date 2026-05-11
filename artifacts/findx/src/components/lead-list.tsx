@@ -4,6 +4,7 @@ import type { Lead } from "../lib/types";
 import { StatusBadge } from "./status-badge";
 import { getLeads } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { useLang } from "../lib/lang-context";
 
 interface LeadListProps {
   onSelectLead: (lead: Lead) => void;
@@ -13,15 +14,16 @@ type SortKey = "discoveredAt" | "businessName" | "city" | "status";
 type SortDir = "asc" | "desc";
 
 export function LeadList({ onSelectLead }: LeadListProps) {
+  const { t } = useLang();
   const { data } = useRealtimeData(() => getLeads({ pageSize: 200 }), ["leads"], 30_000);
   const leads = data?.leads ?? [];
 
   const [sortKey, setSortKey] = useState<SortKey>("discoveredAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
 
-  const toggleSort = (key: SortKey) => {
+  const toggle = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
   };
@@ -34,143 +36,145 @@ export function LeadList({ onSelectLead }: LeadListProps) {
       (l) =>
         l.businessName.toLowerCase().includes(q) ||
         l.city.toLowerCase().includes(q) ||
-        (l.industry?.toLowerCase().includes(q) ?? false),
+        (l.industry?.toLowerCase().includes(q) ?? false)
     );
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    const mul = sortDir === "asc" ? 1 : -1;
+    const m = sortDir === "asc" ? 1 : -1;
     if (sortKey === "discoveredAt")
-      return mul * (new Date(a.discoveredAt).getTime() - new Date(b.discoveredAt).getTime());
-    return mul * String(a[sortKey]).localeCompare(String(b[sortKey]));
+      return m * (new Date(a.discoveredAt).getTime() - new Date(b.discoveredAt).getTime());
+    return m * String(a[sortKey]).localeCompare(String(b[sortKey]));
   });
+
+  const th = "text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider cursor-pointer select-none";
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
-        <input
-          type="text"
-          placeholder="Search leads..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 max-w-xs px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="relative flex-1 max-w-xs">
+          <input
+            type="text"
+            placeholder={t.leads.search}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input pl-3 pr-3 py-2 text-xs"
+          />
+        </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="input py-2 text-xs w-36"
         >
-          <option value="">All statuses</option>
-          <option value="discovered">New</option>
-          <option value="analyzing">Analyzing</option>
-          <option value="analyzed">Analyzed</option>
-          <option value="contacting">Contacted</option>
-          <option value="responded">Responded</option>
-          <option value="qualified">Qualified</option>
-          <option value="won">Won</option>
-          <option value="lost">Lost</option>
+          <option value="">{t.leads.allStatuses}</option>
+          {Object.entries(t.leads.status).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
         </select>
-        <span className="text-xs text-slate-400">{sorted.length} leads</span>
+        <span className="text-xs ml-auto" style={{ color: "var(--text-subtle)" }}>
+          {sorted.length} leads
+        </span>
       </div>
 
-      <div className="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+      {/* Table */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ border: "1px solid var(--border)" }}
+      >
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-800/50">
-              {[
-                { key: "businessName", label: "Business" },
-                { key: "city", label: "City" },
-                { key: "discoveredAt", label: "Discovered" },
-                { key: "status", label: "Status" },
-              ].map((col) => (
+            <tr style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)" }}>
+              {(["businessName", "city", "discoveredAt", "status"] as const).map((col) => (
                 <th
-                  key={col.key}
-                  onClick={() => toggleSort(col.key as SortKey)}
-                  className="text-left px-4 py-3 text-xs font-semibold text-slate-400 cursor-pointer hover:text-slate-200"
+                  key={col}
+                  onClick={() => toggle(col)}
+                  className={th}
+                  style={{ color: "var(--text-muted)" }}
                 >
-                  <span className="flex items-center gap-1">
-                    {col.label}
-                    <ArrowUpDown className="w-3 h-3" />
+                  <span className="flex items-center gap-1.5">
+                    {t.common[col as keyof typeof t.common] ?? col}
+                    <ArrowUpDown className="w-3 h-3 opacity-40" />
                   </span>
                 </th>
               ))}
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400">Score</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400">Website</th>
+              <th className={th} style={{ color: "var(--text-muted)" }}>{t.leads.score}</th>
+              <th className={th} style={{ color: "var(--text-muted)" }}>{t.leads.website}</th>
             </tr>
           </thead>
           <tbody>
-            {sorted.map((lead) => (
+            {sorted.map((lead, i) => (
               <tr
                 key={lead.id}
                 onClick={() => onSelectLead(lead)}
-                className="border-b border-slate-800 hover:bg-blue-950/50 cursor-pointer transition-colors"
+                className="cursor-pointer transition-colors"
+                style={{
+                  borderBottom: i < sorted.length - 1 ? "1px solid var(--border)" : "none",
+                  background: "var(--surface)",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-subtle)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface)")}
               >
                 <td className="px-4 py-3">
-                  <div>
-                    <p className="font-medium text-sm text-slate-100">{lead.businessName}</p>
-                    {lead.industry && (
-                      <p className="text-xs text-slate-400 flex items-center gap-1">
-                        <Building2 className="w-3 h-3" />
-                        {lead.industry}
-                      </p>
-                    )}
-                  </div>
+                  <p className="text-sm font-medium" style={{ color: "var(--text)" }}>{lead.businessName}</p>
+                  {lead.industry && (
+                    <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      <Building2 className="w-3 h-3" />
+                      {lead.industry}
+                    </p>
+                  )}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-slate-300 flex items-center gap-1">
+                  <span className="text-sm flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
                     <MapPin className="w-3 h-3" />
                     {lead.city}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-400">
-                  {new Date(lead.discoveredAt).toLocaleDateString("nl-NL")}
+                <td className="px-4 py-3 text-xs" style={{ color: "var(--text-subtle)" }}>
+                  {new Date(lead.discoveredAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={lead.status} />
                 </td>
                 <td className="px-4 py-3">
                   {lead.leadScore != null ? (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      lead.leadScore >= 70 ? "bg-emerald-900/60 text-emerald-300" :
-                      lead.leadScore >= 40 ? "bg-amber-900/60 text-amber-300" :
-                      "bg-red-900/60 text-red-300"
-                    }`}>
+                    <span
+                      className="badge text-xs"
+                      style={{
+                        background: lead.leadScore >= 70 ? "var(--color-success-bg)" : lead.leadScore >= 40 ? "var(--color-warning-bg)" : "var(--color-danger-bg)",
+                        color: lead.leadScore >= 70 ? "var(--color-success)" : lead.leadScore >= 40 ? "var(--color-warning)" : "var(--color-danger)",
+                      }}
+                    >
                       {lead.leadScore}
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-600">--</span>
+                    <span style={{ color: "var(--text-subtle)" }}>—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    {lead.website ? (
-                      <a
-                        href={lead.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Globe className="w-3 h-3" />
-                        <span className="truncate max-w-[120px]">{lead.website}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ) : (
-                      <span className="text-xs text-slate-600">None</span>
-                    )}
-                    {(lead as any).isTavilyEnriched && (
-                      <span title="Enriched by Tavily" className="flex items-center justify-center w-4 h-4 bg-purple-900/40 text-purple-400 rounded-full text-[10px]">
-                        T
-                      </span>
-                    )}
-                  </div>
+                  {lead.website ? (
+                    <a
+                      href={lead.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs flex items-center gap-1 hover:underline"
+                      style={{ color: "var(--color-info)" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Globe className="w-3 h-3" />
+                      <span className="clamp-1 max-w-28">{lead.website.replace(/^https?:\/\//, "")}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span style={{ color: "var(--text-subtle)" }}>—</span>
+                  )}
                 </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-sm text-slate-500">
-                  No leads found
+                <td colSpan={6} className="text-center py-12 text-sm" style={{ color: "var(--text-subtle)" }}>
+                  {t.leads.noLeads}
                 </td>
               </tr>
             )}

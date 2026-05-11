@@ -1,86 +1,131 @@
 import { useTheme } from "../lib/theme-context";
 import { useLang } from "../lib/lang-context";
 import { useAuth } from "../lib/auth-context";
+import { Sun, Moon, Globe, Bell, LogOut } from "lucide-react";
+import { useState } from "react";
 
 interface TopBarProps {
   title?: string;
   subtitle?: string;
+  actions?: React.ReactNode;
 }
 
-export function TopBar({ title, subtitle }: TopBarProps) {
+export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const { isDark, toggleTheme } = useTheme();
-  const { lang, toggleLang } = useLang();
+  const { lang, toggleLang, isRtl } = useLang();
   const { user, logout } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const initial = (user?.email ?? "U")[0].toUpperCase();
 
   return (
-    <header className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 z-50 bg-surface border-b border-outline-variant sticky top-0">
-      {/* Left: Search */}
-      <div className="flex items-center gap-6">
-        <div className="flex items-center w-64 relative group">
-          <span className="material-symbols-outlined absolute left-0 text-on-surface-variant group-focus-within:text-primary transition-colors">
-            search
-          </span>
-          <input
-            className="w-full bg-transparent border-none border-b border-outline-variant/50 focus:ring-0 focus:border-primary pl-8 py-2 font-body-md text-body-md text-on-surface placeholder-on-surface-variant transition-colors outline-none"
-            placeholder={lang === "ar" ? "بحث في الشبكة..." : "Query intelligence network..."}
-            type="text"
-          />
-        </div>
+    <header
+      className="sticky top-0 z-10 flex items-center justify-between h-14 px-5 gap-4"
+      style={{
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      {/* Left: Page title */}
+      <div className="flex items-center gap-3 min-w-0">
+        {title && (
+          <div className="min-w-0">
+            <h1
+              className="text-sm font-semibold truncate"
+              style={{ color: "var(--text)" }}
+            >
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Center: Page title (optional) */}
-      {title && (
-        <div className="hidden md:block text-center">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">{title}</h2>
-          {subtitle && <p className="font-body-md text-body-md text-on-surface-variant text-sm">{subtitle}</p>}
-        </div>
-      )}
+      {/* Right: actions + controls */}
+      <div className="flex items-center gap-1">
+        {actions}
 
-      {/* Right: Controls */}
-      <div className="flex items-center gap-4">
-        {/* Language Toggle */}
+        {/* Lang toggle */}
         <button
           onClick={toggleLang}
-          className="text-on-surface-variant hover:text-primary transition-colors duration-200 font-label-caps text-label-caps"
-          aria-label="Toggle language"
+          className="btn btn-ghost px-2.5 py-1.5 text-xs font-semibold gap-1.5"
+          title="Switch language"
         >
-          {lang === "en" ? "EN" : "AR"}
+          <Globe className="w-3.5 h-3.5" />
+          {lang.toUpperCase()}
         </button>
 
-        {/* Dark Mode Toggle */}
+        {/* Dark mode */}
         <button
           onClick={toggleTheme}
-          className="text-on-surface-variant hover:text-primary transition-colors duration-200 flex items-center"
-          aria-label="Toggle theme"
+          className="btn btn-ghost px-2 py-1.5"
+          title="Toggle theme"
         >
-          <span className="material-symbols-outlined">
-            {isDark ? "light_mode" : "dark_mode"}
-          </span>
+          {isDark
+            ? <Sun className="w-4 h-4" />
+            : <Moon className="w-4 h-4" />
+          }
         </button>
 
         {/* Notifications */}
-        <button className="text-on-surface-variant hover:text-primary transition-colors duration-200 flex items-center">
-          <span className="material-symbols-outlined">notifications</span>
+        <button className="btn btn-ghost px-2 py-1.5 relative">
+          <Bell className="w-4 h-4" />
+          <span
+            className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
+            style={{ background: "var(--brand)" }}
+          />
         </button>
 
-        {/* User Avatar + Logout */}
-        <div className="relative group">
-          <button className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-caps text-label-caps">
-            {(user?.email ?? "U")[0].toUpperCase()}
+        {/* User menu */}
+        <div className="relative ml-1">
+          <button
+            onClick={() => setUserMenuOpen((v) => !v)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all hover:opacity-80"
+            style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+          >
+            {initial}
           </button>
-          {/* Dropdown */}
-          <div className="absolute right-0 top-10 w-48 bg-surface-container border border-outline-variant rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-            <div className="px-4 py-3 border-b border-outline-variant">
-              <p className="font-label-caps text-label-caps text-on-surface truncate">{user?.email}</p>
-            </div>
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-2 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors font-body-md text-body-md rounded-b-xl"
-            >
-              <span className="material-symbols-outlined text-sm">logout</span>
-              {lang === "ar" ? "تسجيل الخروج" : "Sign out"}
-            </button>
-          </div>
+
+          {userMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setUserMenuOpen(false)}
+              />
+              <div
+                className={`absolute ${isRtl ? "left-0" : "right-0"} top-9 w-52 z-20 rounded-xl overflow-hidden animate-slide-up`}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                }}
+              >
+                <div
+                  className="px-4 py-3"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
+                    {user?.email}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-subtle)" }}>
+                    Free plan
+                  </p>
+                </div>
+                <button
+                  onClick={() => { logout(); setUserMenuOpen(false); }}
+                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm transition-colors hover:bg-[var(--bg-subtle)]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>

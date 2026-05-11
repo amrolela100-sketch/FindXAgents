@@ -1,75 +1,47 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { en, ar, type Translations } from "./i18n";
 
-export type Lang = "en" | "ar";
+type Lang = "en" | "ar";
 
-interface LangContextType {
+interface LangContextValue {
   lang: Lang;
-  toggleLang: () => void;
-  t: (key: string) => string;
+  t: Translations;
   isRtl: boolean;
+  setLang: (lang: Lang) => void;
+  toggleLang: () => void;
 }
 
-const LangContext = createContext<LangContextType | null>(null);
+const LangContext = createContext<LangContextValue | null>(null);
 
-const translations: Record<string, Record<Lang, string>> = {
-  dashboard: { en: "Dashboard", ar: "لوحة التحكم" },
-  agents: { en: "Agents", ar: "الوكلاء" },
-  pipeline: { en: "Pipeline", ar: "خط الإنتاج" },
-  workspaces: { en: "Workspaces", ar: "مساحات العمل" },
-  settings: { en: "Settings", ar: "الإعدادات" },
-  menu: { en: "Menu", ar: "القائمة" },
-  admin: { en: "Admin", ar: "المسؤول" },
-  adminDashboard: { en: "Admin dashboard", ar: "لوحة المسؤول" },
-  ownerDashboard: { en: "Owner Dashboard", ar: "لوحة المالك" },
-  signOut: { en: "Sign out", ar: "تسجيل الخروج" },
-  noWorkspace: { en: "No workspace", ar: "لا توجد مساحة عمل" },
-  ownerAccess: { en: "Owner access", ar: "دخول المالك" },
-  ownerPageNote: { en: "This page is for the project owner only.", ar: "هذه الصفحة خاصة بصاحب المشروع فقط." },
-  password: { en: "Password", ar: "كلمة السر" },
-  unlock: { en: "Unlock", ar: "فتح" },
-  projectOverview: { en: "Project Overview", ar: "نظرة عامة على المشروع" },
-  allDetails: { en: "All project details in one page.", ar: "كل تفاصيل المشروع في صفحة واحدة." },
-  refresh: { en: "Refresh", ar: "تحديث" },
-  lockOwnerAccess: { en: "Lock owner access", ar: "قفل دخول المالك" },
-  users: { en: "Users", ar: "المستخدمون" },
-  leads: { en: "Leads", ar: "العملاء المحتملون" },
-  runs: { en: "Runs", ar: "التشغيلات" },
-  conversion: { en: "Conversion", ar: "التحويل" },
-  onboarded: { en: "onboarded", ar: "مُدخَل" },
-  thisWeek: { en: "this week", ar: "هذا الأسبوع" },
-  contacted: { en: "contacted", ar: "تم التواصل معه" },
-  wins: { en: "wins", ar: "فوز" },
-  platformHealth: { en: "Platform health", ar: "صحة المنصة" },
-  recentWorkspaces: { en: "Recent workspaces", ar: "آخر مساحات العمل" },
-  recentRuns: { en: "Recent runs", ar: "آخر التشغيلات" },
-  latestPipelineActivity: { en: "Latest pipeline activity", ar: "آخر نشاط في خط الإنتاج" },
-  allIndustries: { en: "All industries", ar: "جميع الصناعات" },
-  allNL: { en: "All NL", ar: "هولندا كاملة" },
-  needsAttention: { en: "Needs attention", ar: "يحتاج انتباهاً" },
-  tryAgain: { en: "Try again", ar: "حاول مجدداً" },
-  noData: { en: "No data", ar: "لا توجد بيانات" },
-  prospecting: { en: "Prospecting", ar: "التنقيب" },
-};
+const TRANSLATIONS: Record<Lang, Translations> = { en, ar };
+const STORAGE_KEY = "findx-lang";
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => {
-    return (localStorage.getItem("findx_lang") as Lang) ?? "en";
+  const [lang, setLangState] = useState<Lang>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "en" || stored === "ar") return stored;
+    // Auto-detect from browser
+    const browser = navigator.language.toLowerCase();
+    return browser.startsWith("ar") ? "ar" : "en";
   });
 
+  const isRtl = lang === "ar";
+
   useEffect(() => {
-    localStorage.setItem("findx_lang", lang);
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    localStorage.setItem(STORAGE_KEY, lang);
     document.documentElement.lang = lang;
-  }, [lang]);
+    document.documentElement.dir = isRtl ? "rtl" : "ltr";
+    // Update font for Arabic
+    document.body.style.fontFamily = isRtl
+      ? '"Noto Sans Arabic", "Inter", sans-serif'
+      : '"Inter", sans-serif';
+  }, [lang, isRtl]);
 
-  const toggleLang = () => setLang((l) => (l === "en" ? "ar" : "en"));
-
-  const t = (key: string): string => {
-    return translations[key]?.[lang] ?? key;
-  };
+  const setLang = (l: Lang) => setLangState(l);
+  const toggleLang = () => setLangState((prev) => (prev === "en" ? "ar" : "en"));
 
   return (
-    <LangContext.Provider value={{ lang, toggleLang, t, isRtl: lang === "ar" }}>
+    <LangContext.Provider value={{ lang, t: TRANSLATIONS[lang], isRtl, setLang, toggleLang }}>
       {children}
     </LangContext.Provider>
   );
@@ -77,6 +49,6 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
 export function useLang() {
   const ctx = useContext(LangContext);
-  if (!ctx) throw new Error("useLang must be used within LangProvider");
+  if (!ctx) throw new Error("useLang must be used inside LangProvider");
   return ctx;
 }

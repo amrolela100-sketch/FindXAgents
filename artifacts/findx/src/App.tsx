@@ -16,18 +16,22 @@ import LeadsPage from "./pages/LeadsPage";
 import ClientsPage from "./pages/ClientsPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
-import { useLang } from "./lib/lang-context";
-import { useTheme } from "./lib/theme-context";
-import { Loader2 } from "lucide-react";
+import { LangProvider, useLang } from "./lib/lang-context";
+import { ThemeProvider } from "./lib/theme-context";
+import { CommandPalette } from "./components/command-palette";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { env, isEnvValid, envErrors } from "./lib/env";
-import { AlertTriangle } from "lucide-react";
 
-const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS ?? "").split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 function AuthGuard() {
   const { user, loading } = useAuth();
+  const { isRtl } = useLang();
   const [location] = useLocation();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(true);
@@ -35,15 +39,12 @@ function AuthGuard() {
 
   useEffect(() => {
     if (!user) { setOnboardingChecked(true); return; }
-
-    const checkOnboarding = async () => {
+    const check = async () => {
       try {
         const { supabase } = await import("./lib/supabase");
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
-        const base = env.VITE_API_URL;
-
-        const res = await fetch(`${base}/onboarding/status`, {
+        const res = await fetch(`${env.VITE_API_URL}/onboarding/status`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const d = await res.json();
@@ -55,14 +56,21 @@ function AuthGuard() {
         setOnboardingChecked(true);
       }
     };
-
-    checkOnboarding();
+    check();
   }, [user]);
 
   if (loading || !onboardingChecked) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--bg)" }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center">
+            <Loader2 className="w-4 h-4 text-white animate-spin" />
+          </div>
+          <p className="text-xs" style={{ color: "var(--text-subtle)" }}>Loading…</p>
+        </div>
       </div>
     );
   }
@@ -75,47 +83,55 @@ function AuthGuard() {
   if (showOnboarding && !onboardingDone) {
     return (
       <OnboardingPage
-        onComplete={() => {
-          setOnboardingDone(true);
-          setShowOnboarding(false);
-        }}
+        onComplete={() => { setOnboardingDone(true); setShowOnboarding(false); }}
       />
     );
   }
 
-  const isAdmin = ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) || user.role === "admin";
-  const { isRtl } = useLang();
-  const { isDark } = useTheme();
+  const isAdmin =
+    ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) ||
+    user.role === "admin";
 
   return (
     <WorkspaceProvider>
-      <div className={`min-h-screen ${isDark ? "dark bg-background" : "bg-base-cream"} text-on-surface`}>
+      {/* Layout */}
+      <div
+        className="min-h-screen"
+        style={{ background: "var(--bg)" }}
+      >
         <Sidebar isAdmin={isAdmin} />
-        {/* Desktop: offset by sidebar width. Mobile: no offset (sidebar is a drawer) */}
-        <main className={`md:${isRtl ? "mr-64" : "ml-64"} min-h-screen`}>
+
+        {/* Main area — offset by sidebar on desktop */}
+        <div className={`md:${isRtl ? "mr-60" : "ml-60"}`}>
           <ErrorBoundary key={location}>
             <Switch>
-              <Route path="/" component={HomePage} />
-              <Route path="/login" component={HomePage} />
+              <Route path="/"            component={HomePage} />
+              <Route path="/login"       component={HomePage} />
               <Route path="/agents/:name" component={AgentDetailPage} />
-              <Route path="/agents" component={AgentsPage} />
-              <Route path="/pipeline" component={PipelinePage} />
-              <Route path="/leads" component={LeadsPage} />
-              <Route path="/clients" component={ClientsPage} />
-              <Route path="/workspaces" component={WorkspacePage} />
-              <Route path="/owner" component={OwnerDashboardPage} />
-              <Route path="/settings" component={SettingsPage} />
+              <Route path="/agents"      component={AgentsPage} />
+              <Route path="/pipeline"    component={PipelinePage} />
+              <Route path="/leads"       component={LeadsPage} />
+              <Route path="/clients"     component={ClientsPage} />
+              <Route path="/workspaces"  component={WorkspacePage} />
+              <Route path="/owner"       component={OwnerDashboardPage} />
+              <Route path="/settings"    component={SettingsPage} />
               {isAdmin && <Route path="/admin" component={AdminPage} />}
               <Route>
-                <div className="p-8 text-center">
-                  <h1 className="text-2xl font-serif font-bold text-on-surface mb-2">404</h1>
-                  <p className="text-on-surface-variant">Page not found</p>
+                <div
+                  className="min-h-screen flex flex-col items-center justify-center gap-2"
+                  style={{ background: "var(--bg)" }}
+                >
+                  <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>
+                  <p style={{ color: "var(--text-muted)" }}>Page not found</p>
                 </div>
               </Route>
             </Switch>
           </ErrorBoundary>
-        </main>
+        </div>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette />
     </WorkspaceProvider>
   );
 }
@@ -123,26 +139,34 @@ function AuthGuard() {
 export default function App() {
   const [location] = useLocation();
 
-  if (location === "/auth/callback" || window.location.pathname.includes("/auth/callback")) {
-    return <AuthCallbackPage />;
+  if (
+    location === "/auth/callback" ||
+    window.location.pathname.includes("/auth/callback")
+  ) {
+    return (
+      <ThemeProvider>
+        <LangProvider>
+          <AuthProvider>
+            <AuthCallbackPage />
+          </AuthProvider>
+        </LangProvider>
+      </ThemeProvider>
+    );
   }
 
   return (
-    <>
-      {!isEnvValid && (
-        <div className="bg-red-500 text-white px-4 py-2 text-sm flex flex-col items-center justify-center relative z-50">
-          <div className="flex items-center gap-2 font-bold mb-1">
-            <AlertTriangle className="w-4 h-4" />
-            Environment Configuration Error
-          </div>
-          <div className="text-red-100 flex gap-4">
-            {envErrors.map((err, i) => <span key={i}>{err}</span>)}
-          </div>
-        </div>
-      )}
-      <AuthProvider>
-        <AuthGuard />
-      </AuthProvider>
-    </>
+    <ThemeProvider>
+      <LangProvider>
+        <AuthProvider>
+          {!isEnvValid && (
+            <div className="bg-red-600 text-white px-4 py-2 text-xs flex items-center justify-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Env config error: {envErrors.join(" · ")}</span>
+            </div>
+          )}
+          <AuthGuard />
+        </AuthProvider>
+      </LangProvider>
+    </ThemeProvider>
   );
 }

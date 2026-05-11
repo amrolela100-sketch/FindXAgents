@@ -1,188 +1,249 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { supabase } from "../lib/supabase";
-import { useTheme } from "../lib/theme-context";
+import { Link } from "wouter";
 import { useLang } from "../lib/lang-context";
-import { Loader2 } from "lucide-react";
+import { useTheme } from "../lib/theme-context";
+import { Zap, Search, BarChart3, Mail, ArrowRight, ArrowLeft, Sun, Moon, Globe, ChevronRight } from "lucide-react";
 
 export default function LandingPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { t, lang, toggleLang, isRtl } = useLang();
   const { isDark, toggleTheme } = useTheme();
-  const { lang, toggleLang } = useLang();
-  const [, navigate] = useLocation();
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}auth/callback`,
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+
+  const features = [
+    { icon: Search,   key: "discover" as const, color: "var(--color-info)" },
+    { icon: BarChart3,key: "analyze"  as const, color: "var(--brand)" },
+    { icon: Mail,     key: "outreach" as const, color: "var(--color-success)" },
+  ];
+
+  const stats = [
+    { value: "50K+", key: "leads" as const },
+    { value: "94%",  key: "accuracy" as const },
+    { value: "18h",  key: "timeSaved" as const },
+  ];
 
   return (
-    <div className={`min-h-screen flex flex-col antialiased font-body-lg ${isDark ? "dark bg-background text-on-surface" : "bg-base-cream text-text-ink"}`}>
-
-      {/* ── Header ── */}
-      <header className={`w-full px-margin-page py-6 flex justify-between items-center ${isDark ? "bg-background" : "bg-base-cream"}`}>
-        <div className="font-headline-md text-headline-md tracking-tight flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary" style={{ fontSize: "32px" }}>storm</span>
-          FindX
-        </div>
-        <div className="flex items-center gap-6">
-          {/* Language Toggle */}
-          <button
-            onClick={toggleLang}
-            className="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors duration-300"
-          >
-            {lang === "en" ? "EN / AR" : "AR / EN"}
-          </button>
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="text-on-surface-variant hover:text-primary transition-colors duration-300 flex items-center justify-center"
-            aria-label="Toggle theme"
-          >
-            <span className="material-symbols-outlined">
-              {isDark ? "light_mode" : "dark_mode"}
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/login")}
-            className="font-label-caps text-label-caps text-on-surface hover:text-primary transition-colors duration-300"
-          >
-            {lang === "ar" ? "تسجيل الدخول" : "Sign In"}
-          </button>
-
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded hover:opacity-90 transition-all duration-300 disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (lang === "ar" ? "ابدأ الآن" : "Get Started")}
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-grow flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-margin-page">
-
-        {error && (
-          <div className="mt-4 px-4 py-3 bg-red-900/30 border border-red-500/30 text-red-400 rounded-lg text-sm w-full max-w-md">
-            {error}
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      {/* ── NAV ── */}
+      <nav
+        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-14 glass"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
           </div>
-        )}
+          <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
+        </div>
 
-        {/* ── Hero ── */}
-        <section className="w-full py-24 flex flex-col items-center text-center space-y-stack-md">
-          <div className="max-w-4xl space-y-6">
-            <span className="font-label-caps text-label-caps text-primary uppercase tracking-widest block">
-              {lang === "ar" ? "نشرة الطموح" : "The Prospectus of Ambition"}
+        <div className="flex items-center gap-1">
+          <button onClick={toggleLang} className="btn btn-ghost text-xs gap-1.5 px-2.5">
+            <Globe className="w-3.5 h-3.5" />
+            {lang.toUpperCase()}
+          </button>
+          <button onClick={toggleTheme} className="btn btn-ghost px-2">
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <Link href="/login">
+            <a className="btn btn-primary px-4 py-1.5 text-xs ml-1">
+              {t.landing.getStarted}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </a>
+          </Link>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="flex flex-col items-center text-center px-6 py-24 md:py-32">
+        {/* Badge */}
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
+          style={{
+            background: "var(--brand-subtle)",
+            color: "var(--brand-subtle-fg)",
+            border: "1px solid rgba(217,119,6,0.2)",
+          }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" style={{ background: "var(--brand)" }} />
+          AI-powered B2B Prospecting
+        </div>
+
+        <h1
+          className="text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-6 text-balance"
+          style={{ color: "var(--text)", fontFamily: isRtl ? "Noto Sans Arabic" : "Inter" }}
+        >
+          {t.landing.heroTitle.split("\n").map((line, i) => (
+            <span key={i}>
+              {i === 0 ? line : (
+                <><br /><span className="gradient-text-brand">{line}</span></>
+              )}
             </span>
-            <h1 className="font-display-lg text-display-lg">
-              {lang === "ar" ? "ذكاء دافئ لخط أنابيب مُصمَّم بعناية." : "Warm Intelligence for the Crafted Pipeline."}
-            </h1>
-            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-              {lang === "ar"
-                ? "FindX يسد الفجوة بين البيانات الجافة والتواصل الإنساني."
-                : "FindX bridges the gap between clinical data and human connection. Elevate your prospecting with synthesized insights that feel authored, not assembled."}
+          ))}
+        </h1>
+
+        <p
+          className="text-base md:text-lg max-w-2xl leading-relaxed mb-10 text-balance"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {t.landing.heroSubtitle}
+        </p>
+
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link href="/login">
+            <a className="btn btn-primary px-6 py-2.5 text-sm shadow-md">
+              {t.landing.getStarted}
+              <ArrowIcon className="w-4 h-4" />
+            </a>
+          </Link>
+          <a
+            href="#how"
+            className="btn btn-secondary px-6 py-2.5 text-sm"
+          >
+            {t.landing.learnMore}
+          </a>
+        </div>
+
+        {/* Hero visual */}
+        <div
+          className="mt-16 w-full max-w-4xl rounded-2xl overflow-hidden"
+          style={{ border: "1px solid var(--border)", boxShadow: "0 24px 80px rgba(0,0,0,0.08)" }}
+        >
+          {/* Mock dashboard header */}
+          <div
+            className="flex items-center gap-2 px-4 py-3"
+            style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+          >
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+            <div
+              className="flex-1 mx-4 h-5 rounded-md text-xs flex items-center justify-center"
+              style={{ background: "var(--bg-subtle)", color: "var(--text-subtle)" }}
+            >
+              app.findx.nl/dashboard
+            </div>
+          </div>
+
+          {/* Mock app content */}
+          <div
+            className="p-6 grid grid-cols-4 gap-4"
+            style={{ background: "var(--bg)" }}
+          >
+            {["50 leads", "32 analyzed", "18 contacted", "7.3% conv."].map((s, i) => (
+              <div
+                key={i}
+                className="rounded-xl p-4 skeleton"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+              >
+                <div className="h-2 w-16 rounded skeleton mb-3" style={{ background: "var(--bg-inset)" }} />
+                <div className="text-lg font-bold" style={{ color: "var(--text)" }}>{s.split(" ")[0]}</div>
+                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{s.split(" ").slice(1).join(" ")}</div>
+              </div>
+            ))}
+            <div
+              className="col-span-4 rounded-xl p-4"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            >
+              <div className="h-2 w-24 rounded mb-4" style={{ background: "var(--bg-inset)" }} />
+              <div className="flex gap-3 overflow-hidden">
+                {["New (12)", "Analyzing (4)", "Contacted (8)", "Won (3)"].map((col, i) => (
+                  <div key={i} className="flex-1 min-w-0">
+                    <div className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>{col}</div>
+                    <div className="space-y-2">
+                      {[...Array(i === 0 ? 3 : i === 1 ? 2 : i === 2 ? 2 : 1)].map((_, j) => (
+                        <div
+                          key={j}
+                          className="h-12 rounded-lg"
+                          style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section id="how" className="px-6 md:px-12 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand)" }}>
+              How it works
             </p>
+            <h2 className="text-3xl font-bold text-balance" style={{ color: "var(--text)" }}>
+              3 agents. Full pipeline.
+            </h2>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-8">
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="px-8 py-4 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded shadow-ambient hover:opacity-90 transition-all duration-300 w-full sm:w-auto disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {lang === "ar" ? "ابدأ الآن" : "Get Started Now"}
-            </button>
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="px-8 py-4 bg-surface-container border border-outline text-on-surface font-label-caps text-label-caps rounded hover:bg-surface-container-high transition-colors duration-300 flex items-center justify-center gap-3 w-full sm:w-auto"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-              {lang === "ar" ? "الدخول بـ Google" : "Sign in with Google"}
-            </button>
-          </div>
-        </section>
 
-        {/* ── Social Proof ── */}
-        <section className="w-full py-12 border-t border-outline-variant flex flex-col items-center space-y-8">
-          <span className="font-label-caps text-label-caps text-on-surface-variant">
-            {lang === "ar" ? "موثوق به من قِبَل الشركات الرائدة" : "Trusted by Leading Firms"}
-          </span>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale">
-            {["Vanguard", "Apex Capital", "Meridian"].map((name) => (
-              <div key={name} className="font-headline-md text-headline-md flex items-center gap-2">
-                <span className="material-symbols-outlined">account_balance</span>
-                <span>{name}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {features.map(({ icon: Icon, key, color }, i) => (
+              <div
+                key={key}
+                className="card p-6 card-hover reveal"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                  style={{ background: `${color}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
+                <div
+                  className="text-xs font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: "var(--text-subtle)" }}
+                >
+                  Step {i + 1}
+                </div>
+                <h3 className="font-bold mb-2" style={{ color: "var(--text)" }}>
+                  {t.landing.features[key].title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  {t.landing.features[key].desc}
+                </p>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── Value Props ── */}
-        <section className="w-full py-24 grid grid-cols-1 md:grid-cols-3 gap-gutter-grid">
-          {[
-            { icon: "auto_awesome", title: lang === "ar" ? "ذكاء مُركَّب" : "Synthesized Intelligence", desc: lang === "ar" ? "البيانات لا تُغلق صفقات — الفهم يفعل ذلك." : "Data doesn't close deals; understanding does. Our AI weaves data into coherent narratives." },
-            { icon: "hub", title: lang === "ar" ? "متجهات العلاقات" : "Relationship Vectors", desc: lang === "ar" ? "اكشف المسارات الخفية لتحويل التواصل البارد إلى محادثات دافئة." : "Map unseen connections. Discover warm introduction paths through your network." },
-            { icon: "insights", title: lang === "ar" ? "خطوط أنابيب دقيقة" : "Precision Pipelines", desc: lang === "ar" ? "تجربة CRM راقية تحافظ على تركيزك على أعلى العملاء قيمة." : "A refined CRM experience that keeps your highest-value targets always in focus." },
-          ].map(({ icon, title, desc }) => (
-            <div key={icon} className="bg-surface-container rounded-lg p-8 ambient-shadow ambient-shadow-hover transition-all duration-500 flex flex-col border border-outline-variant">
-              <div className="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 text-primary">
-                <span className="material-symbols-outlined">{icon}</span>
-              </div>
-              <h3 className="font-headline-sm text-headline-sm mb-4">{title}</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant flex-grow">{desc}</p>
+      {/* ── STATS ── */}
+      <section
+        className="px-6 md:px-12 py-16"
+        style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
+      >
+        <div className="max-w-3xl mx-auto grid grid-cols-3 gap-8 text-center">
+          {stats.map(({ value, key }) => (
+            <div key={key}>
+              <div className="text-3xl md:text-4xl font-bold gradient-text-brand mb-1">{value}</div>
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>{t.landing.stats[key]}</div>
             </div>
           ))}
-        </section>
-
-        {/* ── Final CTA ── */}
-        <section className="w-full py-32 flex flex-col items-center text-center space-y-8 bg-surface-container rounded-xl ambient-shadow mb-24 border border-outline-variant px-4">
-          <h2 className="font-display-lg text-display-lg max-w-2xl">
-            {lang === "ar" ? "هل أنت مستعد لتحسين نهجك؟" : "Ready to Refine Your Approach?"}
-          </h2>
-          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-            {lang === "ar" ? "انضم إلى المحترفين الذين يتعاملون مع التنقيب كفن." : "Join the professionals who treat prospecting as an art form."}
-          </p>
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="px-8 py-4 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded hover:opacity-90 transition-all duration-300 flex items-center gap-2 disabled:opacity-60"
-          >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {lang === "ar" ? "ابدأ مجاناً" : "Get Started — Free"}
-          </button>
-          <span className="font-body-md text-body-md text-on-surface-variant">
-            {lang === "ar" ? "لا بطاقة ائتمانية. وصول فوري." : "No credit card required. Instant access."}
-          </span>
-        </section>
-      </main>
-
-      {/* ── Footer ── */}
-      <footer className="w-full py-8 border-t border-outline-variant flex justify-center">
-        <div className="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-2">
-          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>storm</span>
-          FindX © 2025. Warm Intelligence.
         </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="px-6 py-24 text-center">
+        <h2 className="text-3xl font-bold mb-4 text-balance" style={{ color: "var(--text)" }}>
+          Ready to find your next client?
+        </h2>
+        <p className="text-base mb-8" style={{ color: "var(--text-muted)" }}>
+          Start for free. No credit card required.
+        </p>
+        <Link href="/login">
+          <a className="btn btn-primary px-8 py-3 text-sm shadow-lg">
+            {t.landing.getStarted}
+            <ArrowIcon className="w-4 h-4" />
+          </a>
+        </Link>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer
+        className="px-6 py-6 text-center text-xs"
+        style={{ borderTop: "1px solid var(--border)", color: "var(--text-subtle)" }}
+      >
+        © {new Date().getFullYear()} FindX · Built for the Netherlands market
       </footer>
     </div>
   );
