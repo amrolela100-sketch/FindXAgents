@@ -9,7 +9,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isAdmin }: SidebarProps) {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { t, isRtl } = useLang();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -105,7 +105,7 @@ export function Sidebar({ isAdmin }: SidebarProps) {
           <span className="font-body-md text-body-md">Help</span>
         </a>
         <button
-          onClick={() => signOut()}
+          onClick={() => logout()}
           className="flex items-center gap-3 py-3 px-4 rounded-xl text-on-surface-variant hover:bg-surface-variant transition-all duration-300 w-full text-left"
         >
           <span className="material-symbols-outlined">logout</span>
