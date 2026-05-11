@@ -13,6 +13,8 @@ import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import LeadsPage from "./pages/LeadsPage";
 import ClientsPage from "./pages/ClientsPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { LangProvider, useLang } from "./lib/lang-context";
@@ -124,6 +126,27 @@ export default function App() {
           <AuthProvider>
             <AuthCallbackPage />
           </AuthProvider>
+        </LangProvider>
+      </ThemeProvider>
+    );
+  }
+
+  // Legal pages — public, no auth required
+  if (location === "/terms") {
+    return (
+      <ThemeProvider>
+        <LangProvider>
+          <TermsPage />
+        </LangProvider>
+      </ThemeProvider>
+    );
+  }
+
+  if (location === "/privacy") {
+    return (
+      <ThemeProvider>
+        <LangProvider>
+          <PrivacyPage />
         </LangProvider>
       </ThemeProvider>
     );

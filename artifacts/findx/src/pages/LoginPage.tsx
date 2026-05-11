@@ -4,6 +4,7 @@ import { useLang } from "../lib/lang-context";
 import { useTheme } from "../lib/theme-context";
 import { supabase } from "../lib/supabase";
 import { Zap, Sun, Moon, Globe, ArrowLeft, ArrowRight } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export default function LoginPage() {
   const { t, lang, toggleLang, isRtl } = useLang();
@@ -138,10 +139,29 @@ export default function LoginPage() {
 
             {/* Privacy */}
             <p
-              className="mt-6 text-xs text-center leading-relaxed"
+              className="mt-6 text-xs text-center leading-relaxed flex items-center justify-center gap-1 flex-wrap"
               style={{ color: "var(--text-subtle)" }}
             >
-              {t.auth.privacyNote}
+              <Shield className="w-3 h-3 shrink-0" style={{ color: "var(--brand)" }} />
+              {t.auth.privacyNote}{" "}
+              <Link href="/terms">
+                <a
+                  className="underline underline-offset-2 transition-colors hover:opacity-80"
+                  style={{ color: "var(--brand)" }}
+                >
+                  {t.auth.privacyTerms}
+                </a>
+              </Link>
+              {" "}{t.auth.privacyAnd}{" "}
+              <Link href="/privacy">
+                <a
+                  className="underline underline-offset-2 transition-colors hover:opacity-80"
+                  style={{ color: "var(--brand)" }}
+                >
+                  {t.auth.privacyPolicy}
+                </a>
+              </Link>
+              .
             </p>
           </div>
 
