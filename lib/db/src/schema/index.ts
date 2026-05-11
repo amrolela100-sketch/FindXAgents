@@ -48,6 +48,11 @@ export const aiProviderTypeEnum = pgEnum("ai_provider_type", [
   "deepseek",
   "groq",
   "gemini",
+  "openrouter",
+  "google",
+  "mistral",
+  "together",
+  "custom",
 ]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -357,3 +362,4 @@ export type AgentLog = typeof agentLogs.$inferSelect;
 export type AiProvider = typeof aiProviders.$inferSelect;
 export type PushToken = typeof pushTokens.$inferSelect;
 export type User = typeof users.$inferSelect;
+
