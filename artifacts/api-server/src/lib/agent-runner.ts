@@ -193,7 +193,8 @@ export class AgentRunner {
           // One result per domain per run
           const seenDomains = new Set<string>();
 
-          for (const r of rawResults) {
+          for (const rawEntry of rawResults) {
+            let r = { ...rawEntry }; // mutable copy — allows URL normalization below
             if (isDirectoryUrl(r.url)) {
               // Skip directory pages entirely — they produce garbage leads
               directCount++;
@@ -201,7 +202,6 @@ export class AgentRunner {
             }
 
             // Skip article / list / search-result URLs that slipped past the domain filter
-            // Also: normalize deep subpage URLs → homepage (e.g. oma.amsterdam/en/about-us/ → oma.amsterdam)
             {
               const lowerUrl = r.url.toLowerCase();
               const isArticleUrl = (
@@ -213,43 +213,6 @@ export class AgentRunner {
                 /\/\d{4,}-[a-z]/.test(lowerUrl)
               );
               if (isArticleUrl) { directCount++; continue; }
-
-              // Normalize subpage URLs to their homepage.
-              // e.g. "agency.com/en/about-us/team/" → "agency.com"
-              // We keep the URL only if path depth ≤ 1 segment,
-              // OR if the path looks like a lang prefix only (/en/, /nl/, /ar/).
-              try {
-                const parsed = new URL(r.url.startsWith("http") ? r.url : `https://${r.url}`);
-                const segments = parsed.pathname.split("/").filter(Boolean);
-                const isLangPrefix = segments.length === 1 && /^[a-z]{2}(-[a-z]{2})?$/.test(segments[0]);
-                const isSubpage    = segments.length > 1 && !isLangPrefix;
-
-                // Subpage paths that are clearly NOT a homepage
-                const subpagePaths = [
-                  "about", "about-us", "about_us", "over-ons",
-                  "organisation", "organization", "team", "staff", "people",
-                  "contact", "contact-us", "contactus",
-                  "services", "diensten", "solutions",
-                  "blog", "news", "press", "media", "insights",
-                  "careers", "jobs", "vacatures",
-                  "privacy", "terms", "legal", "disclaimer",
-                  "portfolio", "work", "cases", "projects",
-                  "faq", "support", "help",
-                ];
-
-                const firstSeg = segments[0]?.toLowerCase() ?? "";
-                const secondSeg = segments[1]?.toLowerCase() ?? "";
-
-                const isKnownSubpage =
-                  subpagePaths.includes(firstSeg) ||
-                  subpagePaths.includes(secondSeg) ||
-                  isSubpage;
-
-                if (isKnownSubpage) {
-                  // Rewrite to homepage — keep the lead but point to root domain
-                  r = { ...r, url: `${parsed.protocol}//${parsed.hostname}/` };
-                }
-              } catch { /* malformed URL — leave as-is */ }
             }
 
             // Direct result — real company website
