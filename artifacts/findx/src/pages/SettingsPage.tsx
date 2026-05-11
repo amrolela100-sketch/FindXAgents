@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Settings2, Zap, Trash2, Bell, Mail, AlertTriangle, Loader2,
-  CheckCircle2, Plus, X, Star, Eye, EyeOff,
+  CheckCircle2, Plus, X, Star, Eye, EyeOff, ExternalLink, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   getAiProviders, createAiProvider, updateAiProvider, deleteAiProvider,
@@ -22,15 +22,188 @@ const TABS = [
   { id: "data", label: "Data", icon: <Trash2 className="w-4 h-4" /> },
 ];
 
-const PROVIDER_TYPES = [
-  { value: "openai", label: "OpenAI", icon: "🤖" },
-  { value: "anthropic", label: "Anthropic", icon: "🧠" },
-  { value: "groq", label: "Groq", icon: "⚡" },
-  { value: "deepseek", label: "DeepSeek", icon: "🔭" },
-  { value: "glm", label: "GLM / ZhipuAI", icon: "🌐" },
-  { value: "minimax", label: "MiniMax", icon: "🎯" },
-  { value: "kimi", label: "Kimi", icon: "🌙" },
-  { value: "ollama", label: "Ollama (local)", icon: "🦙" },
+type ProviderConfig = {
+  value: string;
+  label: string;
+  icon: string;
+  color: string;
+  description: string;
+  apiKeyLabel: string;
+  apiKeyPlaceholder: string;
+  apiKeyUrl: string;
+  apiKeyUrlLabel: string;
+  defaultBaseUrl: string;
+  baseUrlEditable: boolean;
+  models: string[];
+  defaultModel: string;
+};
+
+const PROVIDER_TYPES: ProviderConfig[] = [
+  {
+    value: "openai",
+    label: "OpenAI",
+    icon: "🤖",
+    color: "#10a37f",
+    description: "GPT-4o, GPT-4 Turbo, and o1 models — best for reasoning & coding",
+    apiKeyLabel: "OpenAI API Key",
+    apiKeyPlaceholder: "sk-...",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    apiKeyUrlLabel: "platform.openai.com",
+    defaultBaseUrl: "https://api.openai.com/v1",
+    baseUrlEditable: false,
+    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1-mini", "o1-preview"],
+    defaultModel: "gpt-4o",
+  },
+  {
+    value: "anthropic",
+    label: "Anthropic",
+    icon: "🧠",
+    color: "#d97706",
+    description: "Claude 3.5 Sonnet & Opus — excellent for writing & analysis",
+    apiKeyLabel: "Anthropic API Key",
+    apiKeyPlaceholder: "sk-ant-...",
+    apiKeyUrl: "https://console.anthropic.com/settings/keys",
+    apiKeyUrlLabel: "console.anthropic.com",
+    defaultBaseUrl: "https://api.anthropic.com/v1",
+    baseUrlEditable: false,
+    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"],
+    defaultModel: "claude-3-5-sonnet-20241022",
+  },
+  {
+    value: "google",
+    label: "Google Gemini",
+    icon: "✨",
+    color: "#4285f4",
+    description: "Gemini 1.5 Pro & Flash — large context window, fast & affordable",
+    apiKeyLabel: "Google AI API Key",
+    apiKeyPlaceholder: "AIza...",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    apiKeyUrlLabel: "aistudio.google.com",
+    defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta",
+    baseUrlEditable: false,
+    models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"],
+    defaultModel: "gemini-2.0-flash",
+  },
+  {
+    value: "groq",
+    label: "Groq",
+    icon: "⚡",
+    color: "#f97316",
+    description: "Ultra-fast inference — Llama 3 & Mixtral at lightning speed",
+    apiKeyLabel: "Groq API Key",
+    apiKeyPlaceholder: "gsk_...",
+    apiKeyUrl: "https://console.groq.com/keys",
+    apiKeyUrlLabel: "console.groq.com",
+    defaultBaseUrl: "https://api.groq.com/openai/v1",
+    baseUrlEditable: false,
+    models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
+    defaultModel: "llama-3.3-70b-versatile",
+  },
+  {
+    value: "openrouter",
+    label: "OpenRouter",
+    icon: "🔀",
+    color: "#7c3aed",
+    description: "Access 100+ models from one API — OpenAI, Claude, Llama, and more",
+    apiKeyLabel: "OpenRouter API Key",
+    apiKeyPlaceholder: "sk-or-...",
+    apiKeyUrl: "https://openrouter.ai/keys",
+    apiKeyUrlLabel: "openrouter.ai",
+    defaultBaseUrl: "https://openrouter.ai/api/v1",
+    baseUrlEditable: false,
+    models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash", "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat"],
+    defaultModel: "google/gemini-2.0-flash",
+  },
+  {
+    value: "deepseek",
+    label: "DeepSeek",
+    icon: "🔭",
+    color: "#0ea5e9",
+    description: "DeepSeek V3 & R1 — top coding & reasoning, very affordable",
+    apiKeyLabel: "DeepSeek API Key",
+    apiKeyPlaceholder: "sk-...",
+    apiKeyUrl: "https://platform.deepseek.com/api_keys",
+    apiKeyUrlLabel: "platform.deepseek.com",
+    defaultBaseUrl: "https://api.deepseek.com/v1",
+    baseUrlEditable: false,
+    models: ["deepseek-chat", "deepseek-reasoner"],
+    defaultModel: "deepseek-chat",
+  },
+  {
+    value: "mistral",
+    label: "Mistral AI",
+    icon: "🌊",
+    color: "#06b6d4",
+    description: "Mistral Large & Codestral — European AI, GDPR-friendly",
+    apiKeyLabel: "Mistral API Key",
+    apiKeyPlaceholder: "...",
+    apiKeyUrl: "https://console.mistral.ai/api-keys/",
+    apiKeyUrlLabel: "console.mistral.ai",
+    defaultBaseUrl: "https://api.mistral.ai/v1",
+    baseUrlEditable: false,
+    models: ["mistral-large-latest", "mistral-small-latest", "codestral-latest", "open-mistral-7b"],
+    defaultModel: "mistral-large-latest",
+  },
+  {
+    value: "together",
+    label: "Together AI",
+    icon: "🤝",
+    color: "#8b5cf6",
+    description: "Open-source models (Llama, Mistral) at competitive prices",
+    apiKeyLabel: "Together AI API Key",
+    apiKeyPlaceholder: "...",
+    apiKeyUrl: "https://api.together.xyz/settings/api-keys",
+    apiKeyUrlLabel: "api.together.xyz",
+    defaultBaseUrl: "https://api.together.xyz/v1",
+    baseUrlEditable: false,
+    models: ["meta-llama/Llama-3.3-70B-Instruct-Turbo", "mistralai/Mixtral-8x22B-Instruct-v0.1", "Qwen/Qwen2.5-72B-Instruct-Turbo"],
+    defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  },
+  {
+    value: "glm",
+    label: "GLM / ZhipuAI",
+    icon: "🌐",
+    color: "#059669",
+    description: "GLM-4 series — strong Chinese/English bilingual model",
+    apiKeyLabel: "ZhipuAI API Key",
+    apiKeyPlaceholder: "...",
+    apiKeyUrl: "https://open.bigmodel.cn/usercenter/apikeys",
+    apiKeyUrlLabel: "open.bigmodel.cn",
+    defaultBaseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    baseUrlEditable: false,
+    models: ["glm-4", "glm-4-flash", "glm-4-plus"],
+    defaultModel: "glm-4-flash",
+  },
+  {
+    value: "ollama",
+    label: "Ollama (Local)",
+    icon: "🦙",
+    color: "#78716c",
+    description: "Run models locally on your own machine — 100% private, no API key needed",
+    apiKeyLabel: "API Key (not required for Ollama)",
+    apiKeyPlaceholder: "Leave empty",
+    apiKeyUrl: "https://ollama.com/download",
+    apiKeyUrlLabel: "Install Ollama",
+    defaultBaseUrl: "http://localhost:11434/v1",
+    baseUrlEditable: true,
+    models: ["llama3.2", "llama3.1", "mistral", "codellama", "phi3", "gemma2"],
+    defaultModel: "llama3.2",
+  },
+  {
+    value: "custom",
+    label: "Custom / Other",
+    icon: "⚙️",
+    color: "#6b7280",
+    description: "Any OpenAI-compatible API — LM Studio, vLLM, Perplexity, etc.",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "sk-...",
+    apiKeyUrl: "",
+    apiKeyUrlLabel: "",
+    defaultBaseUrl: "",
+    baseUrlEditable: true,
+    models: [],
+    defaultModel: "",
+  },
 ];
 
 const EMPTY_FORM = {
@@ -45,6 +218,73 @@ const EMPTY_FORM = {
 
 const inputCls = "w-full px-3 py-2 border border-[#E5E3D9] rounded-lg text-sm bg-white text-[#1A1A1A] placeholder:text-[#BDBDB0] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#C4C0B8]";
 const labelCls = "block text-xs font-medium text-[#7A756D] mb-1";
+
+// ─── Advanced Settings sub-component ────────────────────────────────────────
+function AdvancedSettings({
+  form, setForm, inputCls, labelCls, baseUrlEditable, isOllama, name,
+}: {
+  form: typeof EMPTY_FORM;
+  setForm: (f: typeof EMPTY_FORM) => void;
+  inputCls: string;
+  labelCls: string;
+  baseUrlEditable: boolean;
+  isOllama: boolean;
+  name: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-[#E5E3D9] rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#FAFAF8] hover:bg-[#F0EDE6] transition-colors text-left"
+      >
+        <span className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Advanced Settings</span>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-[#BDBDB0]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#BDBDB0]" />}
+      </button>
+      {open && (
+        <div className="p-4 space-y-3 bg-white">
+          <div>
+            <label className={labelCls}>Display Name</label>
+            <input type="text" value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              placeholder="My Provider"
+              className={inputCls} />
+          </div>
+          {(baseUrlEditable || isOllama) && (
+            <div>
+              <label className={labelCls}>
+                Base URL
+                {isOllama && <span className="ml-1 text-[#BDBDB0]">(default: http://localhost:11434/v1)</span>}
+              </label>
+              <input type="text" value={form.baseUrl}
+                onChange={e => setForm({ ...form, baseUrl: e.target.value })}
+                placeholder={isOllama ? "http://localhost:11434/v1" : "https://api.example.com/v1"}
+                className={inputCls} />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Temperature <span className="text-[#BDBDB0]">(0–2, default 0.7)</span></label>
+              <input type="number" step="0.1" min="0" max="2"
+                value={form.temperature}
+                onChange={e => setForm({ ...form, temperature: e.target.value })}
+                placeholder="0.7"
+                className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Max Tokens <span className="text-[#BDBDB0]">(default 4096)</span></label>
+              <input type="number" min="1" max="65536"
+                value={form.maxTokens}
+                onChange={e => setForm({ ...form, maxTokens: parseInt(e.target.value) || 4096 })}
+                className={inputCls} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("ai");
@@ -167,8 +407,26 @@ export default function SettingsPage() {
 
   function openAddForm() {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM });
+    const def = PROVIDER_TYPES.find(p => p.value === "openai")!;
+    setForm({
+      ...EMPTY_FORM,
+      name: def.label,
+      baseUrl: def.defaultBaseUrl,
+      model: def.defaultModel,
+    });
     setShowForm(true);
+  }
+
+  function handleProviderTypeChange(value: string) {
+    const def = PROVIDER_TYPES.find(p => p.value === value);
+    if (!def) return;
+    setForm(f => ({
+      ...f,
+      providerType: value as AiProviderType,
+      name: f.name && f.name !== PROVIDER_TYPES.find(p => p.value === f.providerType)?.label ? f.name : def.label,
+      baseUrl: def.defaultBaseUrl,
+      model: def.defaultModel,
+    }));
   }
 
   function openEditForm(provider: AiProvider) {
@@ -529,66 +787,150 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {showForm && (
-            <div className="p-5 bg-white rounded-xl border border-[#E5E3D9] space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-[#1A1A1A]">{editingId ? "Edit Provider" : "Add Provider"}</h4>
-                <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-[#7A756D] hover:text-[#1A1A1A]">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Provider Type</label>
-                  <select value={form.providerType} onChange={(e) => setForm({ ...form, providerType: e.target.value as AiProviderType })} disabled={!!editingId}
-                    className={inputCls}>
-                    {PROVIDER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
-                  </select>
+          {showForm && (() => {
+            const provCfg = PROVIDER_TYPES.find(p => p.value === form.providerType) ?? PROVIDER_TYPES[0];
+            const [showKey, setShowKey] = [false, (_: boolean) => {}]; // placeholder; use local state below
+            return (
+              <div className="bg-white rounded-xl border border-[#E5E3D9] overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0EDE6]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{provCfg.icon}</span>
+                    <h4 className="text-sm font-semibold text-[#1A1A1A]">{editingId ? "Edit Provider" : "Add AI Provider"}</h4>
+                  </div>
+                  <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-[#BDBDB0] hover:text-[#1A1A1A] transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <div>
-                  <label className={labelCls}>Name</label>
-                  <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="My Provider"
-                    className={inputCls} />
+
+                <div className="p-5 space-y-5">
+                  {/* Step 1 — Choose Provider */}
+                  {!editingId && (
+                    <div>
+                      <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">① Choose Provider</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {PROVIDER_TYPES.map(p => (
+                          <button
+                            key={p.value}
+                            onClick={() => handleProviderTypeChange(p.value)}
+                            className={`flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${
+                              form.providerType === p.value
+                                ? "border-[#1A1A1A] bg-[#F7F5F0] shadow-sm"
+                                : "border-[#E5E3D9] hover:border-[#C4C0B8] hover:bg-[#FAFAF8]"
+                            }`}
+                          >
+                            <span className="text-xl">{p.icon}</span>
+                            <span className="text-xs font-semibold text-[#1A1A1A] leading-tight">{p.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {/* Provider description */}
+                      <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-[#F7F5F0] border border-[#E5E3D9]">
+                        <span className="text-base mt-0.5">{provCfg.icon}</span>
+                        <div>
+                          <p className="text-xs font-semibold text-[#1A1A1A]">{provCfg.label}</p>
+                          <p className="text-xs text-[#7A756D] mt-0.5">{provCfg.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2 — API Key */}
+                  <div>
+                    <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">
+                      {editingId ? "🔑 API Key" : "② API Key"}
+                    </p>
+                    <div className="space-y-2">
+                      {provCfg.apiKeyUrl && (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100">
+                          <span className="text-xs text-blue-700">Get your key from</span>
+                          <a href={provCfg.apiKeyUrl} target="_blank" rel="noopener noreferrer"
+                            className="text-xs font-semibold text-blue-700 underline flex items-center gap-0.5 hover:text-blue-900">
+                            {provCfg.apiKeyUrlLabel}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                      {provCfg.value === "ollama" && (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-100">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-xs text-emerald-700">No API key needed — Ollama runs locally on your machine</span>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <input
+                          type="password"
+                          value={form.apiKey}
+                          onChange={e => setForm({ ...form, apiKey: e.target.value })}
+                          placeholder={editingId ? "Leave empty to keep current key" : provCfg.apiKeyPlaceholder}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3 — Model */}
+                  <div>
+                    <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">
+                      {editingId ? "🧩 Model" : "③ Choose Model"}
+                    </p>
+                    {provCfg.models.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {provCfg.models.map(m => (
+                            <button
+                              key={m}
+                              onClick={() => setForm({ ...form, model: m })}
+                              className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${
+                                form.model === m
+                                  ? "border-[#1A1A1A] bg-[#F7F5F0] font-semibold text-[#1A1A1A]"
+                                  : "border-[#E5E3D9] text-[#7A756D] hover:border-[#C4C0B8] hover:text-[#1A1A1A]"
+                              }`}
+                            >
+                              {m}
+                              {m === provCfg.defaultModel && (
+                                <span className="ml-1.5 text-[9px] px-1 py-0.5 bg-[#1A1A1A] text-white rounded">recommended</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-[#BDBDB0]">Or type a custom model name:</p>
+                        <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })}
+                          placeholder="Custom model name..." className={inputCls} />
+                      </div>
+                    ) : (
+                      <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })}
+                        placeholder="e.g. gpt-4o, claude-3-5-sonnet-20241022" className={inputCls} />
+                    )}
+                  </div>
+
+                  {/* Advanced — collapsible */}
+                  <AdvancedSettings
+                    form={form}
+                    setForm={setForm}
+                    inputCls={inputCls}
+                    labelCls={labelCls}
+                    baseUrlEditable={provCfg.baseUrlEditable || !!editingId}
+                    isOllama={provCfg.value === "ollama"}
+                    name={form.name}
+                  />
+
+                  {/* Save */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-[#F0EDE6]">
+                    <button onClick={handleSaveProvider} disabled={saving || !form.name || !form.model}
+                      className="px-5 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium hover:bg-[#333] disabled:opacity-50 transition-colors flex items-center gap-2">
+                      {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      {saving ? "Saving..." : editingId ? "Update Provider" : "Add Provider"}
+                    </button>
+                    <button onClick={() => { setShowForm(false); setEditingId(null); }}
+                      className="px-4 py-2 text-sm text-[#7A756D] hover:text-[#1A1A1A] transition-colors">
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>API Key</label>
-                <input type="password" value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder={editingId ? "Leave empty to keep current key" : "sk-..."}
-                  className={inputCls} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Base URL</label>
-                  <input type="text" value={form.baseUrl} onChange={(e) => setForm({ ...form, baseUrl: e.target.value })} placeholder="https://api.openai.com/v1"
-                    className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Model</label>
-                  <input type="text" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="gpt-4o"
-                    className={inputCls} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Temperature</label>
-                  <input type="number" step="0.1" min="0" max="2" value={form.temperature} onChange={(e) => setForm({ ...form, temperature: e.target.value })} placeholder="0.7"
-                    className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Max Tokens</label>
-                  <input type="number" min="1" max="65536" value={form.maxTokens} onChange={(e) => setForm({ ...form, maxTokens: parseInt(e.target.value) || 4096 })}
-                    className={inputCls} />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <button onClick={handleSaveProvider} disabled={saving || !form.name || !form.model}
-                  className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium hover:bg-[#333] disabled:opacity-50 transition-colors">
-                  {saving ? "Saving..." : editingId ? "Update Provider" : "Add Provider"}
-                </button>
-                <button onClick={() => { setShowForm(false); setEditingId(null); }} className="px-4 py-2 text-sm text-[#7A756D] hover:text-[#1A1A1A] transition-colors">Cancel</button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {aiError && (
             <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />{aiError}</p>
