@@ -1,7 +1,7 @@
 import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders } from "@workspace/db";
 import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
-import { scrapeWebsite, isDirectoryUrl, type ScrapedWebsite } from "./website-scraper.js";
+import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
@@ -408,17 +408,29 @@ export class AgentRunner {
         }
       }
 
-      // ── Real website scrape ──────────────────────────────────────────────
-      let scrapedData: ScrapedWebsite | undefined;
+      // ── Smart scrape: tries Scrapy deep audit first, falls back to built-in ──
+      let scrapedData: ScrapedWebsite | ScrapyAuditResult | undefined;
       if (resolvedWebsite) {
         try {
           await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping website: ${resolvedWebsite}`);
-          scrapedData = await scrapeWebsite(resolvedWebsite, 10000);
-          await logToDB(agentId, this.runId, "qualify-ai", "info",
-            `Scraped ${lead.businessName}: reachable=${scrapedData.reachable}, https=${scrapedData.isHttps}, ` +
-            `emails=${scrapedData.emailAddresses.length}, phones=${scrapedData.phoneNumbers.length}, ` +
-            `social=${Object.keys(scrapedData.socialLinks).length}, loadTime=${scrapedData.loadTimeMs}ms`
-          );
+          scrapedData = await smartScrape(resolvedWebsite, 10000);
+
+          const isDeep = (scrapedData as ScrapyAuditResult).isDeepAudit;
+          if (isDeep) {
+            const d = scrapedData as ScrapyAuditResult;
+            await logToDB(agentId, this.runId, "qualify-ai", "info",
+              `Deep audit complete for ${lead.businessName}: ${d.pagesCrawled} pages, ` +
+              `score=${d.deepScore}, grade=${d.grade}, ` +
+              `emails=${d.emailAddresses.length}, phones=${d.phoneNumbers.length}, ` +
+              `broken_links=${d.brokenLinksCount}, techs=${d.technologies.join(", ")}`
+            );
+          } else {
+            await logToDB(agentId, this.runId, "qualify-ai", "info",
+              `Quick scrape for ${lead.businessName}: reachable=${scrapedData.reachable}, https=${scrapedData.isHttps}, ` +
+              `emails=${scrapedData.emailAddresses.length}, phones=${scrapedData.phoneNumbers.length}, ` +
+              `social=${Object.keys(scrapedData.socialLinks).length}, loadTime=${scrapedData.loadTimeMs}ms`
+            );
+          }
         } catch (e: any) {
           await logToDB(agentId, this.runId, "qualify-ai", "warn", `Scrape failed for ${resolvedWebsite}: ${e.message}`);
         }
@@ -431,6 +443,9 @@ export class AgentRunner {
           : lead;
         const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData), 3, 1000);
 
+        // Build extended context for richer findings
+        const deepAudit = scrapedData ? (scrapedData as ScrapyAuditResult) : null;
+
         await db.insert(analyses).values({
           leadId: lead.id,
           type: "gemini_digital",
@@ -442,17 +457,32 @@ export class AgentRunner {
             emailSubject: result.emailSubject,
             digitalMaturity: result.digitalMaturity,
             estimatedRevenueImpact: result.estimatedRevenueImpact,
-            // Store scraping metrics for transparency
+            // Deep audit fields (when Scrapy is available)
+            ...(deepAudit?.isDeepAudit ? {
+              deepAudit: {
+                deepScore:              deepAudit.deepScore,
+                grade:                  deepAudit.grade,
+                pagesCrawled:           deepAudit.pagesCrawled,
+                technologies:           deepAudit.technologies,
+                brokenLinksCount:       deepAudit.brokenLinksCount,
+                securityHeadersPresent: deepAudit.securityHeadersPresent,
+                seoIssues:              deepAudit.seoIssues,
+                issues:                 deepAudit.issues,
+                strengths:              deepAudit.strengths,
+                breakdown:              deepAudit.breakdown,
+              },
+            } : {}),
+            // Scraping metrics (always present)
             scrapingMetrics: scrapedData ? {
-              reachable: scrapedData.reachable,
-              isHttps: scrapedData.isHttps,
-              loadTimeMs: scrapedData.loadTimeMs,
-              emailsFound: scrapedData.emailAddresses.length,
-              phonesFound: scrapedData.phoneNumbers.length,
-              hasSocialMedia: scrapedData.hasSocialMedia,
-              hasBlog: scrapedData.hasBlog,
-              hasContactPage: scrapedData.hasContactPage,
-              wordCount: scrapedData.wordCount,
+              reachable:       scrapedData.reachable,
+              isHttps:         scrapedData.isHttps,
+              loadTimeMs:      scrapedData.loadTimeMs,
+              emailsFound:     scrapedData.emailAddresses.length,
+              phonesFound:     scrapedData.phoneNumbers.length,
+              hasSocialMedia:  scrapedData.hasSocialMedia,
+              hasBlog:         scrapedData.hasBlog,
+              hasContactPage:  scrapedData.hasContactPage,
+              wordCount:       scrapedData.wordCount,
             } : null,
           },
           opportunities: result.opportunities,

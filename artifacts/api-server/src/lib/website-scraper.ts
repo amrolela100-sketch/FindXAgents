@@ -410,3 +410,194 @@ export function buildScrapedContext(scraped: ScrapedWebsite): string {
 
   return lines.join("\n");
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scrapy Deep Auditor integration
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Rich result returned by the Scrapy microservice.
+ * Merges into ScrapedWebsite for backward compatibility with ai-engine.ts.
+ */
+export interface ScrapyAuditResult extends ScrapedWebsite {
+  // Deep audit extras
+  deepScore: number;           // 0-100 from scorer.py
+  grade: string;               // A / B / C / D / F
+  breakdown: Record<string, { points: number; max: number }>;
+  issues: string[];            // Specific problems found
+  strengths: string[];         // What they do well
+  technologies: string[];      // WordPress, React, etc.
+  brokenLinksCount: number;
+  pagesCrawled: number;
+  securityHeadersPresent: string[];
+  seoIssues: string[];
+  isDeepAudit: true;
+}
+
+/**
+ * Call the Scrapy auditor microservice for a full deep crawl.
+ * Returns null if the service is unavailable (graceful fallback).
+ */
+export async function auditWithScrapy(
+  url: string,
+  maxPages = 30,
+  timeoutMs = 90_000,
+): Promise<ScrapyAuditResult | null> {
+  const auditorUrl = process.env.SCRAPY_AUDITOR_URL;
+  if (!auditorUrl) return null;
+
+  const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const secret = process.env.SCRAPY_AUDITOR_SECRET;
+    if (secret) headers["X-Auditor-Secret"] = secret;
+
+    const res = await fetch(`${auditorUrl}/audit`, {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({ url: normalizedUrl, max_pages: maxPages }),
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+
+    const data: any = await res.json();
+    const audit = data.audit ?? {};
+    const sr = data.score_result ?? {};
+
+    // Map Scrapy result → ScrapedWebsite shape (backward compatible)
+    const emails: string[] = sr.emails_found ?? audit.emails ?? [];
+    const phones: string[] = sr.phones_found ?? audit.phones ?? [];
+    const socialRaw: Record<string, string> = sr.social_links ?? audit.social_links ?? {};
+
+    const social: ScrapedWebsite["socialLinks"] = {};
+    if (socialRaw.linkedin)  social.linkedin  = socialRaw.linkedin;
+    if (socialRaw.facebook)  social.facebook  = socialRaw.facebook;
+    if (socialRaw.instagram) social.instagram = socialRaw.instagram;
+    if (socialRaw.twitter)   social.twitter   = socialRaw.twitter;
+    if (socialRaw.youtube)   social.youtube   = socialRaw.youtube;
+    if (socialRaw.whatsapp)  social.whatsapp  = socialRaw.whatsapp;
+
+    const firstPage = (audit.pages_detail ?? [])[0];
+
+    const result: ScrapyAuditResult = {
+      // ScrapedWebsite base fields
+      url:             normalizedUrl,
+      reachable:       (audit.pages_crawled ?? 0) > 0,
+      isHttps:         normalizedUrl.startsWith("https://"),
+      statusCode:      firstPage?.status,
+      loadTimeMs:      firstPage?.load_time_ms,
+      title:           firstPage?.title,
+      metaDescription: firstPage?.meta_description,
+      emailAddresses:  emails.slice(0, 5),
+      phoneNumbers:    phones.slice(0, 5),
+      socialLinks:     social,
+      hasBlog:         (audit.pages_detail ?? []).some((p: any) =>
+                         /blog|news|articles|insights/.test(p.url ?? "")
+                       ),
+      hasContactPage:  (audit.pages_detail ?? []).some((p: any) =>
+                         /contact|reach|get-in-touch/.test(p.url ?? "")
+                       ),
+      hasPrivacyPolicy:(audit.pages_detail ?? []).some((p: any) =>
+                         /privacy|datenschutz/.test(p.url ?? "")
+                       ),
+      hasSocialMedia:  Object.keys(social).length > 0,
+      wordCount:       firstPage?.word_count,
+      contentSnippet:  undefined,
+      language:        undefined,
+
+      // Deep audit extras
+      deepScore:                sr.score ?? 50,
+      grade:                    sr.grade ?? "C",
+      breakdown:                sr.breakdown ?? {},
+      issues:                   sr.issues ?? [],
+      strengths:                sr.strengths ?? [],
+      technologies:             sr.technologies ?? audit.technologies ?? [],
+      brokenLinksCount:         sr.broken_links_count ?? (audit.broken_links ?? []).length,
+      pagesCrawled:             audit.pages_crawled ?? 0,
+      securityHeadersPresent:   sr.security_headers_present ?? [],
+      seoIssues:                sr.seo_issues ?? [],
+      isDeepAudit:              true,
+    };
+
+    return result;
+  } catch (err: any) {
+    clearTimeout(timeout);
+    return null;
+  }
+}
+
+/**
+ * Smart scraper: tries Scrapy deep audit first, falls back to built-in scraper.
+ * Use this in agent-runner.ts instead of calling scrapeWebsite() directly.
+ */
+export async function smartScrape(
+  url: string,
+  timeoutMs = 10_000,
+): Promise<ScrapedWebsite | ScrapyAuditResult> {
+  // Try deep audit first (if service is configured)
+  const deep = await auditWithScrapy(url, 30, 90_000);
+  if (deep) return deep;
+
+  // Fallback: built-in single-page scraper
+  return scrapeWebsite(url, timeoutMs);
+}
+
+/**
+ * Extended context builder — handles both ScrapedWebsite and ScrapyAuditResult.
+ * Adds deep-audit sections when available.
+ */
+export function buildExtendedContext(scraped: ScrapedWebsite | ScrapyAuditResult): string {
+  // Start with standard context
+  let ctx = buildScrapedContext(scraped);
+
+  const deep = scraped as ScrapyAuditResult;
+  if (!deep.isDeepAudit) return ctx;
+
+  // Append deep-audit extras
+  const extras: string[] = [];
+
+  extras.push(`\n── Deep Audit (${deep.pagesCrawled} pages crawled) ──`);
+  extras.push(`Deep Score: ${deep.deepScore}/100 — Grade: ${deep.grade}`);
+
+  if (deep.technologies.length > 0) {
+    extras.push(`Technologies: ${deep.technologies.join(", ")}`);
+  }
+
+  if (deep.securityHeadersPresent.length > 0) {
+    extras.push(`Security Headers Present: ${deep.securityHeadersPresent.join(", ")}`);
+  } else {
+    extras.push("Security Headers: NONE detected ⚠️");
+  }
+
+  if (deep.brokenLinksCount > 0) {
+    extras.push(`Broken Links: ${deep.brokenLinksCount} found ⚠️`);
+  }
+
+  if (deep.seoIssues.length > 0) {
+    extras.push(`SEO Issues:\n${deep.seoIssues.map(i => `  • ${i}`).join("\n")}`);
+  }
+
+  if (deep.issues.length > 0) {
+    extras.push(`All Issues Found:\n${deep.issues.map(i => `  ❌ ${i}`).join("\n")}`);
+  }
+
+  if (deep.strengths.length > 0) {
+    extras.push(`Strengths:\n${deep.strengths.map(s => `  ✅ ${s}`).join("\n")}`);
+  }
+
+  if (deep.breakdown && Object.keys(deep.breakdown).length > 0) {
+    const breakdownLines = Object.entries(deep.breakdown).map(
+      ([cat, val]) => `  ${cat}: ${val.points}/${val.max}`
+    );
+    extras.push(`Score Breakdown:\n${breakdownLines.join("\n")}`);
+  }
+
+  return ctx + "\n" + extras.join("\n");
+}

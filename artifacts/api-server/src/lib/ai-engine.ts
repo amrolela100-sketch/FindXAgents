@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { type ScrapedWebsite, buildScrapedContext, calculateGroundedScore } from "./website-scraper.js";
+import { type ScrapedWebsite, type ScrapyAuditResult, buildExtendedContext, calculateGroundedScore } from "./website-scraper.js";
 
 async function getOpenRouterKey(): Promise<string> {
   try {
@@ -81,7 +81,7 @@ export interface OutreachResult {
  */
 export async function analyzeLeadWithGemini(
   lead: LeadForAnalysis,
-  scrapedData?: ScrapedWebsite
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult
 ): Promise<AnalysisResult> {
   const client = await getClient();
 
@@ -91,7 +91,7 @@ export async function analyzeLeadWithGemini(
 
   if (scrapedData) {
     groundedScore = calculateGroundedScore(scrapedData);
-    websiteContext = buildScrapedContext(scrapedData);
+    websiteContext = buildExtendedContext(scrapedData);
   } else if (!lead.website) {
     groundedScore = 90; // No website at all = massive opportunity
     websiteContext = "Website: NONE — this business has no website at all.";
@@ -169,7 +169,7 @@ export async function generateOutreachWithGemini(
   lead: LeadForAnalysis,
   analysis: AnalysisResult,
   language: SupportedLanguage = "en",
-  scrapedData?: ScrapedWebsite
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult
 ): Promise<OutreachResult> {
   const client = await getClient();
 
@@ -184,6 +184,14 @@ export async function generateOutreachWithGemini(
     if (!scrapedData.hasBlog) verifiedFacts.push("they have no blog or content marketing");
     if (scrapedData.loadTimeMs && scrapedData.loadTimeMs > 3000) verifiedFacts.push(`their website is slow (${scrapedData.loadTimeMs}ms load time)`);
     if (scrapedData.wordCount !== undefined && scrapedData.wordCount < 300) verifiedFacts.push("their website has very thin content");
+
+    // Extra insights from Scrapy deep audit
+    const deep = scrapedData as ScrapyAuditResult;
+    if (deep.isDeepAudit) {
+      if (deep.brokenLinksCount > 0) verifiedFacts.push(`${deep.brokenLinksCount} broken links found on their site`);
+      if (deep.seoIssues.length > 0) verifiedFacts.push(...deep.seoIssues.slice(0, 2));
+      if (deep.technologies.length > 0) verifiedFacts.push(`site is built with ${deep.technologies.slice(0, 3).join(", ")}`);
+    }
   } else if (!lead.website) {
     verifiedFacts.push("they have no website at all");
   }
