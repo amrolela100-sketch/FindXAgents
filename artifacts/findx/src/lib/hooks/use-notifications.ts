@@ -1,88 +1,131 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  getNotifications,
+  createNotification,
+  markAllNotificationsRead,
+  markNotificationRead,
+  clearAllNotifications,
+  type ApiNotification,
+} from "../api";
+import { supabase } from "../supabase";
 
-const STORAGE_KEY = "findx_notifications_v1";
-const MAX_NOTIFICATIONS = 30;
+export type { ApiNotification as AppNotification };
 
-export interface AppNotification {
-  id: string;           // unique — matches runId
-  type: "pipeline_complete" | "pipeline_failed";
-  title: string;        // e.g. "Pipeline complete"
-  body: string;         // e.g. "Found 8 leads for \"marketing agencies\""
-  query: string;
+/**
+ * dispatchNotification
+ * Creates a notification in the DB (cross-device).
+ * Falls back silently if the API call fails — non-critical.
+ */
+export async function dispatchNotification(data: {
+  id?: string;         // optional — ignored (DB generates its own id)
+  type: string;
+  title: string;
+  body: string;
+  query?: string;
   leadsFound?: number;
   emailsDrafted?: number;
-  createdAt: string;    // ISO timestamp
-  read: boolean;
-}
-
-function loadFromStorage(): AppNotification[] {
+  createdAt?: string;
+}) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    await createNotification({
+      type:  data.type,
+      title: data.title,
+      body:  data.body,
+      meta: {
+        query:         data.query ?? "",
+        leadsFound:    data.leadsFound ?? 0,
+        emailsDrafted: data.emailsDrafted ?? 0,
+      },
+    });
   } catch {
-    return [];
+    // Non-critical — swallow errors silently
   }
 }
 
-function saveToStorage(notifications: AppNotification[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.slice(0, MAX_NOTIFICATIONS)));
-  } catch { /* ignore quota errors */ }
-}
-
 /**
- * Global event bus — components dispatch events to add notifications
- * without needing a shared store or context.
+ * useNotifications
+ * Fetches notifications from the API (DB-backed, cross-device).
+ * Subscribes to Supabase realtime for instant updates across devices.
  */
-const NOTIFY_EVENT = "findx:notification";
-
-export function dispatchNotification(n: Omit<AppNotification, "read">) {
-  window.dispatchEvent(
-    new CustomEvent(NOTIFY_EVENT, { detail: { ...n, read: false } })
-  );
-}
-
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<AppNotification[]>(loadFromStorage);
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const fetchedRef = useRef(false);
 
-  // Listen for new notifications dispatched from anywhere in the app
-  useEffect(() => {
-    function onNotify(e: Event) {
-      const notification = (e as CustomEvent<AppNotification>).detail;
-      setNotifications((prev) => {
-        // Deduplicate by id
-        if (prev.some((n) => n.id === notification.id)) return prev;
-        const updated = [notification, ...prev].slice(0, MAX_NOTIFICATIONS);
-        saveToStorage(updated);
-        return updated;
-      });
+  const load = useCallback(async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    } catch {
+      // Not logged in yet or API unavailable — silent
+    } finally {
+      setIsLoading(false);
     }
-    window.addEventListener(NOTIFY_EVENT, onNotify);
-    return () => window.removeEventListener(NOTIFY_EVENT, onNotify);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Initial fetch
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    load();
+  }, [load]);
 
-  const markAllRead = useCallback(() => {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({ ...n, read: true }));
-      saveToStorage(updated);
-      return updated;
-    });
-  }, []);
+  // Supabase realtime — refresh when notifications table changes for this user
+  useEffect(() => {
+    const channel = supabase
+      .channel("notifications:realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        () => { load(); }
+      )
+      .subscribe();
 
-  const markRead = useCallback((id: string) => {
-    setNotifications((prev) => {
-      const updated = prev.map((n) => n.id === id ? { ...n, read: true } : n);
-      saveToStorage(updated);
-      return updated;
-    });
-  }, []);
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
 
-  const clearAll = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+  const markAllRead = useCallback(async () => {
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+    try {
+      await markAllNotificationsRead();
+    } catch {
+      load(); // revert on error
+    }
+  }, [load]);
+
+  const markRead = useCallback(async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => n.id === id ? { ...n, read: true } : n)
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await markNotificationRead(id);
+    } catch {
+      load();
+    }
+  }, [load]);
+
+  const clearAll = useCallback(async () => {
     setNotifications([]);
-  }, []);
+    setUnreadCount(0);
+    try {
+      await clearAllNotifications();
+    } catch {
+      load();
+    }
+  }, [load]);
 
-  return { notifications, unreadCount, markAllRead, markRead, clearAll };
+  return {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAllRead,
+    markRead,
+    clearAll,
+    refresh: load,
+  };
 }
