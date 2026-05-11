@@ -67,7 +67,7 @@ function AuthGuard() {
         <Sidebar isAdmin={isAdmin} />
 
         {/* Main area — offset by sidebar on desktop */}
-        <div className={`md:${isRtl ? "mr-60" : "ml-60"}`}>
+        <div className={isRtl ? "md:mr-60" : "md:ml-60"}>
           <ErrorBoundary key={location}>
             <Switch>
               <Route path="/"            component={HomePage} />
