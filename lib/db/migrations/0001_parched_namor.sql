@@ -1,1 +1,1 @@
-ALTER TABLE "leads" ADD COLUMN "is_tavily_enriched" boolean DEFAULT false NOT NULL;
+ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "is_tavily_enriched" boolean DEFAULT false NOT NULL;

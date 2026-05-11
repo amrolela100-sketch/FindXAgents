@@ -1,2 +1,2 @@
-ALTER TABLE "users" ADD COLUMN "onboarding_completed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "onboarding_data" jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "onboarding_completed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "onboarding_data" jsonb DEFAULT '{}'::jsonb;

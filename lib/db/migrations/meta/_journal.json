@@ -36,6 +36,13 @@
       "when": 1778369208435,
       "tag": "0004_watery_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778459994000,
+      "tag": "0005_add_onboarding",
+      "breakpoints": true
     }
   ]
 }

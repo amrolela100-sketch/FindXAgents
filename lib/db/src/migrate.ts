@@ -38,9 +38,22 @@ export async function runMigrations() {
     
     await migrate(db, { migrationsFolder });
     console.log("Migrations completed successfully!");
-  } catch (error) {
-    console.error("Error running migrations:", error);
-    throw error;
+  } catch (error: any) {
+    // If tables/indexes already exist (42P07) or column already exists (42701),
+    // it means the DB was already set up — treat as success and continue.
+    const IDEMPOTENT_CODES = ["42P07", "42701", "42710"];
+    if (error?.cause?.code && IDEMPOTENT_CODES.includes(error.cause.code)) {
+      console.warn(
+        `Migration skipped (schema already exists, code: ${error.cause.code}). Continuing...`
+      );
+    } else if (error?.code && IDEMPOTENT_CODES.includes(error.code)) {
+      console.warn(
+        `Migration skipped (schema already exists, code: ${error.code}). Continuing...`
+      );
+    } else {
+      console.error("Error running migrations:", error);
+      throw error;
+    }
   } finally {
     await pool.end();
   }

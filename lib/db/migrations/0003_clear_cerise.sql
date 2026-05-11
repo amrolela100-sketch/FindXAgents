@@ -1,1 +1,1 @@
-ALTER TABLE "users" ADD COLUMN "metadata" jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "metadata" jsonb DEFAULT '{}'::jsonb;

@@ -18,7 +18,7 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;--> statement-breakpoint
-CREATE TABLE "agent_logs" (
+CREATE TABLE IF NOT EXISTS "agent_logs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"agent_id" text NOT NULL,
 	"pipeline_run_id" text NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE "agent_logs" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "agent_pipeline_runs" (
+CREATE TABLE IF NOT EXISTS "agent_pipeline_runs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text,
 	"query" text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE "agent_pipeline_runs" (
 	"completed_at" timestamp
 );
 --> statement-breakpoint
-CREATE TABLE "agent_skills" (
+CREATE TABLE IF NOT EXISTS "agent_skills" (
 	"id" text PRIMARY KEY NOT NULL,
 	"agent_id" text NOT NULL,
 	"name" text NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE "agent_skills" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "agents" (
+CREATE TABLE IF NOT EXISTS "agents" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"display_name" text NOT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE "agents" (
 	CONSTRAINT "agents_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
-CREATE TABLE "ai_providers" (
+CREATE TABLE IF NOT EXISTS "ai_providers" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"provider_type" "ai_provider_type" NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE "ai_providers" (
 	CONSTRAINT "ai_providers_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
-CREATE TABLE "analyses" (
+CREATE TABLE IF NOT EXISTS "analyses" (
 	"id" text PRIMARY KEY NOT NULL,
 	"lead_id" text NOT NULL,
 	"type" text NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE "analyses" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "email_provider_tokens" (
+CREATE TABLE IF NOT EXISTS "email_provider_tokens" (
 	"id" text PRIMARY KEY NOT NULL,
 	"provider" text NOT NULL,
 	"access_token" text NOT NULL,
@@ -137,13 +137,13 @@ CREATE TABLE "email_provider_tokens" (
 	CONSTRAINT "email_provider_tokens_provider_unique" UNIQUE("provider")
 );
 --> statement-breakpoint
-CREATE TABLE "email_settings" (
+CREATE TABLE IF NOT EXISTS "email_settings" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"default_provider" text,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "leads" (
+CREATE TABLE IF NOT EXISTS "leads" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text,
 	"business_name" text NOT NULL,
@@ -165,7 +165,7 @@ CREATE TABLE "leads" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "outreaches" (
+CREATE TABLE IF NOT EXISTS "outreaches" (
 	"id" text PRIMARY KEY NOT NULL,
 	"lead_id" text NOT NULL,
 	"status" "outreach_status" DEFAULT 'draft' NOT NULL,
@@ -182,7 +182,7 @@ CREATE TABLE "outreaches" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pipeline_stages" (
+CREATE TABLE IF NOT EXISTS "pipeline_stages" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"order" integer NOT NULL,
@@ -190,7 +190,7 @@ CREATE TABLE "pipeline_stages" (
 	CONSTRAINT "pipeline_stages_order_unique" UNIQUE("order")
 );
 --> statement-breakpoint
-CREATE TABLE "push_tokens" (
+CREATE TABLE IF NOT EXISTS "push_tokens" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"token" text NOT NULL,
@@ -199,7 +199,7 @@ CREATE TABLE "push_tokens" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "resend_configs" (
+CREATE TABLE IF NOT EXISTS "resend_configs" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"api_key" text NOT NULL,
 	"from_email" text DEFAULT 'FindX <onboarding@resend.dev>' NOT NULL,
@@ -207,7 +207,7 @@ CREATE TABLE "resend_configs" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "search_configs" (
+CREATE TABLE IF NOT EXISTS "search_configs" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"provider" text DEFAULT 'tavily' NOT NULL,
 	"api_key" text NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE "search_configs" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "smtp_configs" (
+CREATE TABLE IF NOT EXISTS "smtp_configs" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"host" text NOT NULL,
 	"port" integer DEFAULT 465 NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE "smtp_configs" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "telegram_settings" (
+CREATE TABLE IF NOT EXISTS "telegram_settings" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"bot_token" text NOT NULL,
 	"chat_id" text NOT NULL,
@@ -237,7 +237,7 @@ CREATE TABLE "telegram_settings" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
 	"id" text PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"password_hash" text NOT NULL,
@@ -247,30 +247,48 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-ALTER TABLE "agent_logs" ADD CONSTRAINT "agent_logs_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "agent_logs" ADD CONSTRAINT "agent_logs_pipeline_run_id_agent_pipeline_runs_id_fk" FOREIGN KEY ("pipeline_run_id") REFERENCES "public"."agent_pipeline_runs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "agent_skills" ADD CONSTRAINT "agent_skills_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "analyses" ADD CONSTRAINT "analyses_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "leads" ADD CONSTRAINT "leads_pipeline_stage_id_pipeline_stages_id_fk" FOREIGN KEY ("pipeline_stage_id") REFERENCES "public"."pipeline_stages"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "outreaches" ADD CONSTRAINT "outreaches_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_logs_run_id" ON "agent_logs" USING btree ("pipeline_run_id");--> statement-breakpoint
-CREATE INDEX "idx_logs_agent_id" ON "agent_logs" USING btree ("agent_id");--> statement-breakpoint
-CREATE INDEX "idx_logs_created_at" ON "agent_logs" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_runs_status" ON "agent_pipeline_runs" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_runs_created_at" ON "agent_pipeline_runs" USING btree ("created_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "uq_agent_skill_name" ON "agent_skills" USING btree ("agent_id","name");--> statement-breakpoint
-CREATE INDEX "idx_agent_skills_agent_id" ON "agent_skills" USING btree ("agent_id");--> statement-breakpoint
-CREATE INDEX "idx_agents_pipeline_order" ON "agents" USING btree ("pipeline_order");--> statement-breakpoint
-CREATE INDEX "idx_ai_providers_type" ON "ai_providers" USING btree ("provider_type");--> statement-breakpoint
-CREATE INDEX "idx_ai_providers_default" ON "ai_providers" USING btree ("is_default");--> statement-breakpoint
-CREATE INDEX "idx_analyses_lead_id" ON "analyses" USING btree ("lead_id");--> statement-breakpoint
-CREATE INDEX "idx_leads_city" ON "leads" USING btree ("city");--> statement-breakpoint
-CREATE INDEX "idx_leads_industry" ON "leads" USING btree ("industry");--> statement-breakpoint
-CREATE INDEX "idx_leads_status" ON "leads" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_leads_source" ON "leads" USING btree ("source");--> statement-breakpoint
-CREATE INDEX "idx_leads_has_website" ON "leads" USING btree ("has_website");--> statement-breakpoint
-CREATE INDEX "idx_outreaches_lead_id" ON "outreaches" USING btree ("lead_id");--> statement-breakpoint
-CREATE INDEX "idx_outreaches_status" ON "outreaches" USING btree ("status");--> statement-breakpoint
-CREATE UNIQUE INDEX "idx_push_tokens_user_token" ON "push_tokens" USING btree ("user_id","token");--> statement-breakpoint
-CREATE INDEX "idx_push_tokens_user_id" ON "push_tokens" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "idx_users_email" ON "users" USING btree ("email");
+DO $$ BEGIN
+  ALTER TABLE "agent_logs" ADD CONSTRAINT "agent_logs_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "agent_logs" ADD CONSTRAINT "agent_logs_pipeline_run_id_agent_pipeline_runs_id_fk" FOREIGN KEY ("pipeline_run_id") REFERENCES "public"."agent_pipeline_runs"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "agent_skills" ADD CONSTRAINT "agent_skills_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "analyses" ADD CONSTRAINT "analyses_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "leads" ADD CONSTRAINT "leads_pipeline_stage_id_pipeline_stages_id_fk" FOREIGN KEY ("pipeline_stage_id") REFERENCES "public"."pipeline_stages"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "outreaches" ADD CONSTRAINT "outreaches_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_logs_run_id" ON "agent_logs" USING btree ("pipeline_run_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_logs_agent_id" ON "agent_logs" USING btree ("agent_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_logs_created_at" ON "agent_logs" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_runs_status" ON "agent_pipeline_runs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_runs_created_at" ON "agent_pipeline_runs" USING btree ("created_at");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_agent_skill_name" ON "agent_skills" USING btree ("agent_id","name");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_agent_skills_agent_id" ON "agent_skills" USING btree ("agent_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_agents_pipeline_order" ON "agents" USING btree ("pipeline_order");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_ai_providers_type" ON "ai_providers" USING btree ("provider_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_ai_providers_default" ON "ai_providers" USING btree ("is_default");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_analyses_lead_id" ON "analyses" USING btree ("lead_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_leads_city" ON "leads" USING btree ("city");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_leads_industry" ON "leads" USING btree ("industry");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_leads_status" ON "leads" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_leads_source" ON "leads" USING btree ("source");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_leads_has_website" ON "leads" USING btree ("has_website");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_outreaches_lead_id" ON "outreaches" USING btree ("lead_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_outreaches_status" ON "outreaches" USING btree ("status");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_push_tokens_user_token" ON "push_tokens" USING btree ("user_id","token");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_push_tokens_user_id" ON "push_tokens" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_email" ON "users" USING btree ("email");
