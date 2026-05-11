@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FindX | Warm Intelligence Prospecting</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "tertiary-fixed": "#d8e2ff",
+                "surface-container": "#221f1b",
+                "on-surface-variant": "#d0c5b5",
+                "on-primary-container": "#fff9f6",
+                "tertiary-fixed-dim": "#b5c6f0",
+                "secondary-fixed": "#eae1dd",
+                "surface-bright": "#3c3934",
+                "on-secondary-fixed-variant": "#4b4643",
+                "surface-variant": "#38342f",
+                "outline-variant": "#4d463a",
+                "background": "#16130f",
+                "on-primary": "#412d00",
+                "tertiary": "#b5c6f0",
+                "secondary-fixed-dim": "#cec5c1",
+                "on-error": "#690005",
+                "inverse-surface": "#e9e1da",
+                "secondary-container": "#4e4845",
+                "secondary": "#cec5c1",
+                "primary": "#e4c285",
+                "on-tertiary-container": "#faf9ff",
+                "surface": "#16130f",
+                "tertiary-container": "#627398",
+                "surface-tint": "#e4c285",
+                "primary-container": "#8b6f3a",
+                "on-error-container": "#ffdad6",
+                "outline": "#998f81",
+                "surface-container-low": "#1e1b17",
+                "surface-dim": "#16130f",
+                "on-surface": "#e9e1da",
+                "surface-container-lowest": "#100e0a",
+                "inverse-primary": "#745a27",
+                "primary-fixed": "#ffdea6",
+                "on-tertiary": "#1e3051",
+                "inverse-on-surface": "#33302b",
+                "error": "#ffb4ab",
+                "surface-container-highest": "#38342f",
+                "on-secondary": "#342f2d",
+                "primary-fixed-dim": "#e4c285",
+                "surface-container-high": "#2d2925",
+                "on-primary-fixed-variant": "#5a4312",
+                "on-tertiary-fixed-variant": "#354769",
+                "on-secondary-fixed": "#1f1b19",
+                "on-secondary-container": "#bfb7b3",
+                "on-background": "#e9e1da",
+                "error-container": "#93000a",
+                "on-primary-fixed": "#271900",
+                "on-tertiary-fixed": "#061b3b"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "unit": "4px",
+                "margin-desktop": "64px",
+                "container-max": "1280px",
+                "margin-mobile": "20px",
+                "gutter": "24px",
+                "stack-sm": "0.75rem",
+                "gutter-grid": "2rem",
+                "stack-md": "1.5rem",
+                "stack-lg": "3rem",
+                "margin-page": "4rem"
+        },
+        "fontFamily": {
+                "headline-md": [
+                        "Playfair Display"
+                ],
+                "body-md": [
+                        "DM Sans"
+                ],
+                "display-lg-mobile": [
+                        "Playfair Display"
+                ],
+                "display-lg": [
+                        "Playfair Display"
+                ],
+                "body-lg": [
+                        "DM Sans"
+                ],
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-sm": [
+                        "Playfair Display"
+                ],
+                "title-md": ["DM Sans"],
+                "headline-lg-mobile": ["Playfair Display"],
+                "headline-lg": ["Playfair Display"],
+                "body-sm": ["DM Sans"]
+        },
+        "fontSize": {
+                "headline-md": [
+                        "32px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "36px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": [
+                        "24px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                        }
+                ],
+                "title-md": ["18px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shadow-ambient {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .shadow-ambient-hover:hover {
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg min-h-screen flex flex-col antialiased">
+<!-- Header Navigation (Transactional intent, suppressed global nav, just brand & login) -->
+<header class="w-full px-margin-page py-6 flex justify-between items-center bg-background">
+<div class="font-headline-lg text-headline-lg text-on-surface tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 32px;">storm</span>
+            FindX
+        </div>
+<div class="flex items-center gap-6">
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors duration-300">EN / AR</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-300 flex items-center justify-center">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<a class="font-label-caps text-label-caps text-on-surface hover:text-primary transition-colors duration-300" href="#">Sign In</a>
+<a class="inline-flex items-center justify-center px-6 py-3 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded hover:bg-primary transition-colors duration-300" href="#">Get Started</a>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-margin-page">
+<!-- Hero Section -->
+<section class="w-full py-24 flex flex-col items-center text-center space-y-stack-md relative">
+<div class="max-w-4xl space-y-6">
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-widest block">The Prospectus of Ambition</span>
+<h1 class="font-display-lg text-display-lg text-on-surface">Warm Intelligence for the Crafted Pipeline.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                    FindX bridges the gap between clinical data and human connection. Elevate your prospecting with synthesized insights that feel authored, not assembled.
+                </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 pt-8">
+<button class="px-8 py-4 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded shadow-ambient hover:bg-primary transition-all duration-300 shadow-ambient-hover w-full sm:w-auto">
+                    Get Started Now
+                </button>
+<button class="px-8 py-4 bg-surface-container border border-outline text-on-surface font-label-caps text-label-caps rounded hover:bg-surface-container-high transition-colors duration-300 flex items-center justify-center gap-3 w-full sm:w-auto">
+<svg class="w-5 h-5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+                    Sign in with Google
+                </button>
+</div>
+</section>
+<!-- Social Proof -->
+<section class="w-full py-12 border-t border-outline-variant flex flex-col items-center space-y-8">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Trusted by Leading Firms</span>
+<div class="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale">
+<!-- Abstract generic logos representing high-end firms -->
+<div class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">account_balance</span>
+<span>Vanguard</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">trending_up</span>
+<span>Apex Capital</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">globe</span>
+<span>Meridian</span>
+</div>
+</div>
+</section>
+<!-- Value Proposition -->
+<section class="w-full py-24 grid grid-cols-1 md:grid-cols-3 gap-gutter-grid">
+<div class="bg-surface-container rounded-lg p-8 shadow-ambient shadow-ambient-hover transition-all duration-500 flex flex-col h-full border border-outline-variant">
+<div class="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-4">Synthesized Intelligence</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex-grow">
+                    Data doesn't close deals; understanding does. Our AI weaves disparate data points into coherent narratives, providing deep, actionable context on every prospect.
+                </p>
+</div>
+<div class="bg-surface-container rounded-lg p-8 shadow-ambient shadow-ambient-hover transition-all duration-500 flex flex-col h-full border border-outline-variant">
+<div class="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-4">Relationship Vectors</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex-grow">
+                    Map the unseen connections. Discover warm introduction paths through your existing network, turning cold outreach into curated conversations.
+                </p>
+</div>
+<div class="bg-surface-container rounded-lg p-8 shadow-ambient shadow-ambient-hover transition-all duration-500 flex flex-col h-full border border-outline-variant">
+<div class="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined">insights</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-4">Precision Pipelines</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex-grow">
+                    Manage your flow with tactile elegance. A refined CRM experience that feels like a well-organized desk, keeping your highest-value targets always in focus.
+                </p>
+</div>
+</section>
+<!-- Feature Deep Dive -->
+<section class="w-full py-24 flex flex-col lg:flex-row items-center gap-16 border-t border-outline-variant">
+<div class="w-full lg:w-1/2 space-y-6">
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-widest">The Experience</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Crafted Insights, <br/>Not Assembled Data.</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                    Step away from overwhelming spreadsheets. FindX presents intelligence through an elegant, minimalist interface designed for focus. Every detail is carefully curated to give you the exact context you need before that crucial call.
+                </p>
+<ul class="space-y-4 pt-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1" style="font-size: 20px;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Executive summaries generated in real-time.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1" style="font-size: 20px;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Subtle, distraction-free typography hierarchy.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1" style="font-size: 20px;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Intent signals highlighted with tactical gold accents.</span>
+</li>
+</ul>
+</div>
+<div class="w-full lg:w-1/2 bg-surface-container rounded-xl p-4 shadow-ambient border border-outline-variant">
+<!-- Abstract Dashboard Representation -->
+<div class="bg-surface rounded-lg shadow-sm border border-outline-variant overflow-hidden">
+<div class="border-b border-outline-variant p-4 flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest"></div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">Elena Rostova</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">VP Strategy, Meridian</div>
+</div>
+</div>
+<span class="px-3 py-1 bg-surface-container-highest text-primary font-label-caps text-label-caps rounded">High Intent</span>
+</div>
+<div class="p-6 space-y-6">
+<div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-2">Intelligence Brief</div>
+<p class="font-body-sm text-body-sm text-on-surface leading-relaxed border-l-2 border-primary pl-4">
+                                Elena recently spearheaded the shift towards decentralized logistics at Meridian. She values long-term partnerships over quick fixes. Mention the recent Q3 supply chain report to establish common ground.
+                            </p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container-low rounded">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-1">Engagement Score</div>
+<div class="font-headline-lg text-headline-lg text-primary">92/100</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-1">Last Touch</div>
+<div class="font-title-md text-title-md text-on-surface">2 Days Ago</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="w-full py-32 flex flex-col items-center text-center space-y-8 bg-surface-container rounded-xl shadow-ambient mb-24 border border-outline-variant px-4">
+<div class="max-w-2xl space-y-6">
+<h2 class="font-display-lg text-display-lg text-on-surface">Ready to Refine Your Approach?</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+                    Join the professionals who treat prospecting as an art form supported by profound intelligence.
+                </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 pt-4">
+<button class="px-8 py-4 bg-surface border border-outline text-on-surface font-label-caps text-label-caps rounded hover:bg-surface-container-high transition-colors duration-300 flex items-center justify-center gap-3 w-full sm:w-auto shadow-sm">
+<svg class="w-5 h-5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+                    Continue with Google
+                </button>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">No credit card required. Instant access.</span>
+</section>
+</main>
+<footer class="w-full py-8 border-t border-outline-variant bg-background flex justify-center">
+<div class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 16px;">storm</span>
+            FindX © 2024. Warm Intelligence.
+        </div>
+</footer>
+</body></html>

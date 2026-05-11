@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ملف العميل - FindX</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-low": "#faf2eb",
+                "on-secondary-fixed": "#1b1c19",
+                "tertiary-fixed": "#d8e2ff",
+                "on-surface": "#1e1b17",
+                "primary": "#705724",
+                "on-surface-variant": "#4d463a",
+                "on-primary-fixed": "#271900",
+                "error-container": "#ffdad6",
+                "primary-container": "#8b6f3a",
+                "tertiary-fixed-dim": "#b5c6f0",
+                "on-tertiary-fixed-variant": "#354769",
+                "on-secondary-container": "#63635f",
+                "on-error": "#ffffff",
+                "tertiary-container": "#627398",
+                "surface-dim": "#e0d9d2",
+                "inverse-primary": "#e4c285",
+                "surface-container-lowest": "#ffffff",
+                "outline": "#7f7668",
+                "surface-container-high": "#efe7e0",
+                "secondary": "#5e5e5b",
+                "surface-tint": "#745a27",
+                "surface-bright": "#fff8f3",
+                "tertiary": "#495a7e",
+                "on-error-container": "#93000a",
+                "base-cream": "#F9F7F2",
+                "on-tertiary-container": "#faf9ff",
+                "on-background": "#1e1b17",
+                "secondary-fixed": "#e4e2dd",
+                "primary-fixed-dim": "#e4c285",
+                "on-primary-fixed-variant": "#5a4312",
+                "on-secondary": "#ffffff",
+                "surface-white": "#FFFFFF",
+                "outline-variant": "#d0c5b5",
+                "surface-container-highest": "#e9e1da",
+                "accent-gold": "#8B6F3A",
+                "text-muted": "#5F584F",
+                "secondary-fixed-dim": "#c8c6c2",
+                "inverse-on-surface": "#f7efe8",
+                "text-ink": "#1A1A1A",
+                "on-tertiary-fixed": "#061b3b",
+                "inverse-surface": "#33302b",
+                "secondary-container": "#e1dfdb",
+                "background": "#fff8f3",
+                "on-primary-container": "#fff9f6",
+                "primary-fixed": "#ffdea6",
+                "error": "#ba1a1a",
+                "on-primary": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "surface-container": "#f4ede5",
+                "surface": "#fff8f3",
+                "on-secondary-fixed-variant": "#474744",
+                "surface-variant": "#e9e1da"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "stack-sm": "0.75rem",
+                "gutter-grid": "2rem",
+                "stack-md": "1.5rem",
+                "stack-lg": "3rem",
+                "margin-page": "4rem"
+        },
+        "fontFamily": {
+                "title-md": [
+                        "DM Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Playfair Display"
+                ],
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "display-lg": [
+                        "Playfair Display"
+                ],
+                "body-lg": [
+                        "DM Sans"
+                ],
+                "headline-lg": [
+                        "Playfair Display"
+                ],
+                "body-sm": [
+                        "DM Sans"
+                ]
+        },
+        "fontSize": {
+                "title-md": [
+                        "18px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: theme('colors.surface');
+    color: theme('colors.on-surface');
+  }
+  .card-shadow {
+    box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 50px rgba(139, 111, 58, 0.08);
+  }
+  .nav-transition {
+    transition: all 300ms ease-in-out;
+  }
+</style>
+</head>
+<body class="antialiased min-h-screen flex font-body-sm">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col fixed right-0 top-0 h-full w-64 bg-surface-container-low border-l border-outline-variant/20 py-stack-lg z-50">
+<div class="px-6 mb-8">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">FindX</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-2">Warm Intelligence</p>
+</div>
+<div class="px-4 mb-8">
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps py-3 rounded flex items-center justify-center gap-2 hover:bg-surface-tint transition-colors duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+            New Prospect
+        </button>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">storm</span>
+<span class="font-label-caps text-label-caps">Intelligence</span>
+</a>
+<a class="text-primary font-bold flex items-center gap-3 py-3 px-4 bg-surface-bright rounded nav-transition translate-x-[-4px]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person_search</span>
+<span class="font-label-caps text-label-caps">Prospects</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_tree</span>
+<span class="font-label-caps text-label-caps">Pipelines</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+<span class="font-label-caps text-label-caps">Archives</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-label-caps text-label-caps">Insights</span>
+</a>
+</nav>
+<div class="mt-auto px-2 space-y-1">
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help_outline</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright rounded nav-transition" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center w-full px-6 py-4 bg-surface border-b border-outline-variant/30 fixed top-0 z-50">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">FindX</h1>
+<div class="flex items-center gap-4 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:mr-64 pt-20 md:pt-0 pb-24 md:pb-0 px-4 md:px-margin-page py-12 max-w-[1440px] mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-caps text-[10px] rounded border border-outline-variant/30">تكنولوجيا المعلومات</span>
+<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-caps text-[10px] rounded border border-outline-variant/30">مؤسسة كبرى</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Aura Networks</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 0;">location_on</span>
+                الرياض، المملكة العربية السعودية
+            </p>
+</div>
+<div class="flex gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none border border-primary text-primary px-6 py-3 rounded font-label-caps text-label-caps hover:bg-surface-container-high transition-colors">
+                سجل نشاط
+            </button>
+<button class="flex-1 md:flex-none bg-primary-container text-on-primary-container px-6 py-3 rounded font-label-caps text-label-caps hover:bg-surface-tint transition-colors">
+                بدء التواصل
+            </button>
+</div>
+</div>
+<!-- Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-grid">
+<!-- Main Column (8 cols) -->
+<div class="lg:col-span-8 space-y-gutter-grid">
+<!-- Company Intelligence Card -->
+<section class="bg-surface-white rounded-lg p-8 card-shadow card-hover nav-transition">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6 border-b border-outline-variant/20 pb-4">الذكاء المؤسسي</h2>
+<div class="prose max-w-none font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+<p class="mb-4">تعتبر Aura Networks لاعباً رئيسياً في قطاع البنية التحتية السحابية في الشرق الأوسط. تشير تحليلاتنا الأخيرة إلى تحول استراتيجي نحو حلول الذكاء الاصطناعي المدمجة، مما يمثل فرصة توافق مثالية مع خدماتنا الاستشارية.</p>
+<p>المؤشرات الحالية تدل على استعداد عالٍ لتبني تقنيات جديدة، خاصة في مجال أمن البيانات والتحليلات التنبؤية.</p>
+</div>
+</section>
+<!-- Key Contacts -->
+<section class="bg-surface-white rounded-lg p-8 card-shadow">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6 border-b border-outline-variant/20 pb-4 flex justify-between items-center">
+                    ج��ات الاتصال الرئيسية
+                    <button class="text-primary hover:text-surface-tint font-label-caps text-label-caps transition-colors">إضافة+</button>
+</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Contact 1 -->
+<div class="flex items-center gap-4 p-4 rounded bg-surface-container-low border border-outline-variant/10">
+<img alt="صورة احترافية لمدير تنفيذي بملامح شرق أوسطية يرتدي بدلة داكنة، خلفية مكتبية مضاءة جيداً." class="w-16 h-16 rounded object-cover border border-outline-variant/30" data-alt="A highly detailed professional portrait of a Middle Eastern male executive wearing a sharp dark suit and tie. He has a confident, approachable expression. The background is a slightly blurred, bright modern office setting with warm natural light filtering in. The overall aesthetic is polished, high-end corporate photography, fitting the 'Warm Intelligence' style with subtle cream and gold tones in the environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDevt2S-UpMmonzT3zJb6dRpdMNRYBNIYCFf4VcJCs9w3e7gOs1HnwCbfV-S3MTl5sr7GRmPSpTooH0dvRDBvx7ONUL78KcXhfeMAyVmAgq-e55do4B4NyFhvYFyBr3oMZBKE1jRd1sd2kppQOdo8-aznObBR57R_37Dfjm9S-M0Xp2b8_7HrKKMDYZp_adZL2MTn7y0OqwFyy-mPhnj1Y676-o4m1A85qPZgarUvLhXDkPeT8F9tYAwJfLiABJvcmfxBG-1gwk8AxO"/>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">أحمد السعيد</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">الرئيس التنفيذي للتكنولوجيا</p>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: 'FILL' 0;">mail</span>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: 'FILL' 0;">call</span>
+</div>
+</div>
+</div>
+<!-- Contact 2 -->
+<div class="flex items-center gap-4 p-4 rounded bg-surface-container-low border border-outline-variant/10">
+<img alt="صورة احترافية لمديرة بملامح شرق أوسطية، ترتدي ملابس عمل أنيقة، إضاءة طبيعية." class="w-16 h-16 rounded object-cover border border-outline-variant/30" data-alt="A highly detailed professional portrait of a Middle Eastern female executive wearing elegant business attire. She exudes professionalism and warmth. The background is a soft, out-of-focus modern corporate environment with subtle architectural details. The lighting is natural and flattering, emphasizing a premium editorial look consistent with the ivory and gold minimalist theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvNIm9XbLdVG2CKrxbFEViYx-wxGIn12aSm57sqynvYIOy1nBEaQ5j2va8IHn89v-ritS6pKsNQk-IgJ_uLMyX7906UC0wjDFQZAhUmlpqVPOUJshmggUjfes4Jdtvlqkk1X-O0vf4yUu6KC0BTX_B-FwoX7PmoS5VvuvzzJzcBNfI9k2d4dTUxfzrCfBFowyCxUnDl8io2oIJOPy1FihMqNZAvX9qdGSGi3vMXw8IvDsQA5IOvV1ds3JBmAr-Bo4HulV75HCPXexQ"/>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">سارة العبدالله</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">مديرة المشتريات الاستراتيجية</p>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: 'FILL' 0;">mail</span>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: 'FILL' 0;">call</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Engagement History -->
+<section class="bg-surface-white rounded-lg p-8 card-shadow">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8 border-b border-outline-variant/20 pb-4">تاريخ التفاعل</h2>
+<div class="relative border-r-2 border-primary/20 pr-6 space-y-8">
+<!-- Event 1 -->
+<div class="relative">
+<div class="absolute -right-[31px] top-1 w-4 h-4 rounded-full bg-primary-container border-4 border-surface-white"></div>
+<div class="flex items-start gap-4">
+<div class="mt-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">handshake</span>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h3 class="font-title-md text-title-md text-on-surface">اجتماع استراتيجي</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">15 مايو 2024</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">تمت مناقشة تحديات التوسع الإقليمي. السيد أحمد أبدى اهتماماً كبيراً بحلولنا الم��صصة.</p>
+</div>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="relative">
+<div class="absolute -right-[31px] top-1 w-4 h-4 rounded-full bg-surface-container-high border-4 border-surface-white"></div>
+<div class="flex items-start gap-4">
+<div class="mt-1 text-outline">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">mail</span>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h3 class="font-title-md text-title-md text-on-surface">إرسال مقترح مبدئي</h3>
+<span class="font-label-caps text-[10px] text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">02 مايو 2024</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">تم إرسال ملخص تنفيذي بناءً على المكالمة الاستكشافية الأولى.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar Column (4 cols) -->
+<div class="lg:col-span-4 space-y-gutter-grid">
+<!-- Prospecting Score Widget -->
+<div class="bg-surface-white rounded-lg p-6 card-shadow flex flex-col items-center text-center">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">مؤشر الجاهزية</h3>
+<div class="relative w-32 h-32 flex items-center justify-center mb-4">
+<!-- Fake Dial -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-primary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="85, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-display-lg text-display-lg text-primary">85</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">فرصة عالية التحويل. التوقيت مثالي للتدخل.</p>
+</div>
+<!-- Market Sentiment -->
+<div class="bg-surface-white rounded-lg p-6 card-shadow">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">المزاج العام للسوق</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-sm text-on-surface">الاستقرار المالي</span>
+<span class="font-body-sm text-primary">قوي</span>
+</div>
+<div class="w-full bg-surface-container-high h-1 rounded-full">
+<div class="bg-primary-container h-1 rounded-full" style="width: 90%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="font-body-sm text-on-surface">النمو التكنولوجي</span>
+<span class="font-body-sm text-primary">متسارع</span>
+</div>
+<div class="w-full bg-surface-container-high h-1 rounded-full">
+<div class="bg-primary-container h-1 rounded-full" style="width: 75%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Metadata Info -->
+<div class="bg-surface-white rounded-lg p-6 card-shadow">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 border-b border-outline-variant/20 pb-2">معلومات أساسية</h3>
+<ul class="space-y-3 font-body-sm text-on-surface">
+<li class="flex justify-between">
+<span class="text-on-surface-variant">تاريخ التأسيس:</span>
+<span>2012</span>
+</li>
+<li class="flex justify-between">
+<span class="text-on-surface-variant">حجم الشركة:</span>
+<span>500-1000 موظف</span>
+</li>
+<li class="flex justify-between">
+<span class="text-on-surface-variant">الإيرادات التقديرية:</span>
+<span>$50M+</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+</body></html>

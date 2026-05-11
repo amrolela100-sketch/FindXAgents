@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Settings, Zap, Bot, Kanban, LogOut, Building2, Shield, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Settings, Zap, Bot, Kanban, LogOut, Building2, Shield, ChevronDown, Layers } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
 import { useWorkspace } from "../lib/workspace-context";
 import { useLang } from "../lib/lang-context";
@@ -18,6 +18,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
     { href: "/agents", label: t("agents"), icon: Bot },
     { href: "/pipeline", label: t("pipeline"), icon: Kanban },
     { href: "/workspaces", label: t("workspaces"), icon: Building2 },
+    { href: "/designs", label: "Designs", icon: Layers },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
 

@@ -1,0 +1,79 @@
+[
+  {
+    "id": "d4e264bb5a2e47a79f95848b281284a3",
+    "title": "Intelligence Dashboard",
+    "safeName": "intelligence-dashboard",
+    "htmlFile": "stitch-screens/intelligence-dashboard.html",
+    "imgFile": "stitch-screens/intelligence-dashboard.png"
+  },
+  {
+    "id": "e071c64760c74ad5ba66f97c16412d2d",
+    "title": "Intelligence Dashboard",
+    "safeName": "intelligence-dashboard",
+    "htmlFile": "stitch-screens/intelligence-dashboard.html",
+    "imgFile": "stitch-screens/intelligence-dashboard.png"
+  },
+  {
+    "id": "4d129950ed1b4bf6bfbef489b42a3d09",
+    "title": "FindX - Welcome to Warm Intelligence",
+    "safeName": "findx---welcome-to-warm-intelligence",
+    "htmlFile": "stitch-screens/findx---welcome-to-warm-intelligence.html",
+    "imgFile": "stitch-screens/findx---welcome-to-warm-intelligence.png"
+  },
+  {
+    "id": "6c9a695739844f1c8dc7eb9dfdb45806",
+    "title": "Client Profile - Aura Networks",
+    "safeName": "client-profile---aura-networks",
+    "htmlFile": "stitch-screens/client-profile---aura-networks.html",
+    "imgFile": "stitch-screens/client-profile---aura-networks.png"
+  },
+  {
+    "id": "33f48bb79f80448e9421687452c3c80b",
+    "title": "Lead Insights",
+    "safeName": "lead-insights",
+    "htmlFile": "stitch-screens/lead-insights.html",
+    "imgFile": "stitch-screens/lead-insights.png"
+  },
+  {
+    "id": "2402f49e9453415f8b9324dd7d29342b",
+    "title": "Client Profile - Aura Networks",
+    "safeName": "client-profile---aura-networks",
+    "htmlFile": "stitch-screens/client-profile---aura-networks.html",
+    "imgFile": "stitch-screens/client-profile---aura-networks.png"
+  },
+  {
+    "id": "819d382e6a59437fa352842e9c25c746",
+    "title": "Business Prospects",
+    "safeName": "business-prospects",
+    "htmlFile": "stitch-screens/business-prospects.html",
+    "imgFile": "stitch-screens/business-prospects.png"
+  },
+  {
+    "id": "b207cef2029a4817a40ff5a32fed5e85",
+    "title": "Sales Pipelines",
+    "safeName": "sales-pipelines",
+    "htmlFile": "stitch-screens/sales-pipelines.html",
+    "imgFile": "stitch-screens/sales-pipelines.png"
+  },
+  {
+    "id": "ebd1e4ae10d640e79a4cbd94741a2b6a",
+    "title": "FindX Landing Page - Dark Mode",
+    "safeName": "findx-landing-page---dark-mode",
+    "htmlFile": "stitch-screens/findx-landing-page---dark-mode.html",
+    "imgFile": "stitch-screens/findx-landing-page---dark-mode.png"
+  },
+  {
+    "id": "ed583ff6a6244f94a99c4ae13fcfa6e5",
+    "title": "Sales Pipelines",
+    "safeName": "sales-pipelines",
+    "htmlFile": "stitch-screens/sales-pipelines.html",
+    "imgFile": "stitch-screens/sales-pipelines.png"
+  },
+  {
+    "id": "665ca830500645ccb4c59c5adbe17a04",
+    "title": "Business Prospects",
+    "safeName": "business-prospects",
+    "htmlFile": "stitch-screens/business-prospects.html",
+    "imgFile": "stitch-screens/business-prospects.png"
+  }
+]

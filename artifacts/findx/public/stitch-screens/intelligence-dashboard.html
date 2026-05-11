@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FindX - Warm Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-variant": "#38342f",
+                "inverse-primary": "#745a27",
+                "tertiary": "#b5c6f0",
+                "on-background": "#e9e1da",
+                "on-error-container": "#ffdad6",
+                "on-secondary": "#342f2d",
+                "surface-container-low": "#1e1b17",
+                "surface-bright": "#3c3934",
+                "on-surface-variant": "#d0c5b5",
+                "inverse-surface": "#e9e1da",
+                "on-error": "#690005",
+                "primary-fixed-dim": "#e4c285",
+                "on-secondary-fixed-variant": "#4b4643",
+                "secondary": "#cec5c1",
+                "background": "#16130f",
+                "error": "#ffb4ab",
+                "on-primary": "#412d00",
+                "primary-fixed": "#ffdea6",
+                "tertiary-container": "#627398",
+                "on-tertiary-fixed": "#061b3b",
+                "error-container": "#93000a",
+                "on-tertiary-container": "#faf9ff",
+                "primary": "#e4c285",
+                "on-primary-container": "#fff9f6",
+                "secondary-container": "#4e4845",
+                "surface-dim": "#16130f",
+                "on-tertiary-fixed-variant": "#354769",
+                "secondary-fixed": "#eae1dd",
+                "surface-container": "#221f1b",
+                "surface": "#16130f",
+                "surface-container-lowest": "#100e0a",
+                "outline-variant": "#4d463a",
+                "on-secondary-container": "#bfb7b3",
+                "primary-container": "#8b6f3a",
+                "surface-container-high": "#2d2925",
+                "on-primary-fixed-variant": "#5a4312",
+                "tertiary-fixed": "#d8e2ff",
+                "on-primary-fixed": "#271900",
+                "on-secondary-fixed": "#1f1b19",
+                "inverse-on-surface": "#33302b",
+                "on-tertiary": "#1e3051",
+                "on-surface": "#e9e1da",
+                "surface-container-highest": "#38342f",
+                "secondary-fixed-dim": "#cec5c1",
+                "outline": "#998f81",
+                "tertiary-fixed-dim": "#b5c6f0",
+                "surface-tint": "#e4c285"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "gutter": "24px",
+                "margin-desktop": "64px",
+                "container-max": "1280px",
+                "unit": "4px",
+                "margin-mobile": "20px"
+        },
+        "fontFamily": {
+                "label-caps": [
+                        "DM Sans"
+                ],
+                "headline-md": [
+                        "Playfair Display"
+                ],
+                "display-lg": [
+                        "Playfair Display"
+                ],
+                "body-md": [
+                        "DM Sans"
+                ],
+                "display-lg-mobile": [
+                        "Playfair Display"
+                ],
+                "headline-sm": [
+                        "Playfair Display"
+                ],
+                "body-lg": [
+                        "DM Sans"
+                ]
+        },
+        "fontSize": {
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-md": [
+                        "32px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "36px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": [
+                        "24px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        /* Minimal custom CSS for things Tailwind config can't handle purely via classes without clutter */
+        .ambient-shadow {
+            box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
+        }
+        .ambient-shadow-hover:hover {
+            box-shadow: 0 15px 50px rgba(139, 111, 58, 0.08);
+            transform: translateY(-2px);
+        }
+        .typewriter-cursor {
+            border-right: 2px solid #8B6F3A;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+    </style>
+</head>
+<body class="bg-surface dark:bg-surface text-on-surface dark:text-on-surface font-body-md text-body-md flex h-screen overflow-hidden antialiased">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 rtl:right-0 rtl:left-auto bg-surface-container dark:bg-surface-container-low border-r rtl:border-l rtl:border-r-0 border-outline-variant dark:border-surface-variant py-gutter px-4 shadow-sm dark:shadow-none z-20">
+<div class="mb-8">
+<h1 class="font-display-lg text-display-lg-mobile text-primary dark:text-primary-fixed">FindX Intelligence</h1>
+<p class="font-body-md text-body-md text-on-surface-variant dark:text-on-secondary-container mt-1">Premium Search</p>
+</div>
+<div class="mb-8">
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 font-label-caps text-label-caps tracking-widest uppercase shadow-sm">
+                Upgrade to Gold
+            </button>
+</div>
+<div class="flex-1 flex flex-col gap-2 mt-4">
+<a class="bg-primary-container dark:bg-primary-fixed-dim text-on-primary-container dark:text-on-primary-fixed-variant rounded-xl font-bold flex items-center gap-3 py-3 px-4 transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-body-md text-body-md">Home</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-body-md text-body-md">Search</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-md text-body-md">History</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">bookmark</span>
+<span class="font-body-md text-body-md">Bookmarks</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-2">
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Help</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-secondary-container flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-surface-variant dark:hover:bg-surface-container-high transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md text-body-md">Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen relative bg-surface dark:bg-surface">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 z-50 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-surface-variant sticky top-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center w-64 relative group">
+<span class="material-symbols-outlined absolute left-0 text-on-surface-variant dark:text-on-surface-variant group-focus-within:text-primary dark:group-focus-within:text-primary-fixed transition-colors">search</span>
+<input class="w-full bg-transparent border-none border-b border-outline-variant/50 focus:ring-0 focus:border-primary dark:focus:border-primary-fixed pl-8 py-2 font-body-md text-body-md text-on-surface dark:text-on-surface placeholder-on-surface-variant dark:placeholder-on-surface-variant transition-colors" placeholder="Query intelligence network..." type="text"/>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-8 h-full">
+<a class="text-primary dark:text-primary-fixed font-bold border-b-2 border-primary dark:border-primary-fixed h-full flex items-center font-label-caps text-label-caps hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 active:opacity-80 active:scale-95" href="#">Dashboard</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant h-full flex items-center font-label-caps text-label-caps hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 active:opacity-80 active:scale-95" href="#">Analytics</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant h-full flex items-center font-label-caps text-label-caps hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 active:opacity-80 active:scale-95" href="#">Reports</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 flex items-center active:opacity-80 active:scale-95">
+<span class="material-symbols-outlined">language</span>
+</button>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 flex items-center active:opacity-80 active:scale-95">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 flex items-center active:opacity-80 active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container dark:bg-primary-fixed-dim text-on-primary-container dark:text-on-primary-fixed-variant flex items-center justify-center font-label-caps text-label-caps">
+                    JS
+                </div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter">
+<header class="mb-10 max-w-4xl">
+<h2 class="font-display-lg text-display-lg text-on-surface mb-2">Intelligence</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">A curated synthesis of market signals, relationship vectors, and high-probability conversion pathways.</p>
+</header>
+<!-- Bento Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Score Card -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-8 ambient-shadow ambient-shadow-hover transition-all duration-500 flex flex-col items-center justify-center border border-outline-variant/20 relative overflow-hidden">
+<h3 class="font-label-caps text-label-caps tracking-widest uppercase text-on-surface-variant w-full text-left absolute top-8 left-8">Prospecting Score</h3>
+<div class="relative w-48 h-48 mt-8 flex items-center justify-center">
+<!-- Simulated Gold Dial via layered borders -->
+<div class="absolute inset-0 rounded-full border-2 border-surface-container-highest"></div>
+<div class="absolute inset-0 rounded-full border-[6px] border-transparent border-t-primary-container border-r-primary-container rotate-45"></div>
+<div class="text-center z-10">
+<span class="font-display-lg text-display-lg text-primary block leading-none mb-1">87</span>
+<span class="font-label-caps text-label-caps text-primary-container tracking-widest uppercase">Apex</span>
+</div>
+</div>
+</div>
+<!-- Pipeline Status -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-8 ambient-shadow ambient-shadow-hover transition-all duration-500 border border-outline-variant/20 flex flex-col justify-between">
+<h3 class="font-label-caps text-label-caps tracking-widest uppercase text-on-surface-variant mb-4">Active Pipelines</h3>
+<div>
+<span class="font-display-lg text-display-lg text-on-surface block">14</span>
+<span class="font-body-md text-body-md text-primary-container">+2 organically warming</span>
+</div>
+<!-- Abstract Bar Chart -->
+<div class="mt-8 flex items-end gap-3 h-24">
+<div class="w-1/4 bg-surface-container-highest h-1/4 rounded-t-sm"></div>
+<div class="w-1/4 bg-surface-container-highest h-2/4 rounded-t-sm"></div>
+<div class="w-1/4 bg-surface-container-highest h-3/4 rounded-t-sm"></div>
+<div class="w-1/4 bg-primary-container h-full rounded-t-sm"></div>
+</div>
+</div>
+<!-- Contextual Image Card -->
+<div class="col-span-12 md:col-span-4 rounded-xl overflow-hidden ambient-shadow ambient-shadow-hover transition-all duration-500 border border-outline-variant/20 relative group">
+<img alt="Contextual Brand Image" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" data-alt="A sophisticated macro photograph of a vintage gold-nib fountain pen resting on a stack of thick, cream-colored, textured parchment paper. The lighting is soft, warm, and natural, creating gentle shadows that highlight the tactile quality of the paper and the metallic gleam of the gold pen. The overall aesthetic is highly premium, minimalist, and analog, perfectly aligning with a 'warm intelligence' and crafted precision brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg4yLkkjNm61V5H3AsyPyz4omGxM4LxqxnJIKZx7g-Tm8ytlJItIICrLxA1bciPlNw9aXK2Q18foZzDUbZjR_MsPOEvBL6aFB2_aM5rOm8tY8D68_kg0VrNsOGIR8wIZX4d5RxYQRYrlgSwIDpW98uhG4-JPghqC8yc7pZSaCDkxToO2lihKifA_E9KclEYKxXaWy2A_g3mot88c_zHkNU_r90RuGERGg3_jf7DWcnx_-9kpxDSynYbj3lnIsHhElwl9Oj_WCIxbe9"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex flex-col justify-end p-6">
+<span class="font-label-caps text-label-caps text-on-surface tracking-widest uppercase mb-1">Methodology</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">The Art of the Warm Intro</h4>
+</div>
+</div>
+<!-- Insights Feed -->
+<div class="col-span-12 bg-surface-container-lowest rounded-xl p-8 ambient-shadow border border-outline-variant/20 mt-4">
+<div class="flex justify-between items-center mb-8 pb-4 border-b border-surface-container">
+<h3 class="font-headline-md text-headline-md text-on-surface">Curated Signals</h3>
+<button class="font-label-caps text-label-caps tracking-widest uppercase text-primary hover:text-surface-tint transition-colors flex items-center gap-1">
+                            View Archive <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<div class="flex flex-col gap-8">
+<!-- Insight 1 -->
+<div class="flex gap-6 group cursor-pointer">
+<div class="w-12 h-12 rounded bg-surface shrink-0 flex items-center justify-center text-primary-container border border-outline-variant/20 group-hover:bg-primary-container group-hover:text-surface-container-lowest transition-colors duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-caps text-label-caps tracking-widest uppercase text-primary-container">Intent Spike • Meridian Capital</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">2 hrs ago</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Executive movement detected alongside infrastructure inquiries.</h4>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl leading-relaxed typewriter-cursor inline-block">System analysis indicates a high probability of impending vendor evaluation. Recommend initiating contact via Warm Intro path established last quarter.</p>
+</div>
+</div>
+<!-- Divider -->
+<div class="h-px w-full bg-surface-container max-w-3xl ml-18"></div>
+<!-- Insight 2 -->
+<div class="flex gap-6 group cursor-pointer">
+<div class="w-12 h-12 rounded bg-surface shrink-0 flex items-center justify-center text-primary-container border border-outline-variant/20 group-hover:bg-primary-container group-hover:text-surface-container-lowest transition-colors duration-300">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-caps text-label-caps tracking-widest uppercase text-primary-container">Vector Shift • Global Industries</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">5 hrs ago</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Q3 Earnings call highlighted supply chain inefficiencies.</h4>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl leading-relaxed">Direct alignment with FindX core value proposition. Narrative crafted and queued for your review prior to outreach.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

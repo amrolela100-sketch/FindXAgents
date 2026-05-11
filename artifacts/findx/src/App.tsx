@@ -12,6 +12,7 @@ import WorkspacePage from "./pages/WorkspacePage";
 import AdminPage from "./pages/AdminPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import StitchDesignsPage from "./pages/StitchDesignsPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { useLang } from "./lib/lang-context";
@@ -99,6 +100,7 @@ function AuthGuard() {
               <Route path="/workspaces" component={WorkspacePage} />
               <Route path="/owner" component={OwnerDashboardPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/designs" component={StitchDesignsPage} />
               {isAdmin && <Route path="/admin" component={AdminPage} />}
               <Route>
                 <div className="p-8 text-center">

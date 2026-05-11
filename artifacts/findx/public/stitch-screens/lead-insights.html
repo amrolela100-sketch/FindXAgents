@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FindX - Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#1e1b17",
+                        "secondary-container": "#e1dfdb",
+                        "on-surface": "#1e1b17",
+                        "surface-bright": "#fff8f3",
+                        "error": "#ba1a1a",
+                        "tertiary": "#495a7e",
+                        "inverse-surface": "#33302b",
+                        "on-tertiary-container": "#faf9ff",
+                        "primary-container": "#8b6f3a",
+                        "on-tertiary-fixed": "#061b3b",
+                        "background": "#fff8f3",
+                        "error-container": "#ffdad6",
+                        "text-muted": "#5F584F",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#d0c5b5",
+                        "on-secondary": "#ffffff",
+                        "primary": "#705724",
+                        "tertiary-container": "#627398",
+                        "surface-variant": "#e9e1da",
+                        "text-ink": "#1A1A1A",
+                        "secondary": "#5e5e5b",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#745a27",
+                        "surface-container-high": "#efe7e0",
+                        "primary-fixed": "#ffdea6",
+                        "primary-fixed-dim": "#e4c285",
+                        "surface-container": "#f4ede5",
+                        "surface": "#fff8f3",
+                        "on-secondary-container": "#63635f",
+                        "surface-container-highest": "#e9e1da",
+                        "surface-dim": "#e0d9d2",
+                        "tertiary-fixed": "#d8e2ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#e4e2dd",
+                        "on-surface-variant": "#4d463a",
+                        "accent-gold": "#8B6F3A",
+                        "base-cream": "#F9F7F2",
+                        "on-secondary-fixed-variant": "#474744",
+                        "tertiary-fixed-dim": "#b5c6f0",
+                        "on-primary-fixed": "#271900",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "outline": "#7f7668",
+                        "inverse-on-surface": "#f7efe8",
+                        "on-tertiary-fixed-variant": "#354769",
+                        "inverse-primary": "#e4c285",
+                        "on-primary-container": "#fff9f6",
+                        "surface-container-low": "#faf2eb",
+                        "surface-white": "#FFFFFF",
+                        "secondary-fixed-dim": "#c8c6c2",
+                        "on-secondary-fixed": "#1b1c19",
+                        "on-primary-fixed-variant": "#5a4312"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-page": "4rem",
+                        "gutter-grid": "2rem",
+                        "stack-md": "1.5rem",
+                        "stack-lg": "3rem",
+                        "stack-sm": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["DM Sans"],
+                        "label-caps": ["DM Sans"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "title-md": ["DM Sans"],
+                        "display-lg": ["Playfair Display"],
+                        "headline-lg": ["Playfair Display"],
+                        "body-lg": ["DM Sans"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "title-md": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #F9F7F2; /* base-cream fallback */
+            color: #1A1A1A; /* text-ink fallback */
+        }
+        .card-ambient-shadow {
+            box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
+        }
+        .card-hover-effect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 45px rgba(139, 111, 58, 0.08);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        /* Simulated typewriter effect for visual styling only, no JS animation */
+        .typewriter-sim {
+            border-right: 2px solid #8B6F3A;
+            padding-right: 4px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="bg-base-cream font-body-sm text-text-ink min-h-screen flex selection:bg-accent-gold/20 selection:text-text-ink">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col bg-surface-container-low border-r border-outline-variant/20 docked left-0 h-screen w-64 fixed left-0 top-0 h-full flex flex-col py-stack-lg z-50">
+<div class="px-6 mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">FindX</h1>
+<p class="font-body-sm text-body-sm text-text-muted mt-1">Warm Intelligence</p>
+</div>
+<div class="px-4 mb-stack-lg">
+<button class="w-full bg-accent-gold hover:bg-surface-tint text-on-primary font-title-md text-title-md py-3 rounded transition-colors duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-body-lg">add</span>
+                New Prospect
+            </button>
+</div>
+<ul class="flex-1 space-y-1">
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">storm</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Intelligence</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Prospects</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Pipelines</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Archives</span>
+</a>
+</li>
+<li>
+<a class="text-primary font-bold flex items-center gap-3 py-3 px-4 bg-surface-bright translate-x-1 transition-transform duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Insights</span>
+</a>
+</li>
+</ul>
+<ul class="mt-auto space-y-1 border-t border-outline-variant/20 pt-stack-md">
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Support</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center gap-3 py-3 px-4 hover:bg-surface-bright transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-64 w-full">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-page py-4 bg-surface docked full-width top-0 z-40">
+<div class="flex items-center md:hidden">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">FindX</h1>
+</div>
+<div class="hidden md:flex items-center flex-1 max-w-md">
+<!-- Search bar space logic -->
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-300 flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-300 flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant/30 ml-2">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A subtle, high-quality corporate headshot of a professional individual against a neutral beige background. The lighting is soft and studio-quality, emphasizing approachability and warmth. The overall color palette perfectly aligns with a high-end, ivory and gold minimal UI aesthetic, avoiding harsh contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYHqzfUHG7ATT197LONp5-Et_yt_5Eagzvr4QD8c2V6Vs-HmbrVa0TlVp47FWUXCZdJR8QqtTiHuvdk15-O6IUpyg8CkXNhdMOKRTJCx0DlU1LD16OALKp5GWnolIeFUQy2dWUTWy6ExCN_1mD05bArH_LpWjqVqjeOYsxiWp_H8kpia6W2hBwW5wz0YHdaJ4-fk9PkE20ksHP6j9N0-DelLmv_AykuaAA51wJKh6e3kY7JsC6k_t_2LpZJK5Za95rGxqFTRJlQLP0"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 px-4 md:px-margin-page py-stack-lg max-w-[1400px] mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-stack-lg border-b border-outline-variant/30 pb-stack-md flex justify-between items-end">
+<div>
+<span class="font-label-caps text-label-caps text-accent-gold mb-2 block">Deep Dive Analysis</span>
+<h2 class="font-display-lg text-display-lg text-text-ink">Aurelius Dynamics</h2>
+<p class="font-title-md text-title-md text-text-muted mt-2">Enterprise SaaS • Series B • Evaluation Phase</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-outline text-text-ink font-label-caps text-label-caps tracking-widest uppercase hover:bg-surface-variant transition-colors duration-300 rounded">Export PDF</button>
+<button class="px-6 py-2 bg-accent-gold text-surface-white font-label-caps text-label-caps tracking-widest uppercase hover:bg-surface-tint transition-colors duration-300 rounded shadow-sm">Initiate Contact</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-grid">
+<!-- Main AI Analysis Column -->
+<div class="lg:col-span-8 space-y-gutter-grid">
+<!-- Synthesized Intelligence Card -->
+<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-accent-gold">storm</span>
+<h3 class="font-headline-lg text-headline-lg text-text-ink">Synthesized Intelligence</h3>
+</div>
+<div class="prose max-w-none">
+<p class="font-body-lg text-body-lg text-text-muted leading-relaxed">
+<span class="font-bold text-text-ink">Current Posture:</span> Aurelius Dynamics recently secured $42M in Series B funding, signaling aggressive expansion into the APAC region. Their current technology stack heavily relies on legacy infrastructure, presenting a significant friction point for scaling operations.
+                            </p>
+<p class="font-body-lg text-body-lg text-text-muted leading-relaxed mt-4">
+<span class="font-bold text-text-ink">Strategic Vulnerability:</span> Recent leadership changes in the C-suite (notably the appointment of a new CTO from a competitive firm) indicate a shift towards modernizing their data architecture. The window for introducing our integration suite is currently optimal.
+                            </p>
+<p class="font-body-lg text-body-lg text-accent-gold leading-relaxed mt-4 bg-surface-container-low p-4 rounded border-l-4 border-accent-gold typewriter-sim">
+                                Likelihood of conversion assessed at 84% given historical buying patterns of similar firms post-funding round...
+                            </p>
+</div>
+</div>
+<!-- Market Sentiment & Action Plan Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-grid">
+<!-- Market Sentiment -->
+<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-title-md text-title-md text-text-ink font-bold">Market Sentiment</h3>
+<span class="font-label-caps text-label-caps text-accent-gold bg-accent-gold/10 px-2 py-1 rounded">Bullish</span>
+</div>
+<div class="flex-1 flex flex-col justify-center items-center py-6">
+<div class="relative w-32 h-32 rounded-full border-[12px] border-surface-container-highest flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-[12px] border-accent-gold border-t-transparent border-l-transparent rotate-45"></div>
+<span class="font-headline-lg text-headline-lg text-text-ink">78<span class="text-title-md text-text-muted">%</span></span>
+</div>
+<p class="font-body-sm text-body-sm text-text-muted mt-4 text-center">Positive coverage in Q3 tech press</p>
+</div>
+</div>
+<!-- Action Plan -->
+<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">
+<div class="flex items-center gap-2 mb-6 border-b border-outline-variant/30 pb-2">
+<span class="material-symbols-outlined text-accent-gold text-body-lg">flag</span>
+<h3 class="font-title-md text-title-md text-text-ink font-bold">Action Plan</h3>
+</div>
+<ul class="space-y-4">
+<li class="flex gap-3">
+<div class="w-6 h-6 rounded-full border border-accent-gold flex-shrink-0 flex items-center justify-center bg-accent-gold text-surface-white">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm font-bold text-text-ink">Initial Mapping</p>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">Completed Oct 12</p>
+</div>
+</li>
+<li class="flex gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-accent-gold flex-shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm font-bold text-text-ink">Executive Briefing</p>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">Pending C-Suite alignment</p>
+</div>
+</li>
+<li class="flex gap-3">
+<div class="w-6 h-6 rounded-full border border-outline-variant flex-shrink-0"></div>
+<div>
+<p class="font-body-sm text-body-sm text-text-muted">Technical Discovery</p>
+<p class="font-label-caps text-label-caps text-outline mt-1">Scheduled Nov 05</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Secondary Column -->
+<div class="lg:col-span-4 space-y-gutter-grid">
+<!-- Strategic Fit -->
+<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">
+<div class="mb-4">
+<h3 class="font-title-md text-title-md text-text-ink font-bold">Strategic Fit</h3>
+<p class="font-body-sm text-body-sm text-text-muted mt-1">Alignment with core offering</p>
+</div>
+<div class="space-y-4 mt-6">
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-1">
+<span class="text-text-ink">Technological Synergy</span>
+<span class="text-accent-gold">High</span>
+</div>
+<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">
+<div class="h-full bg-accent-gold w-[90%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-1">
+<span class="text-text-ink">Budget Readiness</span>
+<span class="text-primary-fixed-dim">Moderate</span>
+</div>
+<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">
+<div class="h-full bg-primary-fixed-dim w-[65%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-1">
+<span class="text-text-ink">Timeline Urgency</span>
+<span class="text-text-muted">Low</span>
+</div>
+<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">
+<div class="h-full bg-outline-variant w-[30%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Key Stakeholders List -->
+<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow">
+<h3 class="font-title-md text-title-md text-text-ink font-bold mb-4">Key Stakeholders</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3 p-3 bg-surface-container-low rounded border border-outline-variant/20 hover:border-accent-gold/50 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">
+<img alt="Stakeholder Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged executive. The style is editorial and clean, featuring soft, diffused lighting against an ivory backdrop. The tones are warm and sophisticated, aligning perfectly with a premium, minimalist corporate identity and ivory-gold palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALbxZi6H-OWPB8XesVZoAnb4f7aDgctjX4Wob8VzRqP4TceJ5jfXig417jLnXvzdn8VxljS6cTmiBjW0mUeMdV8mWroaadPUdEpzONfvB6LlilYO2heRwYbe7tLAxmaOsg3IBz-60kbwZHgU4NVIzmHJiIj8MImGAJlS1S_XoUtYA9-uMSz6r7vgvEmWHz3gKLC8Nuus7t0X9LAvT95ozLp93DTcGDmteOE3dTAfaMMf3vh79QBu2VmaliK0aP9UVLbVh9HuPdBQ7b"/>
+</div>
+<div>
+<p class="font-body-sm text-body-sm font-bold text-text-ink leading-tight">Sarah Jenkins</p>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">Chief Technology Officer</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 hover:bg-surface-container-low rounded transition-colors cursor-pointer border border-transparent hover:border-outline-variant/20">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">
+<img alt="Stakeholder Avatar" class="w-full h-full object-cover" data-alt="A polished corporate portrait of a young executive. The aesthetic is modern and minimalist, with a creamy white background and gentle, sophisticated lighting. The image evokes a sense of quiet authority and craftsmanship, fitting seamlessly into an ivory and gold high-end UI design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeaMux_MaskbFqEtfTEc8XkPxxsrPufUKKs9YuSoXnztup3gI2_SdsFSj-mpU9VuQJbumIhbSM_zAccFEAluKCHMuzZ6-WqB0AiFraSC0P6oMLhlroUd3mW-Qyv0XP234Va4zhHCvNv53x2Og4ZXUzYKdecZ8kqGQG30kDeZ1qBVAg__cRYgAf63m2p2ZuavVZfi56kZ2TSRLXcWv8Pv5DRcKlcsFC3kx6KAyu016uOtoadALFia2Wz0ka6Vn72FOqUPuCgSwAd_sf"/>
+</div>
+<div>
+<p class="font-body-sm text-body-sm font-bold text-text-ink leading-tight">Marcus Vance</p>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">VP of Operations</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
