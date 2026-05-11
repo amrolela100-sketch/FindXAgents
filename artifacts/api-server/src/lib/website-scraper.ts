@@ -263,6 +263,89 @@ function detectLanguage(html: string): string | undefined {
   return match?.[1]?.toLowerCase().split("-")[0];
 }
 
+// ── SSRF Protection ──────────────────────────────────────────────────────────
+
+/**
+ * Returns true if an IPv4/IPv6 address is private, loopback, link-local,
+ * or any other non-routable range that must never be reached from the server.
+ *
+ * Blocked ranges:
+ *   IPv4: 127.x.x.x, 10.x.x.x, 172.16-31.x.x, 192.168.x.x,
+ *         169.254.x.x (link-local / AWS metadata), 0.0.0.0/8,
+ *         100.64.x.x (CGNAT), 198.18-19.x.x (benchmarking),
+ *         240.x.x.x (reserved), 255.255.255.255
+ *   IPv6: ::1, fc00::/7 (ULA), fe80::/10 (link-local), ::ffff:... (v4-mapped)
+ */
+function isPrivateOrReservedIP(address: string): boolean {
+  // IPv6 checks
+  if (address.includes(":")) {
+    const lower = address.toLowerCase();
+    if (lower === "::1") return true;                        // loopback
+    if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // ULA fc00::/7
+    if (lower.startsWith("fe80")) return true;              // link-local
+    if (lower.startsWith("::ffff:")) return true;           // IPv4-mapped
+    if (lower === "::" || lower === "0:0:0:0:0:0:0:0") return true;
+    return false;
+  }
+
+  // IPv4 checks
+  const parts = address.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return true;
+  const [a, b] = parts;
+
+  if (a === 0) return true;                    // 0.0.0.0/8
+  if (a === 10) return true;                   // 10.0.0.0/8
+  if (a === 127) return true;                  // 127.0.0.0/8 loopback
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+  if (a === 169 && b === 254) return true;     // 169.254.0.0/16 link-local / AWS metadata
+  if (a === 172 && b >= 16 && b <= 31) return true;  // 172.16.0.0/12
+  if (a === 192 && b === 168) return true;     // 192.168.0.0/16
+  if (a === 192 && b === 0 && parts[2] === 2) return true; // TEST-NET-1
+  if (a === 198 && (b === 18 || b === 19)) return true;    // 198.18.0.0/15 benchmarking
+  if (a === 203 && b === 0 && parts[2] === 113) return true; // TEST-NET-3
+  if (a >= 224) return true;                   // multicast + reserved + broadcast
+
+  return false;
+}
+
+/**
+ * SSRF guard: resolves the hostname and rejects any private/reserved IP.
+ * Throws an error if the URL points to an internal resource.
+ */
+async function assertPublicHost(urlString: string): Promise<void> {
+  let hostname: string;
+  try {
+    hostname = new URL(urlString).hostname;
+  } catch {
+    throw new Error("SSRF_BLOCKED: Invalid URL");
+  }
+
+  // Block bare IP addresses that are obviously private before DNS
+  const ipv4Pattern = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  const ipv6Pattern = /^\[?[0-9a-fA-F:]+\]?$/;
+  if (ipv4Pattern.test(hostname) || ipv6Pattern.test(hostname.replace(/^\[|\]$/g, ""))) {
+    const bare = hostname.replace(/^\[|\]$/g, "");
+    if (isPrivateOrReservedIP(bare)) {
+      throw new Error(`SSRF_BLOCKED: Direct IP ${hostname} is a private/reserved address`);
+    }
+  }
+
+  // DNS resolution check — prevents DNS rebinding and hostname aliasing to private IPs
+  try {
+    const { lookup } = await import("dns/promises");
+    const { address } = await lookup(hostname, { verbatim: false });
+    if (isPrivateOrReservedIP(address)) {
+      throw new Error(`SSRF_BLOCKED: ${hostname} resolves to private IP ${address}`);
+    }
+  } catch (e: any) {
+    if (e.message?.startsWith("SSRF_BLOCKED")) throw e;
+    // DNS lookup failure (NXDOMAIN, timeout, etc.) — treat as unreachable, not a security error
+    throw new Error(`DNS_FAILED: ${e.message?.slice(0, 80)}`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Scrape a website and return grounded data.
  * Uses native fetch with a short timeout — no puppeteer needed.
@@ -270,6 +353,27 @@ function detectLanguage(html: string): string | undefined {
 export async function scrapeWebsite(url: string, timeoutMs = 8000): Promise<ScrapedWebsite> {
   const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
   const isHttps = normalizedUrl.startsWith("https://");
+
+  // ── SSRF guard — must run before any network call ─────────────────────────
+  try {
+    await assertPublicHost(normalizedUrl);
+  } catch (e: any) {
+    return {
+      url: normalizedUrl,
+      reachable: false,
+      isHttps,
+      emailAddresses: [],
+      phoneNumbers: [],
+      socialLinks: {},
+      hasBlog: false,
+      hasContactPage: false,
+      hasPrivacyPolicy: false,
+      hasSocialMedia: false,
+      error: e.message?.startsWith("SSRF_BLOCKED")
+        ? "Blocked: internal/private host"
+        : e.message?.slice(0, 100),
+    };
+  }
 
   const base: ScrapedWebsite = {
     url: normalizedUrl,

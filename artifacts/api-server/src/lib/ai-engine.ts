@@ -4,6 +4,87 @@ import { aiProviders } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { type ScrapedWebsite, type ScrapyAuditResult, buildExtendedContext, calculateGroundedScore } from "./website-scraper.js";
 
+// ── Prompt Injection Sanitizer ───────────────────────────────────────────────
+
+/**
+ * Sanitize untrusted text before embedding it into an AI prompt.
+ *
+ * Strips patterns commonly used in prompt injection attacks:
+ *  - "ignore", "forget", "disregard" followed by "above/previous/all/instructions"
+ *  - "system:", "assistant:", "user:" role hijacking prefixes
+ *  - Special tokens like <|im_start|>, [INST], <<SYS>>, etc.
+ *  - Null bytes and other control characters
+ *  - Excessive newlines (collapse to max 2)
+ *
+ * This does NOT need to be perfect — the score is always enforced from
+ * grounded data. This protects summary/weaknesses/recommendations.
+ */
+function sanitizeForPrompt(value: string | null | undefined, maxLength = 300): string {
+  if (!value) return "";
+
+  let s = String(value)
+    // Remove null bytes and other dangerous control chars (keep \n \t)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    // Collapse excessive whitespace
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  // Remove special LLM tokens (GPT, Llama, Claude, Gemini variants)
+  s = s.replace(/<\|im_(start|end|sep)\|>/gi, "")
+       .replace(/\[INST\]|\[\/INST\]/gi, "")
+       .replace(/<<SYS>>|<\/SYS>/gi, "")
+       .replace(/<\|begin_of_text\|>|<\|end_of_text\|>/gi, "")
+       .replace(/\{%[-~]?\s*system\s*[-~]?%\}/gi, "");
+
+  // Remove role hijacking patterns
+  s = s.replace(/^\s*(system|assistant|user|human|ai)\s*:/gim, "[redacted]:");
+
+  // Remove prompt injection attempts
+  // e.g. "ignore all previous instructions", "forget everything above"
+  s = s.replace(
+    /\b(ignore|forget|disregard|override|bypass|skip)\b.{0,60}\b(above|previous|prior|all|every|instructions?|prompt|context|rules?|constraints?)\b/gi,
+    "[redacted]"
+  );
+  s = s.replace(
+    /\b(now\s+)?(act|pretend|behave|respond|answer|reply)\s+(as|like|you are|you're)\b/gi,
+    "[redacted]"
+  );
+  s = s.replace(/\bdo not (follow|obey|respect)\b.{0,40}\b(rules?|instructions?|guidelines?)\b/gi, "[redacted]");
+
+  // Truncate to max length
+  return s.slice(0, maxLength);
+}
+
+/**
+ * Sanitize a lead object's user-supplied fields before using them in prompts.
+ * Returns a new object — does not mutate the original.
+ */
+function sanitizeLead(lead: {
+  businessName: string;
+  city?: string;
+  address?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  tavilyData?: string | null;
+  [key: string]: any;
+}) {
+  return {
+    ...lead,
+    businessName: sanitizeForPrompt(lead.businessName, 120),
+    city:         sanitizeForPrompt(lead.city, 80),
+    address:      sanitizeForPrompt(lead.address, 150),
+    industry:     sanitizeForPrompt(lead.industry, 100),
+    website:      lead.website?.slice(0, 200) ?? null,  // URL — no injection risk, just truncate
+    phone:        sanitizeForPrompt(lead.phone, 30),
+    email:        sanitizeForPrompt(lead.email, 80),
+    tavilyData:   sanitizeForPrompt(lead.tavilyData, 500),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function getOpenRouterKey(): Promise<string> {
   try {
     const [cfg] = await db.select({ apiKey: aiProviders.apiKey, model: aiProviders.model })
@@ -85,6 +166,9 @@ export async function analyzeLeadWithGemini(
 ): Promise<AnalysisResult> {
   const client = await getClient();
 
+  // Sanitize all untrusted user-supplied fields before embedding in prompt
+  const safeLead = sanitizeLead(lead);
+
   // --- Build grounded score ---
   let groundedScore: number;
   let websiteContext: string;
@@ -92,12 +176,12 @@ export async function analyzeLeadWithGemini(
   if (scrapedData) {
     groundedScore = calculateGroundedScore(scrapedData);
     websiteContext = buildExtendedContext(scrapedData);
-  } else if (!lead.website) {
+  } else if (!safeLead.website) {
     groundedScore = 90; // No website at all = massive opportunity
     websiteContext = "Website: NONE — this business has no website at all.";
   } else {
     groundedScore = 70; // Has website but wasn't scraped
-    websiteContext = `Website: ${lead.website}\nNote: Website could not be scraped. Basic URL exists.`;
+    websiteContext = `Website: ${safeLead.website}\nNote: Website could not be scraped. Basic URL exists.`;
   }
 
   const prompt = `You are a B2B sales analyst for FindX, a global AI-powered prospecting platform.
@@ -105,14 +189,16 @@ Analyze this business lead for digital improvement potential.
 
 IMPORTANT: Base your analysis ONLY on the verified data below. Do NOT invent or assume facts not listed here.
 
-Business Details:
-- Name: ${lead.businessName}
-- City: ${lead.city !== "—" ? lead.city : "Unknown"}
-- Industry: ${lead.industry ?? "Unknown"}
+<<<LEAD_DATA>>>
+Name: ${safeLead.businessName}
+City: ${safeLead.city !== "—" ? safeLead.city : "Unknown"}
+Industry: ${safeLead.industry ?? "Unknown"}
+<<<END_LEAD_DATA>>>
 
-VERIFIED Website Data (scraped in real-time):
+<<<VERIFIED_WEBSITE_DATA>>>
 ${websiteContext}
-${lead.tavilyData ? `\nAdditional Context from Web Search:\n${lead.tavilyData.slice(0, 300)}` : ""}
+${safeLead.tavilyData ? `Additional Context from Web Search:\n${safeLead.tavilyData}` : ""}
+<<<END_VERIFIED_WEBSITE_DATA>>>
 
 The score has been pre-calculated from real metrics: ${groundedScore}/100
 You MUST use exactly ${groundedScore} as the score.
@@ -173,6 +259,9 @@ export async function generateOutreachWithGemini(
 ): Promise<OutreachResult> {
   const client = await getClient();
 
+  // Sanitize all untrusted fields before embedding in prompt
+  const safeLead = sanitizeLead(lead);
+
   const langInstruction = LANG_INSTRUCTIONS[language] ?? LANG_INSTRUCTIONS.en;
 
   // Build specific verified facts to personalize email
@@ -192,18 +281,21 @@ export async function generateOutreachWithGemini(
       if (deep.seoIssues.length > 0) verifiedFacts.push(...deep.seoIssues.slice(0, 2));
       if (deep.technologies.length > 0) verifiedFacts.push(`site is built with ${deep.technologies.slice(0, 3).join(", ")}`);
     }
-  } else if (!lead.website) {
+  } else if (!safeLead.website) {
     verifiedFacts.push("they have no website at all");
   }
 
   const prompt = `You are a senior B2B sales copywriter for FindX, a global digital marketing platform.
 Write a personalized cold outreach email.
 
-Lead: ${lead.businessName}, ${lead.city !== "—" ? lead.city : ""}
-Industry: ${lead.industry ?? "Business"}
+<<<LEAD_DATA>>>
+Lead: ${safeLead.businessName}, ${safeLead.city !== "—" ? safeLead.city : ""}
+Industry: ${safeLead.industry ?? "Business"}
+<<<END_LEAD_DATA>>>
+
 Digital score: ${analysis.score}/100
 ${verifiedFacts.length > 0 ? `VERIFIED facts about their digital presence:\n${verifiedFacts.map(f => `- ${f}`).join("\n")}` : ""}
-Key opportunity: ${analysis.opportunities[0] ?? "Digital improvement"}
+Key opportunity: ${sanitizeForPrompt(analysis.opportunities[0] ?? "Digital improvement", 200)}
 
 Language instruction: ${langInstruction}
 - Keep it under 150 words
