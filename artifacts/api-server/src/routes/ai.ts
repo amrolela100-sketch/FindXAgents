@@ -27,6 +27,11 @@ const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?:
   minimax: { defaultModel: "MiniMax-Text-01", defaultBaseUrl: "https://api.minimax.chat/v1" },
   kimi: { defaultModel: "moonshot-v1-8k", defaultBaseUrl: "https://api.moonshot.cn/v1" },
   ollama: { defaultModel: "llama3", defaultBaseUrl: "http://localhost:11434/v1" },
+  openrouter: { defaultModel: "google/gemini-2.0-flash", defaultBaseUrl: "https://openrouter.ai/api/v1" },
+  google: { defaultModel: "gemini-2.0-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta" },
+  mistral: { defaultModel: "mistral-large-latest", defaultBaseUrl: "https://api.mistral.ai/v1" },
+  together: { defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo", defaultBaseUrl: "https://api.together.xyz/v1" },
+  custom: { defaultModel: "", defaultBaseUrl: "" },
 };
 
 function maskKey(key: string | null | undefined) {
@@ -84,7 +89,7 @@ router.get("/ai/providers", async (_req, res) => {
 
 const aiProviderSchema = z.object({
   name: z.string().min(1).max(100),
-  providerType: z.enum(["glm", "anthropic", "openai", "ollama", "minimax", "kimi", "deepseek", "groq", "gemini"]),
+  providerType: z.enum(["glm", "anthropic", "openai", "ollama", "minimax", "kimi", "deepseek", "groq", "gemini", "openrouter", "google", "mistral", "together", "custom"]),
   apiKey: z.string().optional(),
   baseUrl: z.string().optional(),
   model: z.string().min(1),
@@ -203,3 +208,4 @@ router.post("/ai/providers/seed-from-env", async (req, res) => {
 });
 
 export default router;
+
