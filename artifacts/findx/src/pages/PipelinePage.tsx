@@ -13,7 +13,7 @@ export default function PipelinePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [maxResults, setMaxResults] = useState(10);
-  const [lang, setLang] = useState<"nl" | "en">("nl");
+  const [lang, setLang] = useState<"ar" | "en" | "nl" | "fr" | "es" | "de">("en");
   const [running, setRunning] = useState(false);
 
   const { data, refresh } = useRealtimeData(() => getLeads({ pageSize: 500 }), ["leads", "pipeline"], 20_000);
@@ -22,7 +22,7 @@ export default function PipelinePage() {
   async function handleRun() {
     if (!query.trim()) return;
     setRunning(true);
-    try { await runAgentPipeline({ query: query.trim(), maxResults, language: lang }); setQuery(""); } catch {}
+    try { await runAgentPipeline({ query: query.trim(), maxResults, language: lang as "ar" | "en" | "nl" | "fr" | "es" | "de" }); setQuery(""); refresh(); } catch {}
     finally { setRunning(false); }
   }
 
@@ -59,11 +59,15 @@ export default function PipelinePage() {
       </select>
       <select
         value={lang}
-        onChange={(e) => setLang(e.target.value as "nl" | "en")}
-        className="input text-xs py-1.5 w-24"
+        onChange={(e) => setLang(e.target.value as "ar" | "en" | "nl" | "fr" | "es" | "de")}
+        className="input text-xs py-1.5 w-28"
       >
-        <option value="nl">🇳🇱 {t.agents.dutch}</option>
+        <option value="ar">🇸🇦 {t.agents.arabic}</option>
         <option value="en">🇬🇧 {t.agents.english}</option>
+        <option value="nl">🇳🇱 {t.agents.dutch}</option>
+        <option value="fr">🇫🇷 {t.agents.french}</option>
+        <option value="es">🇪🇸 {t.agents.spanish}</option>
+        <option value="de">🇩🇪 {t.agents.german}</option>
       </select>
       <button
         onClick={handleRun}
