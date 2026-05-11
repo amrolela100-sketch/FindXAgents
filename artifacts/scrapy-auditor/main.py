@@ -96,11 +96,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS: This microservice is internal-only.
+# Allowed origin is read from SCRAPY_AUDITOR_CORS_ORIGIN env var (defaults to
+# the API server's address). Set to the exact internal URL in production;
+# never expose this service on a public port.
+_cors_origin = os.getenv("SCRAPY_AUDITOR_CORS_ORIGIN", "http://localhost:3000")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[_cors_origin],
+    allow_methods=["POST", "GET"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ── Scrapy settings ───────────────────────────────────────────────────────────
