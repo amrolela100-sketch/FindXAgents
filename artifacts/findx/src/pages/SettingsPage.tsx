@@ -36,6 +36,7 @@ type ProviderConfig = {
   baseUrlEditable: boolean;
   models: string[];
   defaultModel: string;
+  keyPrefix?: string; // Expected key prefix for validation
 };
 
 const PROVIDER_TYPES: ProviderConfig[] = [
@@ -106,13 +107,14 @@ const PROVIDER_TYPES: ProviderConfig[] = [
     color: "#7c3aed",
     description: "Access 100+ models from one API — OpenAI, Claude, Llama, and more",
     apiKeyLabel: "OpenRouter API Key",
-    apiKeyPlaceholder: "sk-or-...",
+    apiKeyPlaceholder: "sk-or-v1-...",
     apiKeyUrl: "https://openrouter.ai/keys",
     apiKeyUrlLabel: "openrouter.ai",
     defaultBaseUrl: "https://openrouter.ai/api/v1",
     baseUrlEditable: false,
     models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash", "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-chat"],
     defaultModel: "google/gemini-2.0-flash",
+    keyPrefix: "sk-or-",
   },
   {
     value: "deepseek",
@@ -865,6 +867,13 @@ export default function SettingsPage() {
                           placeholder={editingId ? "Leave empty to keep current key" : provCfg.apiKeyPlaceholder}
                           className={inputCls}
                         />
+                        {/* Key prefix validation warning */}
+                        {provCfg.keyPrefix && form.apiKey && !form.apiKey.startsWith(provCfg.keyPrefix) && (
+                          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                            <span>⚠️</span>
+                            <span>{provCfg.label} API keys start with <code className="font-mono bg-amber-100 px-1 rounded">{provCfg.keyPrefix}</code> — make sure you're using the right key from <a href={provCfg.apiKeyUrl} target="_blank" rel="noopener noreferrer" className="underline">{provCfg.apiKeyUrlLabel}</a></span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

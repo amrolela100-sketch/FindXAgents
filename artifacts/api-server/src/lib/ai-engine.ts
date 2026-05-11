@@ -9,10 +9,26 @@ async function getOpenRouterKey(): Promise<string> {
       .from(aiProviders)
       .where(eq(aiProviders.providerType, "openrouter"))
       .limit(1);
-    if (cfg?.apiKey) return cfg.apiKey;
-  } catch { /* fall through */ }
+    if (cfg?.apiKey) {
+      // Validate key prefix — OpenRouter keys must start with "sk-or-"
+      if (!cfg.apiKey.startsWith("sk-or-")) {
+        throw new Error(
+          `Invalid OpenRouter API key: key starts with "${cfg.apiKey.slice(0, 8)}..." but OpenRouter keys must start with "sk-or-". Please update your AI Provider settings with the correct key from https://openrouter.ai/keys`
+        );
+      }
+      return cfg.apiKey;
+    }
+  } catch (e: any) {
+    if (e.message?.includes("Invalid OpenRouter API key")) throw e;
+    /* fall through for other DB errors */
+  }
   const envKey = process.env.OPENROUTER_API_KEY;
   if (!envKey) throw new Error("OPENROUTER_API_KEY not set and no DB provider found");
+  if (!envKey.startsWith("sk-or-")) {
+    throw new Error(
+      `Invalid OPENROUTER_API_KEY environment variable: must start with "sk-or-". Get your key at https://openrouter.ai/keys`
+    );
+  }
   return envKey;
 }
 
