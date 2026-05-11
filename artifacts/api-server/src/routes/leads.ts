@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { leads, analyses, outreaches } from "@workspace/db";
+import { leads, analyses, outreaches, aiProviders } from "@workspace/db";
 import { eq, and, ilike, sql, desc, count, isNotNull, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-engine";
@@ -8,6 +8,18 @@ import { requireAuth } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 import { safeError } from "../lib/safe-error.js";
+
+/** Check if OpenRouter API key is available (DB takes priority over env) */
+async function hasOpenRouterKey(): Promise<boolean> {
+  try {
+    const [cfg] = await db.select({ apiKey: aiProviders.apiKey })
+      .from(aiProviders)
+      .where(eq(aiProviders.providerType, "openrouter"))
+      .limit(1);
+    if (cfg?.apiKey) return true;
+  } catch { /* fall through */ }
+  return !!process.env.OPENROUTER_API_KEY;
+}
 
 const router = Router();
 
@@ -652,7 +664,7 @@ router.post("/leads/:id/analyze", async (req, res) => {
 
     await db.update(leads).set({ status: "analyzing", updatedAt: new Date() }).where(eq(leads.id, lead.id));
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!await hasOpenRouterKey()) {
       return res.status(503).json({ error: "OPENROUTER_API_KEY not set. Cannot run analysis." });
     }
 
@@ -715,7 +727,7 @@ router.post("/leads/:id/outreach/generate", async (req, res) => {
     if (!lead) return res.status(404).json({ error: "Lead not found" });
     if (!checkLeadOwnership(lead, req, res)) return;
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!await hasOpenRouterKey()) {
       return res.status(503).json({ error: "OPENROUTER_API_KEY not set. Cannot generate outreach." });
     }
 

@@ -141,7 +141,7 @@ export class AgentRunner {
     let items: any[] = [];
 
     // 1. Try Tavily (global, Arabic-friendly web search)
-    if (tavilyKey && items.length === 0) {
+    if (tavilyKey) {
       await logToDB(agentId, this.runId, "discover-web", "info", `Searching web via Tavily for: ${query}`);
       try {
         const res = await fetch("https://api.tavily.com/search", {
@@ -158,11 +158,11 @@ export class AgentRunner {
         });
         if (res.ok) {
           const data: any = await res.json();
-          items = (data.results || []).slice(0, maxResults).map((r: any) => {
+          const rawResults = data.results || [];
+          await logToDB(agentId, this.runId, "discover-web", "info", `Tavily returned ${rawResults.length} raw results`);
+          items = rawResults.slice(0, maxResults * 2).map((r: any) => {
             // Extract business name from title
             const title = r.title?.replace(/ - .*$/, "").replace(/ \| .*$/, "").trim();
-            // Try to extract city from snippet or url
-            const urlMatch = r.url?.match(/([a-z]{2,})\.(com|net|org|ae|sa|eg|ma|qa|kw|bh|om)/i);
             return {
               businessName: title || r.url,
               city: "—",
@@ -172,10 +172,16 @@ export class AgentRunner {
               source: "tavily",
             };
           }).filter((item: any) => item.businessName && item.businessName.length > 2);
+          await logToDB(agentId, this.runId, "discover-web", "info", `Mapped ${items.length} items from Tavily`);
+        } else {
+          const errText = await res.text();
+          await logToDB(agentId, this.runId, "discover-web", "warn", `Tavily returned status ${res.status}: ${errText.slice(0, 200)}`);
         }
       } catch (e: any) {
         await logToDB(agentId, this.runId, "discover-web", "warn", `Tavily search failed: ${e.message}`);
       }
+    } else {
+      await logToDB(agentId, this.runId, "discover-web", "warn", "No Tavily API key found — skipping web search");
     }
 
     // 2. Fallback: KVK (Netherlands only)
@@ -222,10 +228,14 @@ export class AgentRunner {
 
     const insertedIds: string[] = [];
     let added = 0;
+    let skippedDuplicates = 0;
 
     for (const lead of items) {
       if (added >= maxResults) break;
       const domain = getDomain(lead.website);
+      
+      // Scope duplicate check to the current user to avoid cross-user conflicts
+      const userFilter = userId ? eq(leads.userId, userId) : sql`${leads.userId} IS NULL`;
       
       const conditions = [];
       if (lead.kvkNumber) conditions.push(eq(leads.kvkNumber, lead.kvkNumber));
@@ -233,10 +243,14 @@ export class AgentRunner {
       
       let exists = false;
       if (conditions.length > 0) {
-        const existing = await db.select({ id: leads.id }).from(leads).where(sql`${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``}`).limit(1);
+        const existing = await db.select({ id: leads.id }).from(leads).where(
+          and(userFilter, sql`(${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``})`)
+        ).limit(1);
         if (existing.length > 0) exists = true;
       } else {
-        const existingByName = await db.select({ id: leads.id }).from(leads).where(and(ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))).limit(1);
+        const existingByName = await db.select({ id: leads.id }).from(leads).where(
+          and(userFilter, ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))
+        ).limit(1);
         if (existingByName.length > 0) exists = true;
       }
 
@@ -250,8 +264,12 @@ export class AgentRunner {
         }).returning({ id: leads.id });
         insertedIds.push(newLead.id);
         added++;
+      } else {
+        skippedDuplicates++;
       }
     }
+
+    await logToDB(agentId, this.runId, "discover-web", "info", `Results: ${insertedIds.length} new leads saved, ${skippedDuplicates} duplicates skipped out of ${items.length} total`);
 
     await db.update(agentPipelineRuns)
       .set({ leadsFound: insertedIds.length })
