@@ -825,37 +825,7 @@ function isAdminUser(email: string): boolean {
 }
 
 /**
- * DELETE /leads/:id
- * User can delete their own leads only.
- * Admin can delete any lead.
- */
-router.delete("/leads/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [lead] = await db.select({ id: leads.id, userId: leads.userId })
-      .from(leads).where(eq(leads.id, id)).limit(1);
-
-    if (!lead) return res.status(404).json({ error: "Lead not found" });
-
-    // Admin can delete any lead; user can only delete their own
-    const admin = isAdminUser(req.user!.email);
-    if (!admin && lead.userId !== req.user!.userId) {
-      return res.status(403).json({ error: "Forbidden — not your lead" });
-    }
-
-    // Cascade: delete related analyses and outreaches first
-    await db.delete(outreaches).where(eq(outreaches.leadId, id));
-    await db.delete(analyses).where(eq(analyses.leadId, id));
-    await db.delete(leads).where(eq(leads.id, id));
-
-    return res.json({ deleted: true, id });
-  } catch (err) {
-    return safeError(res, err, "Internal server error");
-  }
-});
-
-/**
- * DELETE /leads/bulk
+ * DELETE /leads/bulk  ← MUST be before /leads/:id to avoid Express matching "bulk" as :id
  * User can bulk-delete their own leads only.
  * Admin can bulk-delete any leads.
  */
@@ -892,6 +862,35 @@ router.delete("/leads/bulk", async (req, res) => {
     await db.delete(leads).where(inArray(leads.id, allowedIds));
 
     return res.json({ deleted: allowedIds.length, skipped: leadIds.length - allowedIds.length });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
+/**
+ * DELETE /leads/:id  ← MUST be after /leads/bulk
+ * User can delete their own leads only.
+ * Admin can delete any lead.
+ */
+router.delete("/leads/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [lead] = await db.select({ id: leads.id, userId: leads.userId })
+      .from(leads).where(eq(leads.id, id)).limit(1);
+
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    const admin = isAdminUser(req.user!.email);
+    if (!admin && lead.userId !== req.user!.userId) {
+      return res.status(403).json({ error: "Forbidden — not your lead" });
+    }
+
+    // Cascade: delete related analyses and outreaches first
+    await db.delete(outreaches).where(eq(outreaches.leadId, id));
+    await db.delete(analyses).where(eq(analyses.leadId, id));
+    await db.delete(leads).where(eq(leads.id, id));
+
+    return res.json({ deleted: true, id });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
