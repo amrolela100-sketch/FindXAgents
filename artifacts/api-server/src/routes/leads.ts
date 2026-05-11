@@ -584,7 +584,21 @@ router.get("/leads/export", async (req, res) => {
  * Returns false and writes a 404 response when access is denied.
  */
 function checkLeadOwnership(lead: { userId: string | null }, req: Request, res: Response): boolean {
-  if (lead.userId !== null && lead.userId !== (req.user?.userId ?? null)) {
+  // Security: a lead must belong to the requesting user.
+  // Legacy leads with userId = null are NOT accessible to regular authenticated users;
+  // they can only be accessed by admins (role === "admin").
+  const requestingUserId = req.user?.userId ?? null;
+  const isAdmin = req.user?.role === "admin";
+
+  if (lead.userId === null) {
+    if (!isAdmin) {
+      res.status(404).json({ error: "Lead not found" });
+      return false;
+    }
+    return true; // Admins may still access legacy records
+  }
+
+  if (lead.userId !== requestingUserId) {
     res.status(404).json({ error: "Lead not found" });
     return false;
   }
