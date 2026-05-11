@@ -33,7 +33,7 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
-async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
+async function fetchApi<T>(path: string, init?: RequestInit & { skipAuthRedirect?: boolean }): Promise<T> {
   if (!navigator.onLine) {
     toast({
       title: "No internet connection",
@@ -43,22 +43,24 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error("No internet connection");
   }
 
-  const headers: Record<string, string> = { ...init?.headers } as Record<string, string>;
-  if (init?.body) headers["Content-Type"] = "application/json";
+  const { skipAuthRedirect, ...fetchInit } = init ?? {};
+  const headers: Record<string, string> = { ...fetchInit?.headers } as Record<string, string>;
+  if (fetchInit?.body) headers["Content-Type"] = "application/json";
 
   const token = await getAuthToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  const res = await fetch(`${BASE}${path}`, { ...fetchInit, headers });
   
   if (!res.ok) {
     if (res.status === 401) {
-      // Clear session on 401 if needed, or just redirect
-      const { supabase } = await import("./supabase");
-      await supabase.auth.signOut();
-      
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      // Only redirect to login if not explicitly suppressed and not already there
+      if (!skipAuthRedirect) {
+        const { supabase } = await import("./supabase");
+        await supabase.auth.signOut();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
       throw new Error("Unauthorized");
     }
@@ -88,8 +90,8 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 
-export function getDashboardStats(): Promise<{ stats: DashboardStats }> {
-  return fetchApi("/dashboard/stats");
+export function getDashboardStats(opts?: { skipAuthRedirect?: boolean }): Promise<{ stats: DashboardStats }> {
+  return fetchApi("/dashboard/stats", opts);
 }
 
 export function getPipeline(): Promise<{

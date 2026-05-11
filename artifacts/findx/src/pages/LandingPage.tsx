@@ -118,7 +118,7 @@ export default function LandingPage() {
   } | null>(null);
 
   useEffect(() => {
-    getDashboardStats()
+    getDashboardStats({ skipAuthRedirect: true })
       .then(({ stats }) => {
         const total = stats.totalLeads;
         const label = total >= 1000 ? `${Math.floor(total / 1000)}K+` : `${total}+`;
