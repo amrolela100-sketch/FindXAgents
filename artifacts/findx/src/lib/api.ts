@@ -410,8 +410,8 @@ export function deleteLead(id: string): Promise<{ deleted: boolean; id: string }
 }
 
 export function bulkDeleteLeads(leadIds: string[]): Promise<{ deleted: number; skipped: number }> {
-  return fetchApi("/leads/bulk", {
-    method: "DELETE",
+  return fetchApi("/leads/bulk/delete", {
+    method: "POST",
     body: JSON.stringify({ leadIds }),
   });
 }

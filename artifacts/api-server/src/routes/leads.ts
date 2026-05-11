@@ -825,11 +825,14 @@ function isAdminUser(email: string): boolean {
 }
 
 /**
- * DELETE /leads/bulk  ← MUST be before /leads/:id to avoid Express matching "bulk" as :id
+ * POST /leads/bulk/delete  ← MUST be before /leads/:id
+ * Using POST instead of DELETE to ensure the body (leadIds) is not stripped
+ * by Vercel's proxy layer when forwarding to Render.
+ *
  * User can bulk-delete their own leads only.
  * Admin can bulk-delete any leads.
  */
-router.delete("/leads/bulk", async (req, res) => {
+router.post("/leads/bulk/delete", async (req, res) => {
   const schema = z.object({ leadIds: z.array(z.string().uuid()).min(1).max(200) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
