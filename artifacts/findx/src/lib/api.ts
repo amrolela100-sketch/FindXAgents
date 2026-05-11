@@ -415,3 +415,41 @@ export function bulkDeleteLeads(leadIds: string[]): Promise<{ deleted: number; s
     body: JSON.stringify({ leadIds }),
   });
 }
+
+// ─── Notifications ─────────────────────────────────────────────────────────────
+
+export interface ApiNotification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  meta: Record<string, unknown>;
+  read: boolean;
+  createdAt: string;
+}
+
+export function getNotifications(): Promise<{ notifications: ApiNotification[]; unreadCount: number }> {
+  return fetchApi("/notifications");
+}
+
+export function createNotification(data: {
+  type?: string;
+  title: string;
+  body?: string;
+  meta?: Record<string, unknown>;
+}): Promise<{ notification: ApiNotification }> {
+  return fetchApi("/notifications", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function markAllNotificationsRead(): Promise<{ ok: boolean }> {
+  return fetchApi("/notifications/read-all", { method: "PATCH" });
+}
+
+export function markNotificationRead(id: string): Promise<{ ok: boolean }> {
+  return fetchApi(`/notifications/${id}/read`, { method: "PATCH" });
+}
+
+export function clearAllNotifications(): Promise<{ ok: boolean }> {
+  return fetchApi("/notifications", { method: "DELETE" });
+}
