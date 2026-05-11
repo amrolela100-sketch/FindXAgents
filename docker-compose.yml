@@ -17,6 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Redis (rate-limiting + caching) ─────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save "" --appendonly no --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Scrapy Deep Auditor (Python microservice) ────────────────────────────
   scrapy-auditor:
     build:
@@ -44,11 +57,14 @@ services:
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER:-findx_user}:${POSTGRES_PASSWORD:-findx_super_secret_password}@postgres:5432/${POSTGRES_DB:-findx_db}
       - PORT=3000
+      - REDIS_URL=redis://redis:6379
       - SCRAPY_AUDITOR_URL=http://scrapy-auditor:4000
     env_file:
       - artifacts/api-server/.env
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       scrapy-auditor:
         condition: service_healthy

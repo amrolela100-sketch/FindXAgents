@@ -1,4 +1,11 @@
 services:
+  # ─── Redis (rate-limiting shared across all API instances) ──────────────────
+  - type: redis
+    name: findx-redis
+    region: frankfurt
+    plan: free                 # 25 MB — enough for rate-limit counters
+    maxmemoryPolicy: allkeys-lru
+
   # ─── Backend API ────────────────────────────────────────────────────────────
   - type: web
     name: findx-api
@@ -28,6 +35,14 @@ services:
 
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+      # ── Redis (rate-limiting) ─────────────────────────────────────────────
+      # Auto-populated by Render when both services are in the same render.yaml
+      - key: REDIS_URL
+        fromService:
+          name: findx-redis
+          type: redis
+          property: connectionString
 
       # ── Owner / Admin access ──────────────────────────────────────────────
       - key: OWNER_EMAIL
