@@ -51,14 +51,14 @@ export default function PipelinePage() {
             playChime();
             await dispatchNotification({
               type: "pipeline_complete",
-              title: "Pipeline complete \u2728",
-              body: `Found ${run.leadsFound ?? 0} leads \u00b7 ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
+              title: "Pipeline complete ✨",
+              body: `Found ${run.leadsFound ?? 0} leads · ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
               query: q,
               leadsFound: run.leadsFound ?? 0,
               emailsDrafted: run.emailsDrafted ?? 0,
             });
             if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-              new Notification("FindX \u2014 Pipeline complete \u2728", {
+              new Notification("FindX — Pipeline complete ✨", {
                 body: `Found ${run.leadsFound ?? 0} leads for "${q}"`,
                 icon: "/favicon.svg",
               });
@@ -114,24 +114,19 @@ export default function PipelinePage() {
 
   const runBar = (
     <div className="flex items-center gap-2">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+      <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleRun()}
-        placeholder={t.pipeline.placeholder}
-        className="input text-xs py-1.5 w-56"
-      />
+        placeholder={t.pipeline.placeholder} className="input text-xs py-1.5 w-56" />
       <select value={maxResults} onChange={(e) => setMaxResults(Number(e.target.value))} className="input text-xs py-1.5 w-20">
         {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
       <select value={lang} onChange={(e) => setLang(e.target.value as "ar" | "en" | "nl" | "fr" | "es" | "de")} className="input text-xs py-1.5 w-28">
-        <option value="ar">\u{1f1f8}\u{1f1e6} {t.agents.arabic}</option>
-        <option value="en">\u{1f1ec}\u{1f1e7} {t.agents.english}</option>
-        <option value="nl">\u{1f1f3}\u{1f1f1} {t.agents.dutch}</option>
-        <option value="fr">\u{1f1eb}\u{1f1f7} {t.agents.french}</option>
-        <option value="es">\u{1f1ea}\u{1f1f8} {t.agents.spanish}</option>
-        <option value="de">\u{1f1e9}\u{1f1ea} {t.agents.german}</option>
+        <option value="ar">🇸🇦 {t.agents.arabic}</option>
+        <option value="en">🇬🇧 {t.agents.english}</option>
+        <option value="nl">🇳🇱 {t.agents.dutch}</option>
+        <option value="fr">🇫🇷 {t.agents.french}</option>
+        <option value="es">🇪🇸 {t.agents.spanish}</option>
+        <option value="de">🇩🇪 {t.agents.german}</option>
       </select>
       <button onClick={handleRun} disabled={running || !query.trim()} className="btn btn-primary text-xs px-3 py-1.5 gap-1.5">
         {running ? <Activity className="w-3.5 h-3.5 animate-pulse" /> : <Zap className="w-3.5 h-3.5" />}
