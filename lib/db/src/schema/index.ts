@@ -363,3 +363,22 @@ export type AiProvider = typeof aiProviders.$inferSelect;
 export type PushToken = typeof pushTokens.$inferSelect;
 export type User = typeof users.$inferSelect;
 
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id:        text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId:    text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    type:      text("type").notNull().default("pipeline_complete"),
+    title:     text("title").notNull(),
+    body:      text("body").notNull().default(""),
+    meta:      jsonb("meta").notNull().default({}),
+    read:      boolean("read").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_notifications_user_id").on(t.userId),
+    index("idx_notifications_created_at").on(t.createdAt),
+  ],
+);
