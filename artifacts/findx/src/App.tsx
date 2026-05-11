@@ -12,7 +12,8 @@ import WorkspacePage from "./pages/WorkspacePage";
 import AdminPage from "./pages/AdminPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
-import StitchDesignsPage from "./pages/StitchDesignsPage";
+import LeadsPage from "./pages/LeadsPage";
+import ClientsPage from "./pages/ClientsPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { useLang } from "./lib/lang-context";
@@ -33,14 +34,14 @@ function AuthGuard() {
 
   useEffect(() => {
     if (!user) { setOnboardingChecked(true); return; }
-    
+
     const checkOnboarding = async () => {
       try {
         const { supabase } = await import("./lib/supabase");
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
         const base = env.VITE_API_URL;
-        
+
         const res = await fetch(`${base}/onboarding/status`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -57,11 +58,10 @@ function AuthGuard() {
     checkOnboarding();
   }, [user]);
 
-
   if (loading || !onboardingChecked) {
     return (
-      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#7A756D]" />
+      <div className="min-h-screen bg-[#16130f] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-[#e4c285]" />
       </div>
     );
   }
@@ -87,9 +87,9 @@ function AuthGuard() {
 
   return (
     <WorkspaceProvider>
-      <div className="min-h-screen bg-[#F7F5F0] text-[#1A1A1A]">
+      <div className="min-h-screen bg-surface text-on-surface">
         <Sidebar isAdmin={isAdmin} />
-        <main className={`${isRtl ? "mr-60" : "ml-60"} min-h-screen`}>
+        <main className={`${isRtl ? "mr-64" : "ml-64"} min-h-screen`}>
           <ErrorBoundary key={location}>
             <Switch>
               <Route path="/" component={HomePage} />
@@ -97,15 +97,16 @@ function AuthGuard() {
               <Route path="/agents/:name" component={AgentDetailPage} />
               <Route path="/agents" component={AgentsPage} />
               <Route path="/pipeline" component={PipelinePage} />
+              <Route path="/leads" component={LeadsPage} />
+              <Route path="/clients" component={ClientsPage} />
               <Route path="/workspaces" component={WorkspacePage} />
               <Route path="/owner" component={OwnerDashboardPage} />
               <Route path="/settings" component={SettingsPage} />
-              <Route path="/designs" component={StitchDesignsPage} />
               {isAdmin && <Route path="/admin" component={AdminPage} />}
               <Route>
                 <div className="p-8 text-center">
-                  <h1 className="text-2xl font-serif font-bold text-[#1A1A1A] mb-2">404</h1>
-                  <p className="text-[#7A756D]">Page not found</p>
+                  <h1 className="text-2xl font-serif font-bold text-on-surface mb-2">404</h1>
+                  <p className="text-on-surface-variant">Page not found</p>
                 </div>
               </Route>
             </Switch>
@@ -119,7 +120,6 @@ function AuthGuard() {
 export default function App() {
   const [location] = useLocation();
 
-  // Handle OAuth callback before any auth check
   if (location === "/auth/callback" || window.location.pathname.includes("/auth/callback")) {
     return <AuthCallbackPage />;
   }
