@@ -7,7 +7,6 @@ import PipelinePage from "./pages/PipelinePage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
-import OnboardingPage from "./pages/OnboardingPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import AdminPage from "./pages/AdminPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
@@ -20,7 +19,6 @@ import { LangProvider, useLang } from "./lib/lang-context";
 import { ThemeProvider } from "./lib/theme-context";
 import { CommandPalette } from "./components/command-palette";
 import { Loader2, AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { env, isEnvValid, envErrors } from "./lib/env";
 
@@ -33,33 +31,8 @@ function AuthGuard() {
   const { user, loading } = useAuth();
   const { isRtl } = useLang();
   const [location] = useLocation();
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const [onboardingDone, setOnboardingDone] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  useEffect(() => {
-    if (!user) { setOnboardingChecked(true); return; }
-    const check = async () => {
-      try {
-        const { supabase } = await import("./lib/supabase");
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        const res = await fetch(`${env.VITE_API_URL}/onboarding/status`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const d = await res.json();
-        setOnboardingDone(d.completed === true);
-        if (!d.completed) setShowOnboarding(true);
-      } catch {
-        setOnboardingDone(true);
-      } finally {
-        setOnboardingChecked(true);
-      }
-    };
-    check();
-  }, [user]);
-
-  if (loading || !onboardingChecked) {
+  if (loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -78,14 +51,6 @@ function AuthGuard() {
   if (!user) {
     if (location === "/login") return <LoginPage />;
     return <LandingPage />;
-  }
-
-  if (showOnboarding && !onboardingDone) {
-    return (
-      <OnboardingPage
-        onComplete={() => { setOnboardingDone(true); setShowOnboarding(false); }}
-      />
-    );
   }
 
   const isAdmin =
