@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { ChevronDown, Square, Loader2 } from "lucide-react";
 import { getAgentRuns, cancelAgentRun } from "../lib/api";
 import type { AgentPipelineRun, AgentRunStatus } from "../lib/types";
@@ -49,9 +49,23 @@ function SkeletonRow() {
   );
 }
 
-function RunRow({ run }: { run: AgentPipelineRun }) {
+function RunRow({ run, onCancelled }: { run: AgentPipelineRun; onCancelled?: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const duration = formatDuration(run.createdAt, run.completedAt);
+
+  async function handleCancel(e: MouseEvent) {
+    e.stopPropagation();
+    setCancelling(true);
+    try {
+      await cancelAgentRun(run.id);
+      onCancelled?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div>
@@ -78,12 +92,12 @@ function RunRow({ run }: { run: AgentPipelineRun }) {
         </span>
         {(run.status === "running" || run.status === "queued") && (
           <button
-            onClick={(e) => handleCancel(e, run.id)}
-            disabled={cancelling === run.id}
+            onClick={handleCancel}
+            disabled={cancelling}
             className="flex-shrink-0 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
             title="Cancel run"
           >
-            {cancelling === run.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
+            {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
           </button>
         )}
         <ChevronDown
