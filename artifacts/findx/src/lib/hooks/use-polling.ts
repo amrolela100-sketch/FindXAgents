@@ -9,6 +9,8 @@ interface UsePollingResult<T> {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  /** Alias for refetch — kept for backward compatibility */
+  refresh: () => void;
 }
 
 export function usePolling<T>(
@@ -47,5 +49,5 @@ export function usePolling<T>(
     return () => clearInterval(id);
   }, [enabled, intervalMs, executeFetch]);
 
-  return { data, isLoading, error, refetch: executeFetch };
+  return { data, isLoading, error, refetch: executeFetch, refresh: executeFetch };
 }
