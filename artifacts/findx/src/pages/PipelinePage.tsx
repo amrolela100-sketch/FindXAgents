@@ -19,9 +19,7 @@ export default function PipelinePage() {
   const [running, setRunning] = useState(false);
 
   const { play: playChime } = useCompletionSound();
-
-  // Track active run IDs so we can poll them for completion
-  const activeRunsRef = useRef<Map<string, string>>(new Map()); // runId → query
+  const activeRunsRef = useRef<Map<string, string>>(new Map());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data, refresh } = useRealtimeData(
@@ -31,156 +29,68 @@ export default function PipelinePage() {
   );
   const leads = data?.leads ?? [];
 
-  // Poll active runs every 4 seconds until complete/failed
   useEffect(() => {
-    function startPolling() {
-      if (pollIntervalRef.current) return;
-      pollIntervalRef.current = setInterval(async () => {
-        if (activeRunsRef.current.size === 0) {
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-          return;
-        }
-
-        const entries = Array.from(activeRunsRef.current.entries());
-        for (const [runId, savedQuery] of entries) {
-          try {
-            const { run } = await getAgentRun(runId);
-            if (!run) {
-              activeRunsRef.current.delete(runId);
-              continue;
-            }
-
-            if (run.status === "completed") {
-              activeRunsRef.current.delete(runId);
-              refresh();
-
-              // 🔔 Play completion chime
-              playChime();
-
-              // 🔔 Dispatch in-app notification
-              dispatchNotification({
-                id: runId,
-                type: "pipeline_complete",
-                title: "Pipeline complete ✨",
-                body: `Found ${run.leadsFound ?? 0} leads · ${run.emailsDrafted ?? 0} emails drafted for "${savedQuery}"`,
-                query: savedQuery,
-                leadsFound: run.leadsFound ?? 0,
-                emailsDrafted: run.emailsDrafted ?? 0,
-                createdAt: new Date().toISOString(),
-              });
-
-              // 🔔 Browser notification (if permission granted)
-              if (Notification.permission === "granted") {
-                new Notification("FindX — Pipeline complete ✨", {
-                  body: `Found ${run.leadsFound ?? 0} leads for "${savedQuery}"`,
-                  icon: "/favicon.svg",
-                });
-              }
-
-            } else if (run.status === "failed") {
-              activeRunsRef.current.delete(runId);
-              refresh();
-
-              dispatchNotification({
-                id: runId,
-                type: "pipeline_failed",
-                title: "Pipeline failed",
-                body: `Run for "${savedQuery}" encountered an error. ${run.error ?? ""}`.trim(),
-                query: savedQuery,
-                createdAt: new Date().toISOString(),
-              });
-            }
-          } catch {
-            // network blip — try again next tick
-          }
-        }
-      }, 4_000);
-    }
-
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
   }, []);
+
+  function startPollInterval() {
+    if (pollIntervalRef.current) return;
+    pollIntervalRef.current = setInterval(async () => {
+      if (activeRunsRef.current.size === 0) {
+        clearInterval(pollIntervalRef.current!);
+        pollIntervalRef.current = null;
+        return;
+      }
+      for (const [runId, q] of Array.from(activeRunsRef.current.entries())) {
+        try {
+          const { run } = await getAgentRun(runId);
+          if (!run) { activeRunsRef.current.delete(runId); continue; }
+          if (run.status === "completed") {
+            activeRunsRef.current.delete(runId);
+            refresh();
+            playChime();
+            await dispatchNotification({
+              type: "pipeline_complete",
+              title: "Pipeline complete \u2728",
+              body: `Found ${run.leadsFound ?? 0} leads \u00b7 ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
+              query: q,
+              leadsFound: run.leadsFound ?? 0,
+              emailsDrafted: run.emailsDrafted ?? 0,
+            });
+            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+              new Notification("FindX \u2014 Pipeline complete \u2728", {
+                body: `Found ${run.leadsFound ?? 0} leads for "${q}"`,
+                icon: "/favicon.svg",
+              });
+            }
+          } else if (run.status === "failed") {
+            activeRunsRef.current.delete(runId);
+            refresh();
+            await dispatchNotification({
+              type: "pipeline_failed",
+              title: "Pipeline failed",
+              body: `Run for "${q}" encountered an error. ${run.error ?? ""}`.trim(),
+              query: q,
+            });
+          }
+        } catch { /* network blip */ }
+      }
+    }, 4_000);
+  }
 
   async function handleRun() {
     if (!query.trim()) return;
     setRunning(true);
-
-    // Ask for browser notification permission on first run
-    if (Notification.permission === "default") {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
-
     try {
       const savedQuery = query.trim();
-      const result = await runAgentPipeline({
-        query: savedQuery,
-        maxResults,
-        language: lang,
-      });
+      const result = await runAgentPipeline({ query: savedQuery, maxResults, language: lang });
       setQuery("");
       refresh();
-
-      // Register the run for polling
       activeRunsRef.current.set(result.runId, savedQuery);
-
-      // Start the poll interval if not already running
-      if (!pollIntervalRef.current) {
-        pollIntervalRef.current = setInterval(async () => {
-          if (activeRunsRef.current.size === 0) {
-            if (pollIntervalRef.current) {
-              clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-            return;
-          }
-          const entries = Array.from(activeRunsRef.current.entries());
-          for (const [runId, q] of entries) {
-            try {
-              const { run } = await getAgentRun(runId);
-              if (!run) { activeRunsRef.current.delete(runId); continue; }
-
-              if (run.status === "completed") {
-                activeRunsRef.current.delete(runId);
-                refresh();
-                playChime();
-                dispatchNotification({
-                  id: runId,
-                  type: "pipeline_complete",
-                  title: "Pipeline complete ✨",
-                  body: `Found ${run.leadsFound ?? 0} leads · ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
-                  query: q,
-                  leadsFound: run.leadsFound ?? 0,
-                  emailsDrafted: run.emailsDrafted ?? 0,
-                  createdAt: new Date().toISOString(),
-                });
-                if (Notification.permission === "granted") {
-                  new Notification("FindX — Pipeline complete ✨", {
-                    body: `Found ${run.leadsFound ?? 0} leads for "${q}"`,
-                    icon: "/favicon.svg",
-                  });
-                }
-              } else if (run.status === "failed") {
-                activeRunsRef.current.delete(runId);
-                refresh();
-                dispatchNotification({
-                  id: runId,
-                  type: "pipeline_failed",
-                  title: "Pipeline failed",
-                  body: `Run for "${q}" encountered an error. ${run.error ?? ""}`.trim(),
-                  query: q,
-                  createdAt: new Date().toISOString(),
-                });
-              }
-            } catch { /* network blip */ }
-          }
-        }, 4_000);
-      }
-
+      startPollInterval();
     } catch {
       // error toast already shown by fetchApi
     } finally {
@@ -212,33 +122,19 @@ export default function PipelinePage() {
         placeholder={t.pipeline.placeholder}
         className="input text-xs py-1.5 w-56"
       />
-      <select
-        value={maxResults}
-        onChange={(e) => setMaxResults(Number(e.target.value))}
-        className="input text-xs py-1.5 w-20"
-      >
+      <select value={maxResults} onChange={(e) => setMaxResults(Number(e.target.value))} className="input text-xs py-1.5 w-20">
         {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as "ar" | "en" | "nl" | "fr" | "es" | "de")}
-        className="input text-xs py-1.5 w-28"
-      >
-        <option value="ar">🇸🇦 {t.agents.arabic}</option>
-        <option value="en">🇬🇧 {t.agents.english}</option>
-        <option value="nl">🇳🇱 {t.agents.dutch}</option>
-        <option value="fr">🇫🇷 {t.agents.french}</option>
-        <option value="es">🇪🇸 {t.agents.spanish}</option>
-        <option value="de">🇩🇪 {t.agents.german}</option>
+      <select value={lang} onChange={(e) => setLang(e.target.value as "ar" | "en" | "nl" | "fr" | "es" | "de")} className="input text-xs py-1.5 w-28">
+        <option value="ar">\u{1f1f8}\u{1f1e6} {t.agents.arabic}</option>
+        <option value="en">\u{1f1ec}\u{1f1e7} {t.agents.english}</option>
+        <option value="nl">\u{1f1f3}\u{1f1f1} {t.agents.dutch}</option>
+        <option value="fr">\u{1f1eb}\u{1f1f7} {t.agents.french}</option>
+        <option value="es">\u{1f1ea}\u{1f1f8} {t.agents.spanish}</option>
+        <option value="de">\u{1f1e9}\u{1f1ea} {t.agents.german}</option>
       </select>
-      <button
-        onClick={handleRun}
-        disabled={running || !query.trim()}
-        className="btn btn-primary text-xs px-3 py-1.5 gap-1.5"
-      >
-        {running
-          ? <Activity className="w-3.5 h-3.5 animate-pulse" />
-          : <Zap className="w-3.5 h-3.5" />}
+      <button onClick={handleRun} disabled={running || !query.trim()} className="btn btn-primary text-xs px-3 py-1.5 gap-1.5">
+        {running ? <Activity className="w-3.5 h-3.5 animate-pulse" /> : <Zap className="w-3.5 h-3.5" />}
         {running ? t.pipeline.running : t.pipeline.runPipeline}
       </button>
       <button onClick={refresh} className="btn btn-ghost px-2 py-1.5" title={t.pipeline.refresh}>
@@ -249,30 +145,18 @@ export default function PipelinePage() {
 
   return (
     <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads`} actions={runBar}>
-      {/* Status summary */}
       <div className="flex flex-wrap gap-2 mb-5">
         {STATUS_BADGES.map((s) => (
-          <span
-            key={s.key}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-            style={{
-              background: `${s.color}18`,
-              color: s.color,
-              border: `1px solid ${s.color}30`,
-            }}
-          >
+          <span key={s.key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+            style={{ background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` }}>
             {s.label}
             <span className="font-bold">{statusCounts[s.key] ?? 0}</span>
           </span>
         ))}
       </div>
-
-      {/* Kanban */}
       {leads.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center py-24 rounded-2xl"
-          style={{ border: "2px dashed var(--border)", background: "var(--bg-subtle)" }}
-        >
+        <div className="flex flex-col items-center justify-center py-24 rounded-2xl"
+          style={{ border: "2px dashed var(--border)", background: "var(--bg-subtle)" }}>
           <Zap className="w-10 h-10 mb-3 opacity-20" style={{ color: "var(--text-muted)" }} />
           <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t.pipeline.noLeads}</p>
           <p className="text-xs mt-1" style={{ color: "var(--text-subtle)" }}>{t.pipeline.noLeadsHint}</p>
@@ -280,7 +164,6 @@ export default function PipelinePage() {
       ) : (
         <KanbanBoard leads={leads} onSelectLead={(l: Lead) => setSelectedId(l.id)} onLeadMoved={refresh} />
       )}
-
       <LeadDetailPanel leadId={selectedId} onClose={() => setSelectedId(null)} onLeadUpdated={refresh} />
     </PageShell>
   );
