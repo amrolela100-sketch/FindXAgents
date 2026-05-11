@@ -95,7 +95,7 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
         ) : tab === "analysis" ? (
           <AnalysisPanel lead={lead} onLeadUpdated={() => { void refreshLead(); onLeadUpdated(); }} />
         ) : tab === "outreach" ? (
-          <OutreachPanel lead={lead} onLeadUpdated={() => { void refreshLead(); onLeadUpdated(); }} />
+          <OutreachPanel lead={lead} outreaches={lead.outreaches ?? []} onUpdate={() => { void refreshLead(); onLeadUpdated(); }} />
         ) : (
           <NotesPanel lead={lead} />
         )}
