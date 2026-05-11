@@ -1,8 +1,9 @@
 import { useTheme } from "../lib/theme-context";
 import { useLang } from "../lib/lang-context";
 import { useAuth } from "../lib/auth-context";
-import { Sun, Moon, Globe, Bell, LogOut } from "lucide-react";
+import { Sun, Moon, Globe, Bell, LogOut, CheckCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useNotifications } from "../lib/hooks/use-notifications";
 
 interface TopBarProps {
   title?: string;
@@ -15,8 +16,23 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const { lang, toggleLang, isRtl } = useLang();
   const { user, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
 
   const initial = (user?.email ?? "U")[0].toUpperCase();
+
+  function formatTime(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    return d.toLocaleDateString();
+  }
 
   return (
     <header
@@ -65,25 +81,124 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
           className="btn btn-ghost px-2 py-1.5"
           title="Toggle theme"
         >
-          {isDark
-            ? <Sun className="w-4 h-4" />
-            : <Moon className="w-4 h-4" />
-          }
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Notifications */}
-        <button className="btn btn-ghost px-2 py-1.5 relative">
-          <Bell className="w-4 h-4" />
-          <span
-            className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-            style={{ background: "var(--brand)" }}
-          />
-        </button>
+        {/* ── Notifications Bell ── */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setNotifOpen((v) => !v);
+              setUserMenuOpen(false);
+              if (!notifOpen && unreadCount > 0) markAllRead();
+            }}
+            className="btn btn-ghost px-2 py-1.5 relative"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-1 right-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-0.5"
+                style={{ background: "var(--brand)" }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notification dropdown */}
+          {notifOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
+              <div
+                className={`absolute ${isRtl ? "left-0" : "right-0"} top-10 w-80 z-20 rounded-xl overflow-hidden shadow-xl animate-slide-up`}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
+                }}
+              >
+                {/* Header */}
+                <div
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ borderBottom: "1px solid var(--border)" }}
+                >
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                    Notifications
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {notifications.length > 0 && (
+                      <>
+                        <button
+                          onClick={markAllRead}
+                          title="Mark all read"
+                          className="btn btn-ghost px-1.5 py-1"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                        </button>
+                        <button
+                          onClick={clearAll}
+                          title="Clear all"
+                          className="btn btn-ghost px-1.5 py-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="overflow-y-auto max-h-72">
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2">
+                      <Bell className="w-7 h-7 opacity-20" style={{ color: "var(--text-muted)" }} />
+                      <p className="text-xs" style={{ color: "var(--text-subtle)" }}>
+                        No notifications yet
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="flex gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-subtle)]"
+                        style={{
+                          borderBottom: "1px solid var(--border)",
+                          background: n.read ? undefined : "var(--brand-subtle)",
+                        }}
+                      >
+                        {/* Icon */}
+                        <span
+                          className="mt-0.5 text-base flex-shrink-0"
+                        >
+                          {n.type === "pipeline_complete" ? "✅" : "❌"}
+                        </span>
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                            {n.title}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                            {n.body}
+                          </p>
+                          <p className="text-[10px] mt-1" style={{ color: "var(--text-subtle)" }}>
+                            {formatTime(n.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* User menu */}
         <div className="relative ml-1">
           <button
-            onClick={() => setUserMenuOpen((v) => !v)}
+            onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all hover:opacity-80"
             style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
           >
@@ -92,10 +207,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
 
           {userMenuOpen && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setUserMenuOpen(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
               <div
                 className={`absolute ${isRtl ? "left-0" : "right-0"} top-9 w-52 z-20 rounded-xl overflow-hidden animate-slide-up`}
                 style={{
