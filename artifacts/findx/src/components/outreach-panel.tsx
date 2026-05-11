@@ -20,12 +20,12 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
   const [language, setLanguage] = useState<"ar" | "en" | "nl" | "fr" | "es" | "de">("en");
 
   const LANG_OPTIONS = [
-    { value: "ar", label: "\u{1F1F8}\u{1F1E6} Arabic" },
-    { value: "en", label: "\u{1F1EC}\u{1F1E7} English" },
-    { value: "nl", label: "\u{1F1F3}\u{1F1F1} Dutch" },
-    { value: "fr", label: "\u{1F1EB}\u{1F1F7} French" },
-    { value: "es", label: "\u{1F1EA}\u{1F1F8} Spanish" },
-    { value: "de", label: "\u{1F1E9}\u{1F1EA} German" },
+    { value: "ar", label: "🇸🇦 Arabic" },
+    { value: "en", label: "🇬🇧 English" },
+    { value: "nl", label: "🇳🇱 Dutch" },
+    { value: "fr", label: "🇫🇷 French" },
+    { value: "es", label: "🇪🇸 Spanish" },
+    { value: "de", label: "🇩🇪 German" },
   ];
 
   async function handleGenerate() {
