@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { getAgentRuns } from "../lib/api";
+import { ChevronDown, Square, Loader2 } from "lucide-react";
+import { getAgentRuns, cancelAgentRun } from "../lib/api";
 import type { AgentPipelineRun, AgentRunStatus } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
 
@@ -76,6 +76,16 @@ function RunRow({ run }: { run: AgentPipelineRun }) {
         <span className="text-xs text-[#BDBDB0] whitespace-nowrap">
           {formatRelativeTime(run.createdAt)}
         </span>
+        {(run.status === "running" || run.status === "queued") && (
+          <button
+            onClick={(e) => handleCancel(e, run.id)}
+            disabled={cancelling === run.id}
+            className="flex-shrink-0 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+            title="Cancel run"
+          >
+            {cancelling === run.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
+          </button>
+        )}
         <ChevronDown
           className={`w-3.5 h-3.5 text-[#BDBDB0] transition-transform shrink-0 ${
             expanded ? "rotate-180" : ""
