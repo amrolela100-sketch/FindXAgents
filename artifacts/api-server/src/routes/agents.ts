@@ -24,7 +24,7 @@ router.post("/agents/run", async (req, res) => {
     query: z.string().min(2).max(500),
     sync: z.boolean().default(false),
     maxResults: z.number().int().min(1).max(50).optional(),
-    language: z.enum(["en", "nl", "ar"]).default("en"),
+    language: z.enum(["en", "nl", "ar", "fr", "es", "de"]).default("en"),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
@@ -38,7 +38,7 @@ router.post("/agents/run", async (req, res) => {
 
     // Fire and forget agent runner
     const runner = new AgentRunner(run.id);
-    runner.run(parsed.data.query, parsed.data.maxResults ?? 10, req.user?.sub ?? null).catch(console.error);
+    runner.run(parsed.data.query, parsed.data.maxResults ?? 10, req.user?.sub ?? null, parsed.data.language as any).catch(console.error);
 
     return res.status(202).json({ runId: run.id, status: "queued", run });
   } catch (err) {

@@ -48,7 +48,7 @@ export interface OutreachResult {
 export async function analyzeLeadWithGemini(lead: LeadForAnalysis): Promise<AnalysisResult> {
   const client = getClient();
 
-  const prompt = `You are a B2B sales analyst for FindX, a Dutch digital marketing agency. Analyze this business lead for digital improvement potential.
+  const prompt = `You are a B2B sales analyst for FindX, a global AI-powered prospecting platform. Analyze this business lead for digital improvement potential.
 
 Business Details:
 - Name: ${lead.businessName}
@@ -57,9 +57,8 @@ Business Details:
 - Website: ${lead.website ?? "No website"}
 - Phone: ${lead.phone ?? "None"}
 - Email: ${lead.email ?? "None"}
-- KVK: ${lead.kvkNumber ?? "Unknown"}
-
-${lead.tavilyData ? `Tavily Enrichment Data:\n${lead.tavilyData}\n` : ""}
+${lead.kvkNumber ? `- Registration Number: ${lead.kvkNumber}\n` : ""}
+${lead.tavilyData ? `Web Research Data:\n${lead.tavilyData}\n` : ""}
 Score this lead 0-100 on how much they need digital marketing/web improvement (higher = more opportunity).
 
 Respond ONLY with valid JSON, no markdown, no code blocks:
@@ -69,9 +68,9 @@ Respond ONLY with valid JSON, no markdown, no code blocks:
   "opportunities": ["<3-4 specific digital improvement opportunities>"],
   "weaknesses": ["<2-3 current digital weaknesses>"],
   "recommendations": ["<3 actionable recommendations for the agency pitch>"],
-  "emailSubject": "<compelling Dutch email subject line>",
+  "emailSubject": "<compelling email subject line in English>",
   "digitalMaturity": "<low|medium|high>",
-  "estimatedRevenueImpact": "<e.g. €5,000-€15,000/year>"
+  "estimatedRevenueImpact": "<e.g. $5,000-$15,000/year>"
 }`;
 
   const response = await client.chat.completions.create({
@@ -92,18 +91,27 @@ Respond ONLY with valid JSON, no markdown, no code blocks:
   return parsed;
 }
 
+type SupportedLanguage = "ar" | "en" | "nl" | "fr" | "es" | "de";
+
+const LANG_INSTRUCTIONS: Record<SupportedLanguage, string> = {
+  ar: "اكتب بالعربية الفصحى المهنية. استخدم أسلوباً احترافياً ودوداً. ابدأ البريد بتحية مناسبة.",
+  en: "Write in professional English. Be direct, friendly, and concise.",
+  nl: "Write in professional Dutch (Nederlands). Address them formally as 'u'.",
+  fr: "Écrivez en français professionnel. Utilisez 'vous' pour s'adresser formellement.",
+  es: "Escribe en español profesional. Usa 'usted' para dirigirte formalmente.",
+  de: "Schreiben Sie auf professionellem Deutsch. Verwenden Sie 'Sie' zur formellen Anrede.",
+};
+
 export async function generateOutreachWithGemini(
   lead: LeadForAnalysis,
   analysis: AnalysisResult,
-  language: "nl" | "en" = "nl"
+  language: SupportedLanguage = "en"
 ): Promise<OutreachResult> {
   const client = getClient();
 
-  const langInstruction = language === "nl"
-    ? "Write in professional Dutch (Nederlands). Address them formally as 'u'."
-    : "Write in professional English.";
+  const langInstruction = LANG_INSTRUCTIONS[language] ?? LANG_INSTRUCTIONS.en;
 
-  const prompt = `You are a senior B2B sales copywriter for FindX, a Dutch digital marketing agency. Write a personalized cold outreach email.
+  const prompt = `You are a senior B2B sales copywriter for FindX, a global digital marketing platform. Write a personalized cold outreach email.
 
 Lead: ${lead.businessName}, ${lead.city}
 Industry: ${lead.industry ?? "Business"}
@@ -112,7 +120,7 @@ Digital score: ${analysis.score}/100
 Key opportunity: ${analysis.opportunities[0] ?? "Digital improvement"}
 Weakness found: ${analysis.weaknesses[0] ?? "Limited online presence"}
 
-${langInstruction}
+Language instruction: ${langInstruction}
 - Keep it under 150 words
 - Be specific about their business, not generic
 - Mention one concrete benefit (more customers, better visibility, etc.)
@@ -121,7 +129,7 @@ ${langInstruction}
 
 Respond ONLY with valid JSON, no markdown:
 {
-  "subject": "<email subject>",
+  "subject": "<email subject in the requested language>",
   "body": "<full email body with line breaks as \\n>",
   "language": "${language}"
 }`;

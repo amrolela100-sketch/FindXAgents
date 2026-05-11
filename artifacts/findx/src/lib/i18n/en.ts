@@ -17,7 +17,7 @@ export const en = {
   /* ── Auth ── */
   auth: {
     welcome:        "Welcome to FindX",
-    tagline:        "AI-powered B2B prospecting for the Netherlands market",
+    tagline:        "AI-powered B2B prospecting platform — global reach",
     signInGoogle:   "Continue with Google",
     signingIn:      "Signing in…",
     orContinueWith: "or continue with",
@@ -28,7 +28,7 @@ export const en = {
   /* ── Landing ── */
   landing: {
     heroTitle:    "Find your next client,\nautomatically.",
-    heroSubtitle: "FindX uses AI to discover, analyze, and reach out to high-probability leads in the Netherlands — while you focus on closing.",
+    heroSubtitle: "FindX uses AI to discover, analyze, and reach out to high-probability leads anywhere in the world — while you focus on closing.",
     getStarted:   "Get started free",
     learnMore:    "See how it works",
     badge:        "AI-powered B2B Prospecting",
@@ -48,7 +48,7 @@ export const en = {
       won:       "Won",
     },
     features: {
-      discover:  { title: "Discover",  desc: "AI finds businesses matching your ICP from KVK and web data." },
+      discover:  { title: "Discover",  desc: "AI finds businesses matching your ICP from web data and global directories." },
       analyze:   { title: "Analyze",   desc: "Score and rank leads by conversion probability." },
       outreach:  { title: "Outreach",  desc: "Generate personalized emails and send them in one click." },
     },
@@ -121,7 +121,7 @@ export const en = {
     title:        "Pipeline",
     runPipeline:  "Run Pipeline",
     running:      "Running…",
-    placeholder:  'e.g. "IT consultancy Amsterdam"',
+    placeholder:  'e.g. "IT consultancy Dubai" or "شركات تسويق الرياض"',
     maxResults:   "Max results",
     emailLang:    "Email language",
     refresh:      "Refresh",
@@ -135,7 +135,7 @@ export const en = {
     subtitle:      "Discovery → Analysis → Outreach",
     runPipeline:   "Run Pipeline",
     starting:      "Starting…",
-    placeholder:   'Search query — e.g. "Marketing agencies Utrecht"',
+    placeholder:   'Search query — e.g. "Marketing agencies Dubai" or "مكاتب محاسبة الرياض"',
     maxResults:    "Max results",
     emailLang:     "Email language",
     activeAgents:  "Active Agents",
@@ -147,6 +147,10 @@ export const en = {
     model:         "Model",
     dutch:         "Dutch",
     english:       "English",
+    arabic:        "Arabic",
+    french:        "French",
+    spanish:       "Spanish",
+    german:        "German",
     active:        "Active",
   },
 

@@ -17,7 +17,7 @@ export const ar: Translations = {
 
   auth: {
     welcome:        "أهلاً بك في FindX",
-    tagline:        "منصة B2B بالذكاء الاصطناعي لسوق هولندا",
+    tagline:        "منصة B2B بالذكاء الاصطناعي — وصول عالمي",
     signInGoogle:   "المتابعة عبر Google",
     signingIn:      "جارٍ تسجيل الدخول…",
     orContinueWith: "أو المتابعة بـ",
@@ -27,7 +27,7 @@ export const ar: Translations = {
 
   landing: {
     heroTitle:    "اعثر على عميلك القادم،\nبشكل تلقائي.",
-    heroSubtitle: "يستخدم FindX الذكاء الاصطناعي للاكتشاف والتحليل والتواصل مع العملاء المحتملين في هولندا — بينما تركّز أنت على الإغلاق.",
+    heroSubtitle: "يستخدم FindX الذكاء الاصطناعي للاكتشاف والتحليل والتواصل مع العملاء المحتملين في أي مكان بالعالم — بينما تركّز أنت على الإغلاق.",
     getStarted:   "ابدأ مجاناً",
     learnMore:    "كيف يعمل؟",
     badge:        "منصة B2B بالذكاء الاصطناعي",
@@ -47,7 +47,7 @@ export const ar: Translations = {
       won:       "رابح",
     },
     features: {
-      discover:  { title: "اكتشف",  desc: "يكتشف الذكاء الاصطناعي الشركات المطابقة لنموذج عميلك من KVK والبيانات الإلكترونية." },
+      discover:  { title: "اكتشف",  desc: "يكتشف الذكاء الاصطناعي الشركات المطابقة لنموذج عميلك من الويب والأدلة العالمية." },
       analyze:   { title: "حلّل",   desc: "تقييم وترتيب العملاء المحتملين حسب احتمالية التحويل." },
       outreach:  { title: "تواصل",  desc: "توليد رسائل بريد شخصية وإرسالها بنقرة واحدة." },
     },
@@ -117,7 +117,7 @@ export const ar: Translations = {
     title:        "خط الأنابيب",
     runPipeline:  "تشغيل خط الأنابيب",
     running:      "جارٍ التشغيل…",
-    placeholder:  'مثال: "استشارات IT في أمستردام"',
+    placeholder:  'مثال: "استشارات IT في دبي" أو "IT consultancy Dubai"',
     maxResults:   "الحد الأقصى للنتائج",
     emailLang:    "لغة البريد الإلكتروني",
     refresh:      "تحديث",
@@ -130,7 +130,7 @@ export const ar: Translations = {
     subtitle:      "اكتشاف ← تحليل ← تواصل",
     runPipeline:   "تشغيل خط الأنابيب",
     starting:      "جارٍ البدء…",
-    placeholder:   'استعلام البحث — مثال: "وكالات التسويق في أوتريخت"',
+    placeholder:   'استعلام البحث — مثال: "وكالات تسويق في دبي" أو "مكاتب محاسبة الرياض"',
     maxResults:    "الحد الأقصى للنتائج",
     emailLang:     "لغة البريد الإلكتروني",
     activeAgents:  "الوكلاء النشطون",
@@ -142,6 +142,10 @@ export const ar: Translations = {
     model:         "النموذج",
     dutch:         "هولندي",
     english:       "إنجليزي",
+    arabic:        "عربي",
+    french:        "فرنسي",
+    spanish:       "إسباني",
+    german:        "ألماني",
     active:        "نشط",
   },
 

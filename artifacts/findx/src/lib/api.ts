@@ -149,7 +149,7 @@ export function analyzeLead(id: string): Promise<{ analysis: Analysis; score: nu
   return fetchApi(`/leads/${id}/analyze`, { method: "POST" });
 }
 
-export function generateOutreach(id: string, language: "nl" | "en" = "nl"): Promise<{ outreach: Outreach }> {
+export function generateOutreach(id: string, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en"): Promise<{ outreach: Outreach }> {
   return fetchApi(`/leads/${id}/outreach/generate`, { method: "POST", body: JSON.stringify({ language }) });
 }
 
@@ -211,7 +211,7 @@ export function runAgentPipeline(data: {
   query: string;
   sync?: boolean;
   maxResults?: number;
-  language?: "en" | "nl" | "ar";
+  language?: "ar" | "en" | "nl" | "fr" | "es" | "de";
 }): Promise<{ runId: string; status: string; run: AgentPipelineRun }> {
   return fetchApi("/agents/run", { method: "POST", body: JSON.stringify(data) });
 }
@@ -382,7 +382,7 @@ export function triggerAgentRun(data: {
   query: string;
   sync?: boolean;
   maxResults?: number;
-  language?: "en" | "nl" | "ar";
+  language?: "ar" | "en" | "nl" | "fr" | "es" | "de";
 }): Promise<{ runId: string; status: string; run: AgentPipelineRun }> {
   return runAgentPipeline(data);
 }

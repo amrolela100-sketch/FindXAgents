@@ -56,7 +56,7 @@ export default function AgentsPage() {
   const { t } = useLang();
   const [query, setQuery] = useState("");
   const [maxResults, setMaxResults] = useState(10);
-  const [emailLang, setEmailLang] = useState<"nl" | "en">("nl");
+  const [emailLang, setEmailLang] = useState<"ar" | "en" | "nl" | "fr" | "es" | "de">("en");
   const [starting, setStarting] = useState(false);
 
   const { data: agentsData } = useRealtimeData(() => getAgents(), ["agents"], 60_000);
@@ -118,9 +118,13 @@ export default function AgentsPage() {
             </div>
             <div className="flex items-center gap-2">
               <label className="text-xs" style={{ color: "var(--text-muted)" }}>{t.agents.emailLang}:</label>
-              <select value={emailLang} onChange={(e) => setEmailLang(e.target.value as "nl" | "en")} className="input py-1.5 w-28 text-xs">
-                <option value="nl">🇳🇱 {t.agents.dutch}</option>
+              <select value={emailLang} onChange={(e) => setEmailLang(e.target.value as typeof emailLang)} className="input py-1.5 w-32 text-xs">
+                <option value="ar">🇸🇦 {t.agents.arabic}</option>
                 <option value="en">🇬🇧 {t.agents.english}</option>
+                <option value="nl">🇳🇱 {t.agents.dutch}</option>
+                <option value="fr">🇫🇷 {t.agents.french}</option>
+                <option value="es">🇪🇸 {t.agents.spanish}</option>
+                <option value="de">🇩🇪 {t.agents.german}</option>
               </select>
             </div>
             <div className="flex-1" />

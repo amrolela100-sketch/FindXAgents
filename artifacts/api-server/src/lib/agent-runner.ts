@@ -41,7 +41,7 @@ async function logToDB(agentId: string, runId: string, phase: string, level: str
 export class AgentRunner {
   constructor(private runId: string) {}
 
-  async run(query: string, maxResults: number = 10, userId: string | null) {
+  async run(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     try {
       // 1. Mark as running
       await db.update(agentPipelineRuns)
@@ -59,17 +59,17 @@ export class AgentRunner {
       const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, agent.id));
       
       // If no skills are defined, we'll use a hardcoded fallback pipeline for the requirement
-      const pipelineSkills = skills.length > 0 ? skills.map(s => s.name) : ["discover-kvk", "qualify-ai", "stage-pipeline"];
+      const pipelineSkills = skills.length > 0 ? skills.map(s => s.name) : ["discover-web", "qualify-ai", "stage-pipeline"];
 
       let discoveredLeadIds: string[] = [];
 
       for (const skill of pipelineSkills) {
         await logToDB(agent.id, this.runId, skill, "info", `Starting skill execution: ${skill}`);
 
-        if (skill === "discover-kvk") {
-          discoveredLeadIds = await this.skillDiscoverKvk(agent.id, query, maxResults, userId);
+        if (skill === "discover-kvk" || skill === "discover-web") {
+          discoveredLeadIds = await this.skillDiscoverWeb(agent.id, query, maxResults, userId);
         } else if (skill === "qualify-ai") {
-          await this.skillQualifyAi(agent.id, discoveredLeadIds);
+          await this.skillQualifyAi(agent.id, discoveredLeadIds, language);
         } else if (skill === "stage-pipeline") {
           await this.skillStagePipeline(agent.id, discoveredLeadIds);
         } else {
@@ -92,13 +92,53 @@ export class AgentRunner {
     }
   }
 
-  private async skillDiscoverKvk(agentId: string, query: string, maxResults: number, userId: string | null): Promise<string[]> {
+  private async skillDiscoverWeb(agentId: string, query: string, maxResults: number, userId: string | null): Promise<string[]> {
     const kvkKey = process.env.KVK_API_KEY;
     const googleKey = process.env.GOOGLE_MAPS_API_KEY;
+    const tavilyKey = process.env.TAVILY_API_KEY;
     let items: any[] = [];
 
-    if (kvkKey) {
-      await logToDB(agentId, this.runId, "discover-kvk", "info", `Searching KVK for: ${query}`);
+    // 1. Try Tavily (global, Arabic-friendly web search)
+    if (tavilyKey && items.length === 0) {
+      await logToDB(agentId, this.runId, "discover-web", "info", `Searching web via Tavily for: ${query}`);
+      try {
+        const res = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: tavilyKey,
+            query: `${query} business contact email phone`,
+            search_depth: "basic",
+            max_results: Math.min(maxResults * 2, 20),
+            include_domains: [],
+            exclude_domains: [],
+          }),
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          items = (data.results || []).slice(0, maxResults).map((r: any) => {
+            // Extract business name from title
+            const title = r.title?.replace(/ - .*$/, "").replace(/ \| .*$/, "").trim();
+            // Try to extract city from snippet or url
+            const urlMatch = r.url?.match(/([a-z]{2,})\.(com|net|org|ae|sa|eg|ma|qa|kw|bh|om)/i);
+            return {
+              businessName: title || r.url,
+              city: "—",
+              website: r.url,
+              industry: query,
+              tavilyData: r.content?.slice(0, 500),
+              source: "tavily",
+            };
+          }).filter((item: any) => item.businessName && item.businessName.length > 2);
+        }
+      } catch (e: any) {
+        await logToDB(agentId, this.runId, "discover-web", "warn", `Tavily search failed: ${e.message}`);
+      }
+    }
+
+    // 2. Fallback: KVK (Netherlands only)
+    if (kvkKey && items.length === 0) {
+      await logToDB(agentId, this.runId, "discover-web", "info", `Searching KVK for: ${query}`);
       const res = await fetch(`https://api.kvk.nl/api/v1/zoeken?handelsnaam=${encodeURIComponent(query)}&type=hoofdvestiging&resultatenPerPagina=${Math.min(maxResults, 100)}`, {
         headers: { "x-api-key": kvkKey }
       });
@@ -113,11 +153,15 @@ export class AgentRunner {
             address: adres.straatnaam ? `${adres.straatnaam} ${adres.huisnummer || ""}`.trim() : undefined,
             website: item.websites?.[0],
             industry: item.sbiActiviteiten?.[0]?.sbiOmschrijving,
+            source: "kvk_api",
           };
         });
       }
-    } else if (googleKey) {
-      await logToDB(agentId, this.runId, "discover-kvk", "info", `Searching Google Places for: ${query}`);
+    }
+
+    // 3. Fallback: Google Places
+    if (googleKey && items.length === 0) {
+      await logToDB(agentId, this.runId, "discover-web", "info", `Searching Google Places for: ${query}`);
       const res = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${googleKey}`);
       if (res.ok) {
         const data: any = await res.json();
@@ -128,6 +172,7 @@ export class AgentRunner {
             city: cityMatch ? cityMatch[1].trim() : "Unknown",
             address: item.formatted_address,
             industry: item.types?.join(", "),
+            source: "google_places",
           };
         });
       }
@@ -158,7 +203,7 @@ export class AgentRunner {
           userId,
           ...lead,
           hasWebsite: !!lead.website,
-          source: kvkKey ? "kvk_api" : "google_places",
+          source: lead.source ?? "web_search",
           status: "discovered"
         }).returning({ id: leads.id });
         insertedIds.push(newLead.id);
@@ -170,11 +215,11 @@ export class AgentRunner {
       .set({ leadsFound: insertedIds.length })
       .where(eq(agentPipelineRuns.id, this.runId));
 
-    await logToDB(agentId, this.runId, "discover-kvk", "info", `Discovered and saved ${insertedIds.length} new leads`);
+    await logToDB(agentId, this.runId, "discover-web", "info", `Discovered and saved ${insertedIds.length} new leads`);
     return insertedIds;
   }
 
-  private async skillQualifyAi(agentId: string, leadIds: string[]) {
+  private async skillQualifyAi(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     if (leadIds.length === 0) return;
     
     await logToDB(agentId, this.runId, "qualify-ai", "info", `Analyzing ${leadIds.length} leads with Gemini...`);
