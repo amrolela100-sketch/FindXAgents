@@ -3,6 +3,7 @@ import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
+import pLimit from "p-limit";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
   let lastError: unknown;
@@ -12,7 +13,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): 
     } catch (err) {
       lastError = err;
       if (attempt < retries) {
-        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+        // Jitter prevents thundering herd when multiple retries fire at once
+        const jitter = Math.random() * 0.3 * delayMs;
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt + jitter));
       }
     }
   }
@@ -383,141 +386,156 @@ export class AgentRunner {
   private async skillQualifyAi(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     if (leadIds.length === 0) return;
 
-    await logToDB(agentId, this.runId, "qualify-ai", "info", `Analyzing ${leadIds.length} leads (with real website scraping)...`);
+    await logToDB(agentId, this.runId, "qualify-ai", "info",
+      `Analyzing ${leadIds.length} leads in parallel (max 5 concurrent)...`
+    );
+
+    // ── Concurrency: 5 parallel scrapes + AI calls ───────────────────────────
+    // Scrapy deep audit takes ~30-90s per site. With p-limit(5):
+    //   10 leads × 60s avg / 5 concurrency ≈ ~2 min instead of ~10 min
+    // Gemini calls are fast (~2-5s) so they don't need separate limiting.
+    const scrapeLimit = pLimit(5);
+    const aiLimit     = pLimit(8); // Gemini rate limit: generous, but cap anyway
+
     let analyzedCount = 0;
 
-    for (const id of leadIds) {
-      const [lead] = await db.select().from(leads).where(eq(leads.id, id));
-      if (!lead) continue;
+    const tasks = leadIds.map(id =>
+      scrapeLimit(async () => {
+        const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+        if (!lead) return;
 
-      // ── Follow-up website search for leads with no URL ───────────────────
-      let resolvedWebsite = lead.website;
-      if (!resolvedWebsite) {
-        await logToDB(agentId, this.runId, "qualify-ai", "info",
-          `${lead.businessName} has no website — attempting follow-up search...`
-        );
-        const found = await this.findWebsiteForLead(agentId, lead.businessName, lead.industry);
-        if (found) {
-          resolvedWebsite = found;
-          // Persist the discovered website back to the lead
-          await db.update(leads).set({ website: found, hasWebsite: true, updatedAt: new Date() }).where(eq(leads.id, id));
-        } else {
+        // ── Follow-up website search for leads with no URL ─────────────────
+        let resolvedWebsite = lead.website;
+        if (!resolvedWebsite) {
           await logToDB(agentId, this.runId, "qualify-ai", "info",
-            `No website found for "${lead.businessName}" — will score as no-website opportunity`
+            `${lead.businessName} has no website — attempting follow-up search...`
           );
-        }
-      }
-
-      // ── Smart scrape: tries Scrapy deep audit first, falls back to built-in ──
-      let scrapedData: ScrapedWebsite | ScrapyAuditResult | undefined;
-      if (resolvedWebsite) {
-        try {
-          await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping website: ${resolvedWebsite}`);
-          scrapedData = await smartScrape(resolvedWebsite, 10000);
-
-          const isDeep = (scrapedData as ScrapyAuditResult).isDeepAudit;
-          if (isDeep) {
-            const d = scrapedData as ScrapyAuditResult;
-            await logToDB(agentId, this.runId, "qualify-ai", "info",
-              `Deep audit complete for ${lead.businessName}: ${d.pagesCrawled} pages, ` +
-              `score=${d.deepScore}, grade=${d.grade}, ` +
-              `emails=${d.emailAddresses.length}, phones=${d.phoneNumbers.length}, ` +
-              `broken_links=${d.brokenLinksCount}, techs=${d.technologies.join(", ")}`
-            );
+          const found = await this.findWebsiteForLead(agentId, lead.businessName, lead.industry);
+          if (found) {
+            resolvedWebsite = found;
+            await db.update(leads).set({ website: found, hasWebsite: true, updatedAt: new Date() }).where(eq(leads.id, id));
           } else {
             await logToDB(agentId, this.runId, "qualify-ai", "info",
-              `Quick scrape for ${lead.businessName}: reachable=${scrapedData.reachable}, https=${scrapedData.isHttps}, ` +
-              `emails=${scrapedData.emailAddresses.length}, phones=${scrapedData.phoneNumbers.length}, ` +
-              `social=${Object.keys(scrapedData.socialLinks).length}, loadTime=${scrapedData.loadTimeMs}ms`
+              `No website found for "${lead.businessName}" — scoring as no-website opportunity`
             );
           }
-        } catch (e: any) {
-          await logToDB(agentId, this.runId, "qualify-ai", "warn", `Scrape failed for ${resolvedWebsite}: ${e.message}`);
         }
-      }
 
-      try {
-        // Pass the resolved website URL (may have been enriched via follow-up search)
-        const leadForAnalysis = resolvedWebsite !== lead.website
-          ? { ...lead, website: resolvedWebsite }
-          : lead;
-        const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData), 3, 1000);
+        // ── Smart scrape (Scrapy deep audit → fallback to built-in) ──────────
+        let scrapedData: ScrapedWebsite | ScrapyAuditResult | undefined;
+        if (resolvedWebsite) {
+          try {
+            await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping: ${resolvedWebsite}`);
+            scrapedData = await smartScrape(resolvedWebsite, 10_000);
 
-        // Build extended context for richer findings
-        const deepAudit = scrapedData ? (scrapedData as ScrapyAuditResult) : null;
+            const isDeep = (scrapedData as ScrapyAuditResult).isDeepAudit;
+            if (isDeep) {
+              const d = scrapedData as ScrapyAuditResult;
+              await logToDB(agentId, this.runId, "qualify-ai", "info",
+                `✅ Deep audit — ${lead.businessName}: ${d.pagesCrawled} pages, ` +
+                `score=${d.deepScore}, grade=${d.grade}, ` +
+                `emails=${d.emailAddresses.length}, broken=${d.brokenLinksCount}, ` +
+                `techs=${d.technologies.slice(0, 3).join(", ")}`
+              );
+            } else {
+              await logToDB(agentId, this.runId, "qualify-ai", "info",
+                `✅ Quick scrape — ${lead.businessName}: reachable=${scrapedData.reachable}, ` +
+                `https=${scrapedData.isHttps}, emails=${scrapedData.emailAddresses.length}, ` +
+                `loadTime=${scrapedData.loadTimeMs}ms`
+              );
+            }
+          } catch (e: any) {
+            await logToDB(agentId, this.runId, "qualify-ai", "warn",
+              `Scrape failed for ${resolvedWebsite}: ${e.message}`
+            );
+          }
+        }
 
-        await db.insert(analyses).values({
-          leadId: lead.id,
-          type: "gemini_digital",
-          score: result.score,
-          findings: {
-            summary: result.summary,
-            weaknesses: result.weaknesses,
-            recommendations: result.recommendations,
-            emailSubject: result.emailSubject,
-            digitalMaturity: result.digitalMaturity,
-            estimatedRevenueImpact: result.estimatedRevenueImpact,
-            // Deep audit fields (when Scrapy is available)
-            ...(deepAudit?.isDeepAudit ? {
-              deepAudit: {
-                deepScore:              deepAudit.deepScore,
-                grade:                  deepAudit.grade,
-                pagesCrawled:           deepAudit.pagesCrawled,
-                technologies:           deepAudit.technologies,
-                brokenLinksCount:       deepAudit.brokenLinksCount,
-                securityHeadersPresent: deepAudit.securityHeadersPresent,
-                seoIssues:              deepAudit.seoIssues,
-                issues:                 deepAudit.issues,
-                strengths:              deepAudit.strengths,
-                breakdown:              deepAudit.breakdown,
+        // ── AI analysis (separate concurrency limit) ──────────────────────
+        await aiLimit(async () => {
+          try {
+            const leadForAnalysis = resolvedWebsite !== lead.website
+              ? { ...lead, website: resolvedWebsite }
+              : lead;
+            const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData), 3, 1_000);
+
+            const deepAudit = scrapedData ? (scrapedData as ScrapyAuditResult) : null;
+
+            await db.insert(analyses).values({
+              leadId: lead.id,
+              type: "gemini_digital",
+              score: result.score,
+              findings: {
+                summary:               result.summary,
+                weaknesses:            result.weaknesses,
+                recommendations:       result.recommendations,
+                emailSubject:          result.emailSubject,
+                digitalMaturity:       result.digitalMaturity,
+                estimatedRevenueImpact: result.estimatedRevenueImpact,
+                ...(deepAudit?.isDeepAudit ? {
+                  deepAudit: {
+                    deepScore:              deepAudit.deepScore,
+                    grade:                  deepAudit.grade,
+                    pagesCrawled:           deepAudit.pagesCrawled,
+                    technologies:           deepAudit.technologies,
+                    brokenLinksCount:       deepAudit.brokenLinksCount,
+                    securityHeadersPresent: deepAudit.securityHeadersPresent,
+                    seoIssues:              deepAudit.seoIssues,
+                    issues:                 deepAudit.issues,
+                    strengths:              deepAudit.strengths,
+                    breakdown:              deepAudit.breakdown,
+                  },
+                } : {}),
+                scrapingMetrics: scrapedData ? {
+                  reachable:      scrapedData.reachable,
+                  isHttps:        scrapedData.isHttps,
+                  loadTimeMs:     scrapedData.loadTimeMs,
+                  emailsFound:    scrapedData.emailAddresses.length,
+                  phonesFound:    scrapedData.phoneNumbers.length,
+                  hasSocialMedia: scrapedData.hasSocialMedia,
+                  hasBlog:        scrapedData.hasBlog,
+                  hasContactPage: scrapedData.hasContactPage,
+                  wordCount:      scrapedData.wordCount,
+                } : null,
               },
-            } : {}),
-            // Scraping metrics (always present)
-            scrapingMetrics: scrapedData ? {
-              reachable:       scrapedData.reachable,
-              isHttps:         scrapedData.isHttps,
-              loadTimeMs:      scrapedData.loadTimeMs,
-              emailsFound:     scrapedData.emailAddresses.length,
-              phonesFound:     scrapedData.phoneNumbers.length,
-              hasSocialMedia:  scrapedData.hasSocialMedia,
-              hasBlog:         scrapedData.hasBlog,
-              hasContactPage:  scrapedData.hasContactPage,
-              wordCount:       scrapedData.wordCount,
-            } : null,
-          },
-          opportunities: result.opportunities,
+              opportunities: result.opportunities,
+            });
+
+            const updatePayload: any = {
+              status: "analyzed",
+              leadScore: result.score,
+              updatedAt: new Date(),
+            };
+            if (scrapedData) {
+              if (scrapedData.emailAddresses.length > 0 && !lead.email)
+                updatePayload.email = scrapedData.emailAddresses[0];
+              if (scrapedData.phoneNumbers.length > 0 && !lead.phone)
+                updatePayload.phone = scrapedData.phoneNumbers[0];
+            }
+            await db.update(leads).set(updatePayload).where(eq(leads.id, lead.id));
+
+            analyzedCount++;
+            await logToDB(agentId, this.runId, "qualify-ai", "info",
+              `✅ ${lead.businessName}: Score=${result.score}, Maturity=${result.digitalMaturity}`
+            );
+          } catch (e: any) {
+            await logToDB(agentId, this.runId, "qualify-ai", "error",
+              `Failed to analyze ${lead.businessName}: ${e.message}`
+            );
+          }
         });
+      })
+    );
 
-        // Update lead with enriched data from scraping
-        const updatePayload: any = {
-          status: "analyzed",
-          leadScore: result.score,
-          updatedAt: new Date(),
-        };
-
-        if (scrapedData) {
-          if (scrapedData.emailAddresses.length > 0 && !lead.email) {
-            updatePayload.email = scrapedData.emailAddresses[0];
-          }
-          if (scrapedData.phoneNumbers.length > 0 && !lead.phone) {
-            updatePayload.phone = scrapedData.phoneNumbers[0];
-          }
-        }
-
-        await db.update(leads).set(updatePayload).where(eq(leads.id, lead.id));
-
-        analyzedCount++;
-        await logToDB(agentId, this.runId, "qualify-ai", "info",
-          `Analyzed ${lead.businessName}: Score ${result.score} (grounded from real scraping)`
-        );
-      } catch (e: any) {
-        await logToDB(agentId, this.runId, "qualify-ai", "error", `Failed to analyze ${lead.businessName}: ${e.message}`);
-      }
-    }
+    await Promise.allSettled(tasks);
 
     await db.update(agentPipelineRuns)
       .set({ leadsAnalyzed: analyzedCount })
       .where(eq(agentPipelineRuns.id, this.runId));
+
+    await logToDB(agentId, this.runId, "qualify-ai", "info",
+      `Parallel analysis complete: ${analyzedCount}/${leadIds.length} leads analyzed`
+    );
   }
 
   private async skillStagePipeline(agentId: string, leadIds: string[]) {
@@ -546,91 +564,111 @@ export class AgentRunner {
     if (leadIds.length === 0) return;
 
     await logToDB(agentId, this.runId, "generate-outreach", "info",
-      `Generating personalized outreach emails for ${leadIds.length} leads in ${language}...`
+      `Generating outreach emails for ${leadIds.length} leads in parallel (max 6 concurrent)...`
     );
+
+    // 6 concurrent Gemini calls — fast enough, stays within API rate limits
+    const limit = pLimit(6);
     let emailCount = 0;
 
-    for (const id of leadIds) {
-      try {
-        const [lead] = await db.select().from(leads).where(eq(leads.id, id));
-        if (!lead) continue;
+    const tasks = leadIds.map(id =>
+      limit(async () => {
+        try {
+          const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+          if (!lead) return;
 
-        const [analysis] = await db.select().from(analyses)
-          .where(eq(analyses.leadId, id))
-          .orderBy(analyses.createdAt)
-          .limit(1);
+          const [analysis] = await db.select().from(analyses)
+            .where(eq(analyses.leadId, id))
+            .orderBy(analyses.createdAt)
+            .limit(1);
 
-        if (!analysis) {
-          await logToDB(agentId, this.runId, "generate-outreach", "warn",
-            `No analysis found for ${lead.businessName}, skipping outreach`
-          );
-          continue;
-        }
+          if (!analysis) {
+            await logToDB(agentId, this.runId, "generate-outreach", "warn",
+              `No analysis for ${lead.businessName} — skipping`
+            );
+            return;
+          }
 
-        const findings = analysis.findings as Record<string, any>;
-        const analysisResult = {
-          score: analysis.score ?? 50,
-          summary: findings?.summary ?? "",
-          opportunities: (analysis.opportunities as string[]) ?? [],
-          weaknesses: findings?.weaknesses ?? [],
-          recommendations: findings?.recommendations ?? [],
-          emailSubject: findings?.emailSubject ?? `Partnership opportunity for ${lead.businessName}`,
-          digitalMaturity: findings?.digitalMaturity ?? "medium",
-          estimatedRevenueImpact: findings?.estimatedRevenueImpact ?? "",
-        };
-
-        // Reconstruct scrapedData from stored metrics for outreach personalization
-        let scrapedSummary: any = null;
-        if (findings?.scrapingMetrics) {
-          scrapedSummary = {
-            url: lead.website ?? "",
-            reachable: findings.scrapingMetrics.reachable,
-            isHttps: findings.scrapingMetrics.isHttps,
-            emailAddresses: findings.scrapingMetrics.emailsFound > 0 ? ["found"] : [],
-            phoneNumbers: findings.scrapingMetrics.phonesFound > 0 ? ["found"] : [],
-            socialLinks: findings.scrapingMetrics.hasSocialMedia ? { linkedin: "found" } : {},
-            hasBlog: findings.scrapingMetrics.hasBlog,
-            hasContactPage: findings.scrapingMetrics.hasContactPage,
-            hasPrivacyPolicy: false,
-            hasSocialMedia: findings.scrapingMetrics.hasSocialMedia,
-            loadTimeMs: findings.scrapingMetrics.loadTimeMs,
-            wordCount: findings.scrapingMetrics.wordCount,
+          const findings = analysis.findings as Record<string, any>;
+          const analysisResult = {
+            score:                  analysis.score ?? 50,
+            summary:                findings?.summary ?? "",
+            opportunities:          (analysis.opportunities as string[]) ?? [],
+            weaknesses:             findings?.weaknesses ?? [],
+            recommendations:        findings?.recommendations ?? [],
+            emailSubject:           findings?.emailSubject ?? `Partnership opportunity for ${lead.businessName}`,
+            digitalMaturity:        findings?.digitalMaturity ?? "medium",
+            estimatedRevenueImpact: findings?.estimatedRevenueImpact ?? "",
           };
+
+          // Reconstruct scraped context from stored metrics
+          let scrapedSummary: any = null;
+          if (findings?.scrapingMetrics) {
+            const m = findings.scrapingMetrics;
+            scrapedSummary = {
+              url:             lead.website ?? "",
+              reachable:       m.reachable,
+              isHttps:         m.isHttps,
+              emailAddresses:  m.emailsFound > 0 ? ["found"] : [],
+              phoneNumbers:    m.phonesFound > 0 ? ["found"] : [],
+              socialLinks:     m.hasSocialMedia ? { linkedin: "found" } : {},
+              hasBlog:         m.hasBlog,
+              hasContactPage:  m.hasContactPage,
+              hasPrivacyPolicy: false,
+              hasSocialMedia:  m.hasSocialMedia,
+              loadTimeMs:      m.loadTimeMs,
+              wordCount:       m.wordCount,
+            };
+          }
+          // Also pass deep audit issues if available
+          if (findings?.deepAudit) {
+            scrapedSummary = {
+              ...scrapedSummary,
+              isDeepAudit:        true,
+              technologies:       findings.deepAudit.technologies ?? [],
+              brokenLinksCount:   findings.deepAudit.brokenLinksCount ?? 0,
+              seoIssues:          findings.deepAudit.seoIssues ?? [],
+            };
+          }
+
+          const outreach = await withRetry(
+            () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary),
+            2,
+            1_000
+          );
+
+          await db.insert(outreaches).values({
+            leadId: id,
+            subject: outreach.subject,
+            body: outreach.body,
+            status: "draft",
+            personalizedDetails: { language: outreach.language, generatedBy: "pipeline" },
+          });
+
+          await db.update(leads)
+            .set({ status: "contacting", updatedAt: new Date() })
+            .where(eq(leads.id, id));
+
+          emailCount++;
+          await logToDB(agentId, this.runId, "generate-outreach", "info",
+            `✅ Email for ${lead.businessName}`
+          );
+        } catch (e: any) {
+          await logToDB(agentId, this.runId, "generate-outreach", "error",
+            `Failed outreach for lead ${id}: ${e.message}`
+          );
         }
+      })
+    );
 
-        const outreach = await withRetry(
-          () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary),
-          2,
-          1000
-        );
-
-        await db.insert(outreaches).values({
-          leadId: id,
-          subject: outreach.subject,
-          body: outreach.body,
-          status: "draft",
-          personalizedDetails: { language: outreach.language, generatedBy: "pipeline" },
-        });
-
-        await db.update(leads).set({ status: "contacting", updatedAt: new Date() }).where(eq(leads.id, id));
-
-        emailCount++;
-        await logToDB(agentId, this.runId, "generate-outreach", "info",
-          `Generated personalized email for ${lead.businessName}`
-        );
-      } catch (e: any) {
-        await logToDB(agentId, this.runId, "generate-outreach", "error",
-          `Failed to generate outreach for lead ${id}: ${e.message}`
-        );
-      }
-    }
+    await Promise.allSettled(tasks);
 
     await db.update(agentPipelineRuns)
       .set({ emailsDrafted: emailCount })
       .where(eq(agentPipelineRuns.id, this.runId));
 
     await logToDB(agentId, this.runId, "generate-outreach", "info",
-      `Generated ${emailCount} grounded outreach emails`
+      `Parallel outreach complete: ${emailCount}/${leadIds.length} emails generated`
     );
   }
 }
