@@ -74,7 +74,9 @@ export async function runMigrations() {
   }
 }
 
-// Allow running directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Allow running directly as a standalone script (not when bundled)
+// Use: node --loader tsx lib/db/src/migrate.ts
+const isDirectRun = process.argv[1]?.includes("migrate") && !process.argv[1]?.includes("dist/index");
+if (isDirectRun) {
   runMigrations().then(() => process.exit(0)).catch(() => process.exit(1));
 }
