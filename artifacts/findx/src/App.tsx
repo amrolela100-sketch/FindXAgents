@@ -32,6 +32,7 @@ function AuthGuard() {
   const { user, loading } = useAuth();
   const { isRtl } = useLang();
   const [location] = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   if (loading) {
     return (
@@ -53,8 +54,6 @@ function AuthGuard() {
     if (location === "/login") return <LoginPage />;
     return <LandingPage />;
   }
-
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const isAdmin =
     ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) ||
