@@ -218,8 +218,8 @@ const EMPTY_FORM = {
   maxTokens: 4096,
 };
 
-const inputCls = "w-full px-3 py-2 border border-[#E5E3D9] rounded-lg text-sm bg-white text-[#1A1A1A] placeholder:text-[#BDBDB0] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#C4C0B8]";
-const labelCls = "block text-xs font-medium text-[#7A756D] mb-1";
+const inputCls = "w-full px-3 py-2 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] text-[var(--text)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#C4C0B8]";
+const labelCls = "block text-xs font-medium text-[var(--text-muted)] mb-1";
 
 // ─── Advanced Settings sub-component ────────────────────────────────────────
 function AdvancedSettings({
@@ -235,17 +235,17 @@ function AdvancedSettings({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-[#E5E3D9] rounded-xl overflow-hidden">
+    <div className="border-[var(--glass-border)] rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#FAFAF8] hover:bg-[#F0EDE6] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#FAFAF8] hover:bg-[var(--glass-raised)] transition-colors text-left"
       >
-        <span className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider">Advanced Settings</span>
-        {open ? <ChevronUp className="w-3.5 h-3.5 text-[#BDBDB0]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#BDBDB0]" />}
+        <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Advanced Settings</span>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-[var(--text-subtle)]" /> : <ChevronDown className="w-3.5 h-3.5 text-[var(--text-subtle)]" />}
       </button>
       {open && (
-        <div className="p-4 space-y-3 bg-white">
+        <div className="p-4 space-y-3 bg-[var(--glass)]">
           <div>
             <label className={labelCls}>Display Name</label>
             <input type="text" value={form.name}
@@ -257,7 +257,7 @@ function AdvancedSettings({
             <div>
               <label className={labelCls}>
                 Base URL
-                {isOllama && <span className="ml-1 text-[#BDBDB0]">(default: http://localhost:11434/v1)</span>}
+                {isOllama && <span className="ml-1 text-[var(--text-subtle)]">(default: http://localhost:11434/v1)</span>}
               </label>
               <input type="text" value={form.baseUrl}
                 onChange={e => setForm({ ...form, baseUrl: e.target.value })}
@@ -267,7 +267,7 @@ function AdvancedSettings({
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Temperature <span className="text-[#BDBDB0]">(0–2, default 0.7)</span></label>
+              <label className={labelCls}>Temperature <span className="text-[var(--text-subtle)]">(0–2, default 0.7)</span></label>
               <input type="number" step="0.1" min="0" max="2"
                 value={form.temperature}
                 onChange={e => setForm({ ...form, temperature: e.target.value })}
@@ -275,7 +275,7 @@ function AdvancedSettings({
                 className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Max Tokens <span className="text-[#BDBDB0]">(default 4096)</span></label>
+              <label className={labelCls}>Max Tokens <span className="text-[var(--text-subtle)]">(default 4096)</span></label>
               <input type="number" min="1" max="65536"
                 value={form.maxTokens}
                 onChange={e => setForm({ ...form, maxTokens: parseInt(e.target.value) || 4096 })}
@@ -680,19 +680,19 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 bg-[#F7F5F0] min-h-screen">
+    <div className="p-8 space-y-6 bg-[var(--bg)] min-h-screen">
       <div>
-        <h2 className="text-2xl font-serif font-bold text-[#1A1A1A]">Settings</h2>
-        <p className="text-sm text-[#7A756D] mt-0.5">Configure API endpoints, AI providers, and manage data.</p>
+        <h2 className="text-2xl font-serif font-bold text-[var(--text)]">Settings</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-0.5">Configure API endpoints, AI providers, and manage data.</p>
       </div>
 
-      <div className="flex gap-1 p-1 bg-white border border-[#E5E3D9] rounded-lg w-fit">
+      <div className="flex gap-1 p-1 glass-card rounded-lg w-fit">
         {TABS.map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-[#1A1A1A] text-white"
-                : "text-[#7A756D] hover:text-[#1A1A1A] hover:bg-[#F0EDE6]"
+                : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--glass-raised)]"
             }`}>
             {tab.icon}
             {tab.label}
@@ -704,8 +704,8 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-[#7A756D]" />
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">AI Providers</h3>
+              <Settings2 className="w-4 h-4 text-[var(--text-muted)]" />
+              <h3 className="text-sm font-semibold text-[var(--text)]">AI Providers</h3>
             </div>
             <button onClick={openAddForm}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#1A1A1A] text-white rounded-lg hover:bg-[#333] transition-colors">
@@ -726,24 +726,24 @@ export default function SettingsPage() {
                     <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded">ENV FALLBACK</span>
                   )}
                 </div>
-                <p className="text-xs text-[#7A756D] truncate">
+                <p className="text-xs text-[var(--text-muted)] truncate">
                   {PROVIDER_TYPES.find((t) => t.value === activeProvider.providerType)?.label ?? activeProvider.providerType}
                   {" "}&middot;{" "}
-                  <span className="text-[#1A1A1A] font-medium">{activeProvider.model}</span>
+                  <span className="text-[var(--text)] font-medium">{activeProvider.model}</span>
                 </p>
               </div>
             </div>
           )}
 
           {aiLoading ? (
-            <div className="flex items-center gap-2 text-xs text-[#7A756D]">
+            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
               <Loader2 className="w-3 h-3 animate-spin" />
               Loading providers...
             </div>
           ) : aiProviders.length === 0 ? (
-            <div className="p-6 bg-white border border-[#E5E3D9] rounded-xl text-center">
-              <p className="text-xs text-[#7A756D]">
-                No AI providers configured. Add one or set environment variables (<code className="text-[#1A1A1A]">GLM_API_KEY</code>) as fallback.
+            <div className="p-6 glass-card rounded-xl text-center">
+              <p className="text-xs text-[var(--text-muted)]">
+                No AI providers configured. Add one or set environment variables (<code className="text-[var(--text)]">GLM_API_KEY</code>) as fallback.
               </p>
               <button onClick={openAddForm} className="mt-3 px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm hover:bg-[#333] transition-colors">
                 Add your first AI provider
@@ -754,32 +754,32 @@ export default function SettingsPage() {
               {aiProviders.map((provider) => {
                 const info = PROVIDER_TYPES.find((t) => t.value === provider.providerType);
                 return (
-                  <div key={provider.id} className={`flex items-center justify-between p-3 rounded-lg border ${provider.isDefault ? "bg-[#F0EDE6] border-[#C4C0B8]" : "bg-white border-[#E5E3D9]"}`}>
+                  <div key={provider.id} className={`flex items-center justify-between p-3 rounded-lg border ${provider.isDefault ? "bg-[var(--glass-raised)] border-[#C4C0B8]" : "bg-[var(--glass)] border-[var(--glass-border)]"}`}>
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-base">{info?.icon || "🤖"}</span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm text-[#1A1A1A] truncate">{provider.name}</p>
+                          <p className="text-sm text-[var(--text)] truncate">{provider.name}</p>
                           {provider.isDefault && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-[#1A1A1A] text-white rounded">DEFAULT</span>}
-                          {!provider.isActive && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-[#F0EDE6] text-[#7A756D] rounded">INACTIVE</span>}
+                          {!provider.isActive && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-[var(--glass-raised)] text-[var(--text-muted)] rounded">INACTIVE</span>}
                         </div>
-                        <p className="text-xs text-[#7A756D]">{info?.label} &middot; {provider.model}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{info?.label} &middot; {provider.model}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {testResult?.id === provider.id && (testResult.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <AlertTriangle className="w-3.5 h-3.5 text-red-500" />)}
-                      <button onClick={() => handleTestProvider(provider.id)} disabled={testing === provider.id} className="p-1.5 text-[#7A756D] hover:text-emerald-600 disabled:opacity-50 transition-colors" title="Test connection">
+                      <button onClick={() => handleTestProvider(provider.id)} disabled={testing === provider.id} className="p-1.5 text-[var(--text-muted)] hover:text-emerald-600 disabled:opacity-50 transition-colors" title="Test connection">
                         {testing === provider.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                       </button>
                       {!provider.isDefault && (
-                        <button onClick={() => handleSetDefault(provider.id)} className="p-1.5 text-[#7A756D] hover:text-amber-600 transition-colors" title="Set as default">
+                        <button onClick={() => handleSetDefault(provider.id)} className="p-1.5 text-[var(--text-muted)] hover:text-amber-600 transition-colors" title="Set as default">
                           <Star className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button onClick={() => openEditForm(provider)} className="p-1.5 text-[#7A756D] hover:text-blue-600 transition-colors" title="Edit">
+                      <button onClick={() => openEditForm(provider)} className="p-1.5 text-[var(--text-muted)] hover:text-blue-600 transition-colors" title="Edit">
                         <Settings2 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => handleDeleteProvider(provider.id)} className="p-1.5 text-[#7A756D] hover:text-red-500 transition-colors" title="Delete">
+                      <button onClick={() => handleDeleteProvider(provider.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-500 transition-colors" title="Delete">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -793,14 +793,14 @@ export default function SettingsPage() {
             const provCfg = PROVIDER_TYPES.find(p => p.value === form.providerType) ?? PROVIDER_TYPES[0];
             const [showKey, setShowKey] = [false, (_: boolean) => {}]; // placeholder; use local state below
             return (
-              <div className="bg-white rounded-xl border border-[#E5E3D9] overflow-hidden">
+              <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0EDE6]">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{provCfg.icon}</span>
-                    <h4 className="text-sm font-semibold text-[#1A1A1A]">{editingId ? "Edit Provider" : "Add AI Provider"}</h4>
+                    <h4 className="text-sm font-semibold text-[var(--text)]">{editingId ? "Edit Provider" : "Add AI Provider"}</h4>
                   </div>
-                  <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-[#BDBDB0] hover:text-[#1A1A1A] transition-colors">
+                  <button onClick={() => { setShowForm(false); setEditingId(null); }} className="text-[var(--text-subtle)] hover:text-[var(--text)] transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -809,7 +809,7 @@ export default function SettingsPage() {
                   {/* Step 1 — Choose Provider */}
                   {!editingId && (
                     <div>
-                      <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">① Choose Provider</p>
+                      <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">① Choose Provider</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {PROVIDER_TYPES.map(p => (
                           <button
@@ -817,21 +817,21 @@ export default function SettingsPage() {
                             onClick={() => handleProviderTypeChange(p.value)}
                             className={`flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${
                               form.providerType === p.value
-                                ? "border-[#1A1A1A] bg-[#F7F5F0] shadow-sm"
-                                : "border-[#E5E3D9] hover:border-[#C4C0B8] hover:bg-[#FAFAF8]"
+                                ? "border-[#1A1A1A] bg-[var(--bg)] shadow-sm"
+                                : "border-[var(--glass-border)] hover:border-[#C4C0B8] hover:bg-[#FAFAF8]"
                             }`}
                           >
                             <span className="text-xl">{p.icon}</span>
-                            <span className="text-xs font-semibold text-[#1A1A1A] leading-tight">{p.label}</span>
+                            <span className="text-xs font-semibold text-[var(--text)] leading-tight">{p.label}</span>
                           </button>
                         ))}
                       </div>
                       {/* Provider description */}
-                      <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-[#F7F5F0] border border-[#E5E3D9]">
+                      <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-[var(--bg)] border-[var(--glass-border)]">
                         <span className="text-base mt-0.5">{provCfg.icon}</span>
                         <div>
-                          <p className="text-xs font-semibold text-[#1A1A1A]">{provCfg.label}</p>
-                          <p className="text-xs text-[#7A756D] mt-0.5">{provCfg.description}</p>
+                          <p className="text-xs font-semibold text-[var(--text)]">{provCfg.label}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">{provCfg.description}</p>
                         </div>
                       </div>
                     </div>
@@ -839,7 +839,7 @@ export default function SettingsPage() {
 
                   {/* Step 2 — API Key */}
                   <div>
-                    <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">
+                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
                       {editingId ? "🔑 API Key" : "② API Key"}
                     </p>
                     <div className="space-y-2">
@@ -880,7 +880,7 @@ export default function SettingsPage() {
 
                   {/* Step 3 — Model */}
                   <div>
-                    <p className="text-xs font-semibold text-[#7A756D] uppercase tracking-wider mb-3">
+                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
                       {editingId ? "🧩 Model" : "③ Choose Model"}
                     </p>
                     {provCfg.models.length > 0 ? (
@@ -892,8 +892,8 @@ export default function SettingsPage() {
                               onClick={() => setForm({ ...form, model: m })}
                               className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${
                                 form.model === m
-                                  ? "border-[#1A1A1A] bg-[#F7F5F0] font-semibold text-[#1A1A1A]"
-                                  : "border-[#E5E3D9] text-[#7A756D] hover:border-[#C4C0B8] hover:text-[#1A1A1A]"
+                                  ? "border-[#1A1A1A] bg-[var(--bg)] font-semibold text-[var(--text)]"
+                                  : "border-[var(--glass-border)] text-[var(--text-muted)] hover:border-[#C4C0B8] hover:text-[var(--text)]"
                               }`}
                             >
                               {m}
@@ -903,7 +903,7 @@ export default function SettingsPage() {
                             </button>
                           ))}
                         </div>
-                        <p className="text-[10px] text-[#BDBDB0]">Or type a custom model name:</p>
+                        <p className="text-[10px] text-[var(--text-subtle)]">Or type a custom model name:</p>
                         <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })}
                           placeholder="Custom model name..." className={inputCls} />
                       </div>
@@ -932,7 +932,7 @@ export default function SettingsPage() {
                       {saving ? "Saving..." : editingId ? "Update Provider" : "Add Provider"}
                     </button>
                     <button onClick={() => { setShowForm(false); setEditingId(null); }}
-                      className="px-4 py-2 text-sm text-[#7A756D] hover:text-[#1A1A1A] transition-colors">
+                      className="px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
                       Cancel
                     </button>
                   </div>
@@ -956,19 +956,19 @@ export default function SettingsPage() {
       {activeTab === "email" && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-[#7A756D]" />
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Email Providers</h3>
+            <Mail className="w-4 h-4 text-[var(--text-muted)]" />
+            <h3 className="text-sm font-semibold text-[var(--text)]">Email Providers</h3>
           </div>
 
           {emailSettings && (
-            <div className="flex items-center gap-2 p-3 bg-white border border-[#E5E3D9] rounded-lg">
-              <span className="text-xs text-[#7A756D]">Default provider:</span>
+            <div className="flex items-center gap-2 p-3 glass-card rounded-lg">
+              <span className="text-xs text-[var(--text-muted)]">Default provider:</span>
               <div className="flex gap-1.5">
                 {(["resend", "smtp", "gmail"] as const).map((p) => {
                   const isConfigured = emailSettings.providers?.[p]?.configured;
                   return (
                     <button key={p} onClick={() => handleSetEmailDefault(p)} disabled={!isConfigured}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emailSettings.defaultProvider === p ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-white text-[#7A756D] border-[#E5E3D9] hover:text-[#1A1A1A] hover:border-[#C4C0B8]"}`}>
+                      className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emailSettings.defaultProvider === p ? "bg-[#1A1A1A] text-white border-[#1A1A1A]" : "bg-[var(--glass)] text-[var(--text-muted)] border-[var(--glass-border)] hover:text-[var(--text)] hover:border-[#C4C0B8]"}`}>
                       {p}
                     </button>
                   );
@@ -979,13 +979,13 @@ export default function SettingsPage() {
           )}
 
           {/* ─── Resend ─── */}
-          <div className="bg-white rounded-xl border border-[#E5E3D9] p-5 space-y-4">
+          <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-[#F0EDE6] flex items-center justify-center text-sm">✉️</div>
+                <div className="w-7 h-7 rounded-md bg-[var(--glass-raised)] flex items-center justify-center text-sm">✉️</div>
                 <div>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">Resend</p>
-                  <p className="text-xs text-[#7A756D]">Transactional email via Resend API</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">Resend</p>
+                  <p className="text-xs text-[var(--text-muted)]">Transactional email via Resend API</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -996,7 +996,7 @@ export default function SettingsPage() {
                   </span>
                 )}
                 <button onClick={() => { setShowResendForm(!showResendForm); setResendError(null); setResendSuccess(null); }}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#F0EDE6] text-[#1A1A1A] rounded-lg hover:bg-[#E8E4DC] transition-colors">
+                  className="px-3 py-1.5 text-xs font-medium bg-[var(--glass-raised)] text-[var(--text)] rounded-lg hover:bg-[#E8E4DC] transition-colors">
                   {showResendForm ? "Cancel" : resendConfig?.configured ? "Update" : "Configure"}
                 </button>
               </div>
@@ -1012,11 +1012,11 @@ export default function SettingsPage() {
                       placeholder={resendConfig?.configured ? "Enter new key to update..." : "re_xxxxxxxxxxxx"}
                       className={`${inputCls} pr-9`} />
                     <button type="button" onClick={() => setShowResendKey(!showResendKey)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#BDBDB0] hover:text-[#7A756D]">
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)] hover:text-[var(--text-muted)]">
                       {showResendKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-[#7A756D] mt-1">Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">resend.com/api-keys</a></p>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">resend.com/api-keys</a></p>
                 </div>
                 <div>
                   <label className={labelCls}>From Email / Name</label>
@@ -1024,7 +1024,7 @@ export default function SettingsPage() {
                     onChange={(e) => setResendForm({ ...resendForm, fromEmail: e.target.value })}
                     placeholder='FindX <noreply@yourdomain.com>'
                     className={inputCls} />
-                  <p className="text-[10px] text-[#7A756D] mt-1">Must match a verified Resend sender domain</p>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">Must match a verified Resend sender domain</p>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <button onClick={handleSaveResend} disabled={resendSaving || !resendForm.apiKey}
@@ -1043,9 +1043,9 @@ export default function SettingsPage() {
 
             {resendConfig?.configured && !showResendForm && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-[#F0EDE6]">
-                <span className="text-[#7A756D]">From: <span className="text-[#1A1A1A]">{resendConfig.fromEmail ?? "default"}</span></span>
+                <span className="text-[var(--text-muted)]">From: <span className="text-[var(--text)]">{resendConfig.fromEmail ?? "default"}</span></span>
                 <button onClick={handleTestResend} disabled={resendTesting}
-                  className="flex items-center gap-1 px-2.5 py-1 border border-[#E5E3D9] rounded-md text-[#7A756D] hover:text-[#1A1A1A] hover:border-[#C4C0B8] disabled:opacity-50 transition-colors">
+                  className="flex items-center gap-1 px-2.5 py-1 border-[var(--glass-border)] rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[#C4C0B8] disabled:opacity-50 transition-colors">
                   {resendTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
                   Test
                 </button>
@@ -1057,13 +1057,13 @@ export default function SettingsPage() {
           </div>
 
           {/* ─── SMTP ─── */}
-          <div className="bg-white rounded-xl border border-[#E5E3D9] p-5 space-y-4">
+          <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-[#F0EDE6] flex items-center justify-center text-sm">📬</div>
+                <div className="w-7 h-7 rounded-md bg-[var(--glass-raised)] flex items-center justify-center text-sm">📬</div>
                 <div>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">SMTP</p>
-                  <p className="text-xs text-[#7A756D]">Custom SMTP server (Gmail, Outlook, etc.)</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">SMTP</p>
+                  <p className="text-xs text-[var(--text-muted)]">Custom SMTP server (Gmail, Outlook, etc.)</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1073,7 +1073,7 @@ export default function SettingsPage() {
                   </span>
                 )}
                 <button onClick={() => { setShowSmtpForm(!showSmtpForm); setSmtpError(null); setSmtpSuccess(null); }}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#F0EDE6] text-[#1A1A1A] rounded-lg hover:bg-[#E8E4DC] transition-colors">
+                  className="px-3 py-1.5 text-xs font-medium bg-[var(--glass-raised)] text-[var(--text)] rounded-lg hover:bg-[#E8E4DC] transition-colors">
                   {showSmtpForm ? "Cancel" : smtpConfig?.configured ? "Update" : "Configure"}
                 </button>
               </div>
@@ -1107,7 +1107,7 @@ export default function SettingsPage() {
                         placeholder={smtpConfig?.configured ? "Enter new password to update..." : "••••••••••••"}
                         className={`${inputCls} pr-9`} />
                       <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#BDBDB0] hover:text-[#7A756D]">
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)] hover:text-[var(--text-muted)]">
                         {showSmtpPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
@@ -1128,8 +1128,8 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })}
-                      className="rounded border-[#E5E3D9]" />
-                    <span className="text-xs text-[#7A756D]">Use TLS/SSL (recommended for port 465)</span>
+                      className="rounded border-[var(--glass-border)]" />
+                    <span className="text-xs text-[var(--text-muted)]">Use TLS/SSL (recommended for port 465)</span>
                   </label>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
@@ -1149,8 +1149,8 @@ export default function SettingsPage() {
 
             {smtpConfig?.configured && !showSmtpForm && (
               <div className="text-xs pt-1 border-t border-[#F0EDE6] space-y-0.5">
-                <p className="text-[#7A756D]">Host: <span className="text-[#1A1A1A]">{smtpConfig.host}:{smtpConfig.port}</span></p>
-                <p className="text-[#7A756D]">From: <span className="text-[#1A1A1A]">{smtpConfig.fromEmail}</span></p>
+                <p className="text-[var(--text-muted)]">Host: <span className="text-[var(--text)]">{smtpConfig.host}:{smtpConfig.port}</span></p>
+                <p className="text-[var(--text-muted)]">From: <span className="text-[var(--text)]">{smtpConfig.fromEmail}</span></p>
               </div>
             )}
 
@@ -1159,12 +1159,12 @@ export default function SettingsPage() {
           </div>
 
           {/* ─── Gmail ─── */}
-          <div className="bg-white rounded-xl border border-[#E5E3D9] p-5">
+          <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-5">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-md bg-[#F0EDE6] flex items-center justify-center text-sm">📧</div>
+              <div className="w-7 h-7 rounded-md bg-[var(--glass-raised)] flex items-center justify-center text-sm">📧</div>
               <div>
-                <p className="text-sm font-semibold text-[#1A1A1A]">Gmail OAuth</p>
-                <p className="text-xs text-[#7A756D]">Set <code className="bg-[#F0EDE6] px-1 rounded">GOOGLE_CLIENT_ID</code> and <code className="bg-[#F0EDE6] px-1 rounded">GOOGLE_CLIENT_SECRET</code> environment variables to enable.</p>
+                <p className="text-sm font-semibold text-[var(--text)]">Gmail OAuth</p>
+                <p className="text-xs text-[var(--text-muted)]">Set <code className="bg-[var(--glass-raised)] px-1 rounded">GOOGLE_CLIENT_ID</code> and <code className="bg-[var(--glass-raised)] px-1 rounded">GOOGLE_CLIENT_SECRET</code> environment variables to enable.</p>
               </div>
             </div>
           </div>
@@ -1175,17 +1175,17 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-base">🔍</span>
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Search Providers</h3>
+            <h3 className="text-sm font-semibold text-[var(--text)]">Search Providers</h3>
           </div>
 
           {/* ─── Tavily ─── */}
-          <div className="bg-white rounded-xl border border-[#E5E3D9] p-5 space-y-4">
+          <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-[#F0EDE6] flex items-center justify-center text-sm">🌐</div>
+                <div className="w-7 h-7 rounded-md bg-[var(--glass-raised)] flex items-center justify-center text-sm">🌐</div>
                 <div>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">Tavily Search</p>
-                  <p className="text-xs text-[#7A756D]">AI-powered web search used by the discovery agent</p>
+                  <p className="text-sm font-semibold text-[var(--text)]">Tavily Search</p>
+                  <p className="text-xs text-[var(--text-muted)]">AI-powered web search used by the discovery agent</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1196,7 +1196,7 @@ export default function SettingsPage() {
                   </span>
                 )}
                 <button onClick={() => { setShowSearchForm(!showSearchForm); setSearchError(null); setSearchSuccess(null); }}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#F0EDE6] text-[#1A1A1A] rounded-lg hover:bg-[#E8E4DC] transition-colors">
+                  className="px-3 py-1.5 text-xs font-medium bg-[var(--glass-raised)] text-[var(--text)] rounded-lg hover:bg-[#E8E4DC] transition-colors">
                   {showSearchForm ? "Cancel" : searchConfig?.configured ? "Update" : "Configure"}
                 </button>
               </div>
@@ -1212,11 +1212,11 @@ export default function SettingsPage() {
                       placeholder={searchConfig?.configured ? "Enter new key to update..." : "tvly-xxxxxxxxxxxx"}
                       className={`${inputCls} pr-9`} />
                     <button type="button" onClick={() => setShowSearchKey(!showSearchKey)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#BDBDB0] hover:text-[#7A756D]">
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)] hover:text-[var(--text-muted)]">
                       {showSearchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-[#7A756D] mt-1">
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
                     Get your API key from <a href="https://app.tavily.com/home" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">app.tavily.com</a>. Free tier includes 1,000 searches/month.
                   </p>
                 </div>
@@ -1237,9 +1237,9 @@ export default function SettingsPage() {
 
             {searchConfig?.configured && !showSearchForm && (
               <div className="flex items-center justify-between text-xs pt-1 border-t border-[#F0EDE6]">
-                <span className="text-[#7A756D]">Provider: <span className="text-[#1A1A1A] font-medium">Tavily</span></span>
+                <span className="text-[var(--text-muted)]">Provider: <span className="text-[var(--text)] font-medium">Tavily</span></span>
                 <button onClick={handleTestSearch} disabled={searchTesting}
-                  className="flex items-center gap-1 px-2.5 py-1 border border-[#E5E3D9] rounded-md text-[#7A756D] hover:text-[#1A1A1A] hover:border-[#C4C0B8] disabled:opacity-50 transition-colors">
+                  className="flex items-center gap-1 px-2.5 py-1 border-[var(--glass-border)] rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[#C4C0B8] disabled:opacity-50 transition-colors">
                   {searchTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
                   Test
                 </button>
@@ -1247,7 +1247,7 @@ export default function SettingsPage() {
             )}
 
             {!searchConfig?.configured && !showSearchForm && (
-              <p className="text-xs text-[#BDBDB0] pt-1 border-t border-[#F0EDE6]">
+              <p className="text-xs text-[var(--text-subtle)] pt-1 border-t border-[#F0EDE6]">
                 Not configured — the AI discovery agent will not be able to search the web without this key.
               </p>
             )}
@@ -1259,12 +1259,12 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "notifications" && (
-        <div className="bg-white rounded-xl border border-[#E5E3D9] p-6 space-y-4">
+        <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-[#7A756D]" />
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Telegram Notifications</h3>
+            <Bell className="w-4 h-4 text-[var(--text-muted)]" />
+            <h3 className="text-sm font-semibold text-[var(--text)]">Telegram Notifications</h3>
           </div>
-          <p className="text-xs text-[#7A756D]">Get instant notifications on Telegram when emails are sent, opened, or replied.</p>
+          <p className="text-xs text-[var(--text-muted)]">Get instant notifications on Telegram when emails are sent, opened, or replied.</p>
 
           <div className="space-y-4">
             <div>
@@ -1272,7 +1272,7 @@ export default function SettingsPage() {
               <input type="password" value={telegramForm.botToken} onChange={(e) => setTelegramForm({ ...telegramForm, botToken: e.target.value })}
                 placeholder={telegramSettings ? "••••••••••••••" : "123456789:ABCdef..."}
                 className={inputCls} />
-              <p className="text-[10px] text-[#7A756D] mt-1">
+              <p className="text-[10px] text-[var(--text-muted)] mt-1">
                 Create a bot via <a href="https://t.me/botfather" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@BotFather</a>
               </p>
             </div>
@@ -1280,7 +1280,7 @@ export default function SettingsPage() {
               <label className={labelCls}>Chat ID</label>
               <input type="text" value={telegramForm.chatId} onChange={(e) => setTelegramForm({ ...telegramForm, chatId: e.target.value })} placeholder="123456789"
                 className={inputCls} />
-              <p className="text-[10px] text-[#7A756D] mt-1">
+              <p className="text-[10px] text-[var(--text-muted)] mt-1">
                 Get your Chat ID via <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@userinfobot</a>
               </p>
             </div>
@@ -1305,7 +1305,7 @@ export default function SettingsPage() {
                 {telegramSaving ? "Saving..." : "Save Settings"}
               </button>
               <button onClick={handleTestTelegram} disabled={telegramTesting || !telegramForm.botToken || !telegramForm.chatId}
-                className="px-4 py-2 border border-[#E5E3D9] text-[#1A1A1A] rounded-lg text-sm font-medium hover:bg-[#F0EDE6] disabled:opacity-50 transition-colors">
+                className="px-4 py-2 border-[var(--glass-border)] text-[var(--text)] rounded-lg text-sm font-medium hover:bg-[var(--glass-raised)] disabled:opacity-50 transition-colors">
                 {telegramTesting ? "Sending..." : "Test"}
               </button>
             </div>
@@ -1314,12 +1314,12 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "data" && (
-        <div className="bg-white rounded-xl border border-[#E5E3D9] p-6 space-y-4">
+        <div className="bg-[var(--glass)] rounded-xl border-[var(--glass-border)] p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Trash2 className="w-4 h-4 text-red-500" />
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Data Management</h3>
+            <h3 className="text-sm font-semibold text-[var(--text)]">Data Management</h3>
           </div>
-          <p className="text-sm text-[#7A756D]">
+          <p className="text-sm text-[var(--text-muted)]">
             Permanently delete all leads, analyses, outreach records, and pipeline run history. This cannot be undone.
           </p>
 
@@ -1343,7 +1343,7 @@ export default function SettingsPage() {
                   className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
                   {clearing ? "Deleting..." : "Yes, delete everything"}
                 </button>
-                <button onClick={() => setConfirming(false)} className="px-4 py-2 border border-[#E5E3D9] text-[#1A1A1A] rounded-lg text-sm hover:bg-[#F0EDE6] transition-colors">
+                <button onClick={() => setConfirming(false)} className="px-4 py-2 border-[var(--glass-border)] text-[var(--text)] rounded-lg text-sm hover:bg-[var(--glass-raised)] transition-colors">
                   Cancel
                 </button>
               </div>

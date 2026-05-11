@@ -53,31 +53,51 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
   ];
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-[#E5E3D9]">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E3D9]">
+    <div
+      className="fixed inset-y-0 right-0 w-[480px] z-50 flex flex-col"
+      style={{
+        background: "rgba(255,255,255, 0.60)",
+        backdropFilter: "blur(32px) saturate(200%)",
+        WebkitBackdropFilter: "blur(32px) saturate(200%)",
+        borderLeft: "1px solid var(--glass-border-strong)",
+        boxShadow: "-8px 0 48px rgba(0,0,0,0.15), inset 1px 0 0 rgba(255,255,255,0.20)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-5 py-4"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
+      >
         <div className="flex-1 min-w-0">
-          <h2 className="font-serif font-bold text-lg text-[#1A1A1A] truncate">{lead?.businessName ?? "Loading..."}</h2>
+          <h2 className="font-serif font-bold text-lg truncate" style={{ color: "var(--text)" }}>
+            {lead?.businessName ?? "Loading..."}
+          </h2>
           {lead && <StatusBadge status={lead.status} />}
         </div>
         <button
           onClick={onClose}
           aria-label="Close lead detail panel"
-          className="ml-3 p-1.5 hover:bg-[#F0EDE6] rounded-lg transition-colors"
+          className="ml-3 p-1.5 rounded-lg transition-colors hover:bg-[var(--glass-raised)]"
         >
-          <X className="w-5 h-5 text-[#7A756D]" />
+          <X className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
         </button>
       </div>
 
-      <div className="flex border-b border-[#E5E3D9] px-2">
+      {/* Tabs */}
+      <div
+        className="flex px-2"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
+      >
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors"
+            style={
               tab === key
-                ? "border-[#1A1A1A] text-[#1A1A1A]"
-                : "border-transparent text-[#7A756D] hover:text-[#1A1A1A]"
-            }`}
+                ? { borderColor: "var(--brand)", color: "var(--brand)" }
+                : { borderColor: "transparent", color: "var(--text-muted)" }
+            }
           >
             <Icon className="w-4 h-4" />
             {label}
@@ -85,11 +105,16 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 bg-[#F7F5F0]">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5 kanban-scroll">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-sm text-[#7A756D]">Loading...</div>
+          <div className="flex items-center justify-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
+            Loading...
+          </div>
         ) : !lead ? (
-          <div className="text-center py-12 text-sm text-[#7A756D]">Lead not found</div>
+          <div className="text-center py-12 text-sm" style={{ color: "var(--text-subtle)" }}>
+            Lead not found
+          </div>
         ) : tab === "overview" ? (
           <OverviewTab lead={lead} />
         ) : tab === "analysis" ? (
@@ -100,6 +125,30 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
           <NotesPanel lead={lead} />
         )}
       </div>
+    </div>
+  );
+}
+
+function InfoCard({ children, title }: { children: React.ReactNode; title?: string }) {
+  return (
+    <div
+      className="rounded-xl p-4 space-y-3"
+      style={{
+        background: "var(--glass)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid var(--glass-border)",
+      }}
+    >
+      {title && (
+        <h3
+          className="font-semibold text-xs uppercase tracking-wider"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {title}
+        </h3>
+      )}
+      {children}
     </div>
   );
 }
@@ -119,69 +168,76 @@ function OverviewTab({ lead }: { lead: Lead }) {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <div className="space-y-5">
-      <div className="bg-white rounded-xl border border-[#E5E3D9] p-4 space-y-3">
-        <h3 className="font-semibold text-xs text-[#7A756D] uppercase tracking-wider">Contact Info</h3>
+    <div className="space-y-4">
+      <InfoCard title="Contact Info">
         <div className="space-y-2">
           {lead.industry && (
-            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <Building2 className="w-4 h-4 text-[#BDBDB0] shrink-0" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text)" }}>
+              <Building2 className="w-4 h-4 shrink-0" style={{ color: "var(--text-subtle)" }} />
               <span>{lead.industry}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-            <MapPin className="w-4 h-4 text-[#BDBDB0] shrink-0" />
+          <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text)" }}>
+            <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--text-subtle)" }} />
             <span>{[lead.address, lead.city].filter(Boolean).join(", ")}</span>
           </div>
           {lead.phone && (
-            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <Phone className="w-4 h-4 text-[#BDBDB0] shrink-0" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text)" }}>
+              <Phone className="w-4 h-4 shrink-0" style={{ color: "var(--text-subtle)" }} />
               <span>{lead.phone}</span>
             </div>
           )}
           {lead.email && (
-            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <Mail className="w-4 h-4 text-[#BDBDB0] shrink-0" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text)" }}>
+              <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--text-subtle)" }} />
               <span>{lead.email}</span>
             </div>
           )}
           {lead.website && (
-            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
-              <Globe className="w-4 h-4 text-[#BDBDB0] shrink-0" />
-              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                {lead.website}
-                <ExternalLink className="w-3 h-3" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text)" }}>
+              <Globe className="w-4 h-4 shrink-0" style={{ color: "var(--text-subtle)" }} />
+              <a
+                href={lead.website} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:underline"
+                style={{ color: "#60A5FA" }}
+              >
+                {lead.website} <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           )}
         </div>
-      </div>
+      </InfoCard>
 
       {(lead.analyses ?? []).length > 0 && (
-        <div className="bg-white rounded-xl border border-[#E5E3D9] p-4">
-          <h3 className="font-semibold text-xs text-[#7A756D] uppercase tracking-wider mb-2">Latest Score</h3>
+        <InfoCard title="Latest Score">
           <ScoreBadge score={(lead.analyses ?? [])[0]?.score} />
-        </div>
+        </InfoCard>
       )}
 
-      <div className="bg-white rounded-xl border border-[#E5E3D9] p-4">
-        <h3 className="font-semibold text-xs text-[#7A756D] uppercase tracking-wider mb-1">Source</h3>
-        <p className="text-sm text-[#1A1A1A]">{lead.source}</p>
-        {lead.kvkNumber && <p className="text-xs text-[#7A756D] mt-0.5">KVK: {lead.kvkNumber}</p>}
-      </div>
+      <InfoCard title="Source">
+        <p className="text-sm" style={{ color: "var(--text)" }}>{lead.source}</p>
+        {lead.kvkNumber && (
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-subtle)" }}>KVK: {lead.kvkNumber}</p>
+        )}
+      </InfoCard>
 
-      <div className="bg-white rounded-xl border border-[#E5E3D9] p-4">
-        <h3 className="font-semibold text-xs text-[#7A756D] uppercase tracking-wider mb-3">Timeline</h3>
+      <InfoCard title="Timeline">
         {timeline.length === 0 ? (
-          <p className="text-sm text-[#7A756D]">No activity yet</p>
+          <p className="text-sm" style={{ color: "var(--text-subtle)" }}>No activity yet</p>
         ) : (
           <div className="space-y-3">
             {timeline.map((item, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${item.type === "analysis" ? "bg-indigo-400" : "bg-blue-400"}`} />
+                <div
+                  className="mt-1 w-2 h-2 rounded-full flex-shrink-0"
+                  style={{
+                    background: item.type === "analysis" ? "#818CF8" : "#60A5FA",
+                    boxShadow: `0 0 6px ${item.type === "analysis" ? "rgba(129,140,248,0.5)" : "rgba(96,165,250,0.5)"}`,
+                  }}
+                />
                 <div>
-                  <p className="text-sm text-[#1A1A1A]">{item.title}</p>
-                  <p className="text-xs text-[#7A756D] flex items-center gap-1 mt-0.5">
+                  <p className="text-sm" style={{ color: "var(--text)" }}>{item.title}</p>
+                  <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--text-subtle)" }}>
                     <Clock className="w-3 h-3" />
                     {new Date(item.date).toLocaleString("nl-NL")}
                   </p>
@@ -190,7 +246,7 @@ function OverviewTab({ lead }: { lead: Lead }) {
             ))}
           </div>
         )}
-      </div>
+      </InfoCard>
     </div>
   );
 }

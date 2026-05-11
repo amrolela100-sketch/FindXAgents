@@ -12,10 +12,7 @@ interface PageShellProps {
 
 export function PageShell({ children, title, subtitle, actions, noPadding }: PageShellProps) {
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{ background: "var(--bg)" }}
-    >
+    <div className="flex flex-col min-h-screen">
       <TopBar title={title} subtitle={subtitle} actions={actions} />
       <main
         className={`flex-1 ${noPadding ? "" : "px-5 md:px-8 py-6"}`}

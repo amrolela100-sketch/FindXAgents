@@ -269,21 +269,14 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  const sidebarStyle: React.CSSProperties = {
-    background: "var(--surface)",
-    borderRight: isRtl ? "none" : "1px solid var(--border)",
-    borderLeft: isRtl ? "1px solid var(--border)" : "none",
-    transition: "width 0.3s ease",
-  };
-
   return (
     <>
       {/* ── DESKTOP SIDEBAR ── */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 h-full z-20 ${collapsed ? "w-16" : "w-60"}`}
+        className={`hidden md:flex flex-col fixed top-0 h-full z-20 ${collapsed ? "w-16" : "w-60"} ${isRtl ? "sidebar-glass sidebar-glass-rtl" : "sidebar-glass"}`}
         style={{
-          ...sidebarStyle,
           [isRtl ? "right" : "left"]: 0,
+          transition: "width 0.3s ease",
         }}
       >
         <SidebarContent isAdmin={isAdmin} collapsed={collapsed} />
@@ -291,10 +284,13 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         {/* Collapse toggle button */}
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-30 border"
+          className="absolute -right-3 top-6 w-6 h-6 rounded-full flex items-center justify-center z-30"
           style={{
-            background: "var(--surface)",
-            borderColor: "var(--border)",
+            background: "var(--glass-raised)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid var(--glass-border-strong)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.12)",
             color: "var(--text-subtle)",
           }}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -308,8 +304,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
 
       {/* ── MOBILE TOP BAR ── */}
       <div
-        className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30"
-        style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+        className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30 topbar-glass"
       >
         <Link href="/">
           <a className="flex items-center gap-2">
@@ -335,16 +330,15 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 z-40"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* ── MOBILE DRAWER ── */}
       <div
-        className="md:hidden fixed top-0 h-full w-72 z-50 transition-transform duration-300"
+        className={`md:hidden fixed top-0 h-full w-72 z-50 transition-transform duration-300 ${isRtl ? "sidebar-glass sidebar-glass-rtl" : "sidebar-glass"}`}
         style={{
-          ...sidebarStyle,
           [isRtl ? "right" : "left"]: 0,
           transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)",
         }}

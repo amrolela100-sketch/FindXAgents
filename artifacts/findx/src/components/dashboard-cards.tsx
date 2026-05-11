@@ -33,9 +33,10 @@ function useAnimatedCounter(target: number | string, duration = 1400): React.Ref
     animatedRef.current = false;
     const el = elRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { run(); obs.unobserve(e.target); } });
-    }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) { run(); obs.unobserve(e.target); } }),
+      { threshold: 0.2 }
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, [run]);
@@ -49,7 +50,8 @@ type CardDef = {
   icon: typeof Database;
   getTrend: (s: DashboardStats, t: any) => string;
   positive: (s: DashboardStats) => boolean;
-  color: string;
+  accent: string;
+  glowColor: string;
 };
 
 const CARD_DEFS: CardDef[] = [
@@ -59,7 +61,8 @@ const CARD_DEFS: CardDef[] = [
     icon: Database,
     getTrend: (s, t) => s.leadsThisWeek > 0 ? `+${s.leadsThisWeek} ${t.dashboard.thisWeek}` : t.dashboard.noNewLeads,
     positive: (s) => s.leadsThisWeek > 0,
-    color: "var(--color-info)",
+    accent: "#60A5FA",
+    glowColor: "rgba(59,130,246, 0.25)",
   },
   {
     labelKey: "analyzed",
@@ -67,7 +70,8 @@ const CARD_DEFS: CardDef[] = [
     icon: Search,
     getTrend: (s, t) => `${s.totalLeads > 0 ? Math.round((s.leadsAnalyzed / s.totalLeads) * 100) : 0}% ${t.dashboard.ofTotal}`,
     positive: (s) => s.leadsAnalyzed > 0,
-    color: "var(--brand)",
+    accent: "#FBBF24",
+    glowColor: "rgba(245,158,11, 0.25)",
   },
   {
     labelKey: "contacted",
@@ -75,7 +79,8 @@ const CARD_DEFS: CardDef[] = [
     icon: Mail,
     getTrend: (s, t) => `${s.leadsResponded} ${t.dashboard.responded}`,
     positive: (s) => s.leadsResponded > 0,
-    color: "var(--color-success)",
+    accent: "#34D399",
+    glowColor: "rgba(16,185,129, 0.25)",
   },
   {
     labelKey: "conversion",
@@ -83,15 +88,24 @@ const CARD_DEFS: CardDef[] = [
     icon: TrendingUp,
     getTrend: (s, t) => `${s.leadsWon} ${t.dashboard.wonDeals}`,
     positive: (s) => s.leadsWon > 0,
-    color: "#8B5CF6",
+    accent: "#C084FC",
+    glowColor: "rgba(168,85,247, 0.25)",
   },
 ];
 
 function SkeletonCard() {
   return (
-    <div className="card p-5">
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        background: "var(--glass)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid var(--glass-border)",
+      }}
+    >
       <div className="flex items-start justify-between mb-4">
-        <div className="w-8 h-8 rounded-lg skeleton" />
+        <div className="w-9 h-9 rounded-xl skeleton" />
       </div>
       <div className="h-8 w-16 rounded-lg skeleton mb-2" />
       <div className="h-3 w-20 rounded skeleton mb-3" />
@@ -110,28 +124,46 @@ function KpiCard({ def, stats, index }: { def: CardDef; stats: DashboardStats; i
 
   return (
     <div
-      className="card p-5 reveal card-hover"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="reveal card-hover rounded-2xl p-5 transition-all duration-300"
+      style={{
+        background: "var(--glass)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        border: "1px solid var(--glass-border)",
+        boxShadow: `0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.10)`,
+        animationDelay: `${index * 60}ms`,
+      }}
     >
+      {/* Icon */}
       <div className="flex items-start justify-between mb-4">
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: `${def.color}15` }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            background: `${def.accent}18`,
+            border: `1px solid ${def.accent}30`,
+            boxShadow: `0 0 12px ${def.glowColor}`,
+          }}
         >
-          <Icon className="w-4 h-4" style={{ color: def.color }} />
+          <Icon className="w-4 h-4" style={{ color: def.accent }} />
         </div>
       </div>
+
+      {/* Value */}
       <p className="text-2xl font-bold" style={{ color: "var(--text)" }}>
         <span ref={ref}>{value}</span>
       </p>
+
+      {/* Label */}
       <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
         {t.dashboard[def.labelKey] as string}
       </p>
+
+      {/* Trend */}
       <p
         className="text-xs mt-3 font-medium"
-        style={{ color: isPos ? "var(--color-success)" : "var(--text-subtle)" }}
+        style={{ color: isPos ? "#34D399" : "var(--text-subtle)" }}
       >
-        {trend}
+        {isPos ? "↑ " : ""}{trend}
       </p>
     </div>
   );

@@ -1,5 +1,4 @@
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { Button } from "./ui/button";
 
 interface QueryErrorProps {
   error: Error | null;
@@ -8,21 +7,31 @@ interface QueryErrorProps {
 
 export function QueryError({ error, resetErrorBoundary }: QueryErrorProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center border rounded-xl bg-red-50/50 border-red-100">
-      <AlertCircle className="w-8 h-8 text-red-500 mb-3" />
-      <h3 className="text-lg font-serif font-semibold text-red-900 mb-2">Failed to load data</h3>
-      <p className="text-sm text-red-600 mb-4 max-w-md">
+    <div
+      className="flex flex-col items-center justify-center p-8 text-center rounded-2xl"
+      style={{
+        background: "rgba(239,68,68, 0.06)",
+        border: "1px solid rgba(239,68,68, 0.20)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+    >
+      <AlertCircle className="w-8 h-8 mb-3" style={{ color: "#F87171" }} />
+      <h3 className="text-lg font-serif font-semibold mb-2" style={{ color: "#F87171" }}>
+        Failed to load data
+      </h3>
+      <p className="text-sm mb-4 max-w-md" style={{ color: "var(--text-muted)" }}>
         {error?.message || "An error occurred while fetching data from the server."}
       </p>
       {resetErrorBoundary && (
-        <Button 
-          variant="outline" 
+        <button
           onClick={resetErrorBoundary}
-          className="bg-white border-red-200 text-red-700 hover:bg-red-50 gap-2"
+          className="btn btn-secondary gap-2"
+          style={{ borderColor: "rgba(239,68,68,0.30)", color: "#F87171" }}
         >
           <RefreshCw className="w-4 h-4" />
           Try Again
-        </Button>
+        </button>
       )}
     </div>
   );

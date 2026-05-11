@@ -51,7 +51,7 @@ function MarqueeRow({
             className="whitespace-nowrap text-[13px] font-medium text-[#F7F5F0] px-6 flex items-center gap-2"
           >
             {item}
-            <span className="text-[#7A756D] select-none px-1">◆</span>
+            <span className="text-[var(--text-muted)] select-none px-1">◆</span>
           </span>
         ))}
       </div>

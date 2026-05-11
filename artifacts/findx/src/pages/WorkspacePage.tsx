@@ -63,28 +63,28 @@ function WorkspaceForm({
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[#1A1A1A] uppercase tracking-wider">Name *</label>
+        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Name *</label>
         <input
-          className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
           placeholder="e.g. Enterprise NL Q3"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[#1A1A1A] uppercase tracking-wider">Description</label>
+        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Description</label>
         <input
-          className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
           placeholder="optional"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[#1A1A1A] uppercase tracking-wider">ICP</label>
+        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">ICP</label>
         <textarea
           rows={3}
-          className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition resize-none"
+          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition resize-none"
           placeholder="Describe your ideal customer profile..."
           value={form.icp}
           onChange={(e) => setForm((f) => ({ ...f, icp: e.target.value }))}
@@ -92,9 +92,9 @@ function WorkspaceForm({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[#1A1A1A] uppercase tracking-wider">Industry</label>
+          <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Industry</label>
           <select
-            className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+            className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
             value={form.targetIndustry}
             onChange={(e) => setForm((f) => ({ ...f, targetIndustry: e.target.value }))}
           >
@@ -103,9 +103,9 @@ function WorkspaceForm({
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[#1A1A1A] uppercase tracking-wider">Region</label>
+          <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Region</label>
           <select
-            className="w-full px-3 py-2.5 border border-[#E5E3D9] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+            className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
             value={form.targetCity}
             onChange={(e) => setForm((f) => ({ ...f, targetCity: e.target.value }))}
           >
@@ -129,7 +129,7 @@ function WorkspaceForm({
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg text-sm text-[#7A756D] border border-[#E5E3D9] hover:bg-[#F7F5F0] transition"
+          className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] border-[var(--glass-border)] hover:bg-[var(--bg)] transition"
         >
           Cancel
         </button>
@@ -156,18 +156,18 @@ function WorkspaceCard({
   return (
     <motion.div
       variants={fadeUp}
-      className={`bg-white border rounded-2xl p-5 space-y-4 transition-shadow hover:shadow-md ${
-        isActive ? "border-[#1A1A1A] ring-2 ring-[#1A1A1A]/8" : "border-[#E5E3D9]"
+      className={`bg-[var(--glass)] border rounded-2xl p-5 space-y-4 transition-shadow hover:shadow-md ${
+        isActive ? "border-[#1A1A1A] ring-2 ring-[#1A1A1A]/8" : "border-[var(--glass-border)]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isActive ? "bg-[#1A1A1A]" : "bg-[#F0EDE6]"}`}>
-            <Building2 className={`w-5 h-5 ${isActive ? "text-white" : "text-[#7A756D]"}`} />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isActive ? "bg-[#1A1A1A]" : "bg-[var(--glass-raised)]"}`}>
+            <Building2 className={`w-5 h-5 ${isActive ? "text-white" : "text-[var(--text-muted)]"}`} />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-[#1A1A1A] truncate">{ws.name}</p>
-            {ws.description && <p className="text-xs text-[#7A756D] truncate">{ws.description}</p>}
+            <p className="font-semibold text-[var(--text)] truncate">{ws.name}</p>
+            {ws.description && <p className="text-xs text-[var(--text-muted)] truncate">{ws.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -176,12 +176,12 @@ function WorkspaceCard({
               Active
             </span>
           )}
-          <button onClick={onEdit} className="p-1.5 rounded-lg text-[#7A756D] hover:bg-[#F7F5F0] hover:text-[#1A1A1A] transition">
+          <button onClick={onEdit} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)] transition">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-lg text-[#7A756D] hover:bg-red-50 hover:text-red-500 transition"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -190,19 +190,19 @@ function WorkspaceCard({
 
       <div className="grid grid-cols-2 gap-2">
         {ws.targetIndustry && (
-          <div className="flex items-center gap-1.5 text-xs text-[#7A756D]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
             <Briefcase className="w-3 h-3" />
             <span className="truncate">{ws.targetIndustry}</span>
           </div>
         )}
         {ws.targetCity && (
-          <div className="flex items-center gap-1.5 text-xs text-[#7A756D]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
             <MapPin className="w-3 h-3" />
             <span className="truncate">{ws.targetCity}</span>
           </div>
         )}
         {ws.icp && (
-          <div className="col-span-2 flex items-start gap-1.5 text-xs text-[#7A756D]">
+          <div className="col-span-2 flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
             <Target className="w-3 h-3 mt-0.5 flex-shrink-0" />
             <span className="line-clamp-2">{ws.icp}</span>
           </div>
@@ -215,14 +215,14 @@ function WorkspaceCard({
           <button onClick={onDelete} className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition">
             Delete
           </button>
-          <button onClick={() => setConfirmDelete(false)} className="text-xs text-[#7A756D] px-3 py-1.5 rounded-lg border border-[#E5E3D9] hover:bg-[#F7F5F0] transition">
+          <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--text-muted)] px-3 py-1.5 rounded-lg border-[var(--glass-border)] hover:bg-[var(--bg)] transition">
             Cancel
           </button>
         </div>
       ) : !isActive ? (
         <button
           onClick={onSwitch}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-[#E5E3D9] text-sm text-[#7A756D] hover:border-[#1A1A1A] hover:text-[#1A1A1A] hover:bg-[#F7F5F0] transition"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border-[var(--glass-border)] text-sm text-[var(--text-muted)] hover:border-[#1A1A1A] hover:text-[var(--text)] hover:bg-[var(--bg)] transition"
         >
           Switch <ChevronRight className="w-3.5 h-3.5" />
         </button>
@@ -281,13 +281,13 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F0] p-4 sm:p-8">
+    <div className="min-h-screen bg-[var(--bg)] p-4 sm:p-8">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[#1A1A1A]">Workspaces</h1>
-            <p className="text-sm text-[#7A756D] mt-0.5">
+            <h1 className="text-2xl font-serif font-bold text-[var(--text)]">Workspaces</h1>
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">
               Manage multiple prospecting campaigns, each with their own ICP and region.
             </p>
           </div>
@@ -303,7 +303,7 @@ export default function WorkspacePage() {
         {/* Active workspace banner */}
         {activeWorkspace && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-[#1A1A1A] rounded-2xl p-5 text-white flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--glass)]/10 flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -332,9 +332,9 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-2"
+              className="glass-card rounded-2xl p-6 space-y-2"
             >
-              <p className="font-semibold text-[#1A1A1A] mb-4">Create new workspace</p>
+              <p className="font-semibold text-[var(--text)] mb-4">Create new workspace</p>
               <WorkspaceForm onSave={handleCreate} onCancel={() => setShowCreate(false)} saving={saving} />
             </motion.div>
           )}
@@ -343,16 +343,16 @@ export default function WorkspacePage() {
         {/* Workspace list */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-[#7A756D]" />
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
           </div>
         ) : workspaces.length === 0 ? (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-dashed border-[#D4CFC5] rounded-2xl p-12 text-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#F0EDE6] flex items-center justify-center mx-auto">
-              <Building2 className="w-6 h-6 text-[#7A756D]" />
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-[var(--glass)] border border-dashed border-[#D4CFC5] rounded-2xl p-12 text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-[var(--glass-raised)] flex items-center justify-center mx-auto">
+              <Building2 className="w-6 h-6 text-[var(--text-muted)]" />
             </div>
             <div>
-              <p className="font-semibold text-[#1A1A1A]">No workspaces yet</p>
-              <p className="text-sm text-[#7A756D] mt-1">Create your first workspace to start prospecting.</p>
+              <p className="font-semibold text-[var(--text)]">No workspaces yet</p>
+              <p className="text-sm text-[var(--text-muted)] mt-1">Create your first workspace to start prospecting.</p>
             </div>
             <button
               onClick={() => setShowCreate(true)}
@@ -365,8 +365,8 @@ export default function WorkspacePage() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} className="grid sm:grid-cols-2 gap-4">
             {workspaces.map((ws) =>
               editingId === ws.id ? (
-                <div key={ws.id} className="bg-white border border-[#1A1A1A] rounded-2xl p-5">
-                  <p className="font-semibold text-[#1A1A1A] mb-4">Edit workspace</p>
+                <div key={ws.id} className="bg-[var(--glass)] border border-[#1A1A1A] rounded-2xl p-5">
+                  <p className="font-semibold text-[var(--text)] mb-4">Edit workspace</p>
                   <WorkspaceForm
                     initial={ws}
                     onSave={(data) => handleUpdate(ws.id, data)}

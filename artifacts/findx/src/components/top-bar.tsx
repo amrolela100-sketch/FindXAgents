@@ -11,6 +11,14 @@ interface TopBarProps {
   actions?: React.ReactNode;
 }
 
+const DROPDOWN_STYLE: React.CSSProperties = {
+  background: "var(--glass-overlay)",
+  backdropFilter: "blur(24px) saturate(200%)",
+  WebkitBackdropFilter: "blur(24px) saturate(200%)",
+  border: "1px solid var(--glass-border-strong)",
+  boxShadow: "0 16px 48px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.10)",
+};
+
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const { isDark, toggleTheme } = useTheme();
   const { lang, toggleLang, isRtl } = useLang();
@@ -35,21 +43,12 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   }
 
   return (
-    <header
-      className="sticky top-0 z-10 flex items-center justify-between h-14 px-5 gap-4"
-      style={{
-        background: "var(--surface)",
-        borderBottom: "1px solid var(--border)",
-      }}
-    >
+    <header className="sticky top-0 z-10 flex items-center justify-between h-14 px-5 gap-4 topbar-glass">
       {/* Left: Page title */}
       <div className="flex items-center gap-3 min-w-0">
         {title && (
           <div className="min-w-0">
-            <h1
-              className="text-sm font-semibold truncate"
-              style={{ color: "var(--text)" }}
-            >
+            <h1 className="text-sm font-semibold truncate" style={{ color: "var(--text)" }}>
               {title}
             </h1>
             {subtitle && (
@@ -106,22 +105,16 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             )}
           </button>
 
-          {/* Notification dropdown */}
           {notifOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
               <div
-                className={`absolute ${isRtl ? "left-0" : "right-0"} top-10 w-80 z-20 rounded-xl overflow-hidden shadow-xl animate-slide-up`}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
-                }}
+                className={`absolute ${isRtl ? "left-0" : "right-0"} top-10 w-80 z-20 rounded-2xl overflow-hidden animate-slide-up`}
+                style={DROPDOWN_STYLE}
               >
-                {/* Header */}
                 <div
                   className="flex items-center justify-between px-4 py-3"
-                  style={{ borderBottom: "1px solid var(--border)" }}
+                  style={{ borderBottom: "1px solid var(--glass-border)" }}
                 >
                   <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                     Notifications
@@ -129,18 +122,10 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
                   <div className="flex items-center gap-1">
                     {notifications.length > 0 && (
                       <>
-                        <button
-                          onClick={markAllRead}
-                          title="Mark all read"
-                          className="btn btn-ghost px-1.5 py-1"
-                        >
+                        <button onClick={markAllRead} title="Mark all read" className="btn btn-ghost px-1.5 py-1">
                           <CheckCheck className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                         </button>
-                        <button
-                          onClick={clearAll}
-                          title="Clear all"
-                          className="btn btn-ghost px-1.5 py-1"
-                        >
+                        <button onClick={clearAll} title="Clear all" className="btn btn-ghost px-1.5 py-1">
                           <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                         </button>
                       </>
@@ -148,43 +133,29 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
                   </div>
                 </div>
 
-                {/* Items */}
                 <div className="overflow-y-auto max-h-72">
                   {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 gap-2">
                       <Bell className="w-7 h-7 opacity-20" style={{ color: "var(--text-muted)" }} />
-                      <p className="text-xs" style={{ color: "var(--text-subtle)" }}>
-                        No notifications yet
-                      </p>
+                      <p className="text-xs" style={{ color: "var(--text-subtle)" }}>No notifications yet</p>
                     </div>
                   ) : (
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        className="flex gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-subtle)]"
+                        className="flex gap-3 px-4 py-3 transition-colors"
                         style={{
-                          borderBottom: "1px solid var(--border)",
+                          borderBottom: "1px solid var(--glass-border)",
                           background: n.read ? undefined : "var(--brand-subtle)",
                         }}
                       >
-                        {/* Icon */}
-                        <span
-                          className="mt-0.5 text-base flex-shrink-0"
-                        >
+                        <span className="mt-0.5 text-base flex-shrink-0">
                           {n.type === "pipeline_complete" ? "✅" : "❌"}
                         </span>
-
-                        {/* Content */}
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
-                            {n.title}
-                          </p>
-                          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                            {n.body}
-                          </p>
-                          <p className="text-[10px] mt-1" style={{ color: "var(--text-subtle)" }}>
-                            {formatTime(n.createdAt)}
-                          </p>
+                          <p className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>{n.title}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{n.body}</p>
+                          <p className="text-[10px] mt-1" style={{ color: "var(--text-subtle)" }}>{formatTime(n.createdAt)}</p>
                         </div>
                       </div>
                     ))
@@ -199,8 +170,12 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="relative ml-1">
           <button
             onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all hover:opacity-80"
-            style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all hover:scale-105"
+            style={{
+              background: "linear-gradient(135deg, var(--brand) 0%, #F97316 100%)",
+              color: "#fff",
+              boxShadow: "0 2px 8px var(--brand-glow)",
+            }}
           >
             {initial}
           </button>
@@ -209,27 +184,16 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
               <div
-                className={`absolute ${isRtl ? "left-0" : "right-0"} top-9 w-52 z-20 rounded-xl overflow-hidden animate-slide-up`}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-                }}
+                className={`absolute ${isRtl ? "left-0" : "right-0"} top-10 w-52 z-20 rounded-2xl overflow-hidden animate-slide-up`}
+                style={DROPDOWN_STYLE}
               >
-                <div
-                  className="px-4 py-3"
-                  style={{ borderBottom: "1px solid var(--border)" }}
-                >
-                  <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>
-                    {user?.email}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-subtle)" }}>
-                    Free plan
-                  </p>
+                <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                  <p className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>{user?.email}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-subtle)" }}>Free plan</p>
                 </div>
                 <button
                   onClick={() => { logout(); setUserMenuOpen(false); }}
-                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm transition-colors hover:bg-[var(--bg-subtle)]"
+                  className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm transition-colors hover:bg-[var(--glass-raised)]"
                   style={{ color: "var(--text-muted)" }}
                 >
                   <LogOut className="w-4 h-4" />

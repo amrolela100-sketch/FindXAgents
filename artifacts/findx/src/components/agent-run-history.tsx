@@ -4,13 +4,13 @@ import { getAgentRuns, cancelAgentRun } from "../lib/api";
 import type { AgentPipelineRun, AgentRunStatus } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
 
-const STATUS_DOT: Record<AgentRunStatus, string> = {
-  completed: "bg-emerald-500",
-  running: "bg-amber-400 animate-pulse",
-  failed: "bg-red-500",
-  partial: "bg-orange-400",
-  queued: "bg-gray-400",
-  cancelled: "bg-gray-300",
+const STATUS_DOT_COLOR: Record<AgentRunStatus, string> = {
+  completed: "#34D399",
+  running:   "#FBBF24",
+  failed:    "#F87171",
+  partial:   "#FB923C",
+  queued:    "#94A3B8",
+  cancelled: "#6B7280",
 };
 
 function formatDuration(start: string, end: string | null): string | null {
@@ -31,19 +31,18 @@ function formatRelativeTime(iso: string): string {
   if (min < 60) return `${min} min ago`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr}h ago`;
-  const days = Math.floor(hr / 24);
-  return `${days}d ago`;
+  return `${Math.floor(hr / 24)}d ago`;
 }
 
 function SkeletonRow() {
   return (
-    <div className="px-4 py-3 border-b border-[#E5E3D9]">
+    <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--glass-border)" }}>
       <div className="flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#E5E3D9] animate-pulse" />
-        <div className="h-3.5 w-20 rounded bg-[#E5E3D9] animate-pulse" />
-        <div className="h-3.5 w-48 rounded bg-[#E5E3D9] animate-pulse" />
-        <div className="ml-auto h-3.5 w-12 rounded bg-[#E5E3D9] animate-pulse" />
-        <div className="h-3.5 w-16 rounded bg-[#E5E3D9] animate-pulse" />
+        <div className="w-2.5 h-2.5 rounded-full skeleton" />
+        <div className="h-3.5 w-20 rounded skeleton" />
+        <div className="h-3.5 w-48 rounded skeleton" />
+        <div className="ml-auto h-3.5 w-12 rounded skeleton" />
+        <div className="h-3.5 w-16 rounded skeleton" />
       </div>
     </div>
   );
@@ -53,6 +52,8 @@ function RunRow({ run, onCancelled }: { run: AgentPipelineRun; onCancelled?: () 
   const [expanded, setExpanded] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const duration = formatDuration(run.createdAt, run.completedAt);
+  const dotColor = STATUS_DOT_COLOR[run.status];
+  const isLive = run.status === "running" || run.status === "queued";
 
   async function handleCancel(e: MouseEvent) {
     e.stopPropagation();
@@ -72,64 +73,69 @@ function RunRow({ run, onCancelled }: { run: AgentPipelineRun; onCancelled?: () 
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left px-4 py-3 border-b border-[#E5E3D9] hover:bg-[#F7F5F0] transition-colors flex items-center gap-3"
+        className="w-full text-left px-4 py-3 flex items-center gap-3 transition-colors hover:bg-[var(--glass-raised)]"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
       >
         <span
-          className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_DOT[run.status]}`}
+          className={`w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? "animate-pulse" : ""}`}
+          style={{
+            background: dotColor,
+            boxShadow: `0 0 6px ${dotColor}80`,
+          }}
         />
-        <span className="font-mono text-sm text-[#7A756D]">
+        <span className="font-mono text-xs" style={{ color: "var(--text-subtle)" }}>
           {run.id.slice(0, 8)}
         </span>
-        <span className="text-sm text-[#1A1A1A]">
-          {run.leadsFound} discovered &rarr; {run.leadsAnalyzed} analyzed &rarr;{" "}
-          {run.emailsDrafted} emailed
+        <span className="text-sm truncate" style={{ color: "var(--text)" }}>
+          {run.leadsFound} discovered → {run.leadsAnalyzed} analyzed → {run.emailsDrafted} emailed
         </span>
-        <span className="ml-auto text-xs text-[#7A756D] whitespace-nowrap">
+        <span className="ml-auto text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
           {duration ?? "..."}
         </span>
-        <span className="text-xs text-[#BDBDB0] whitespace-nowrap">
+        <span className="text-xs whitespace-nowrap" style={{ color: "var(--text-subtle)" }}>
           {formatRelativeTime(run.createdAt)}
         </span>
-        {(run.status === "running" || run.status === "queued") && (
+        {isLive && (
           <button
             onClick={handleCancel}
             disabled={cancelling}
-            className="flex-shrink-0 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+            className="flex-shrink-0 p-1 rounded-lg transition-colors"
+            style={{ color: "#F87171" }}
             title="Cancel run"
           >
             {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
           </button>
         )}
         <ChevronDown
-          className={`w-3.5 h-3.5 text-[#BDBDB0] transition-transform shrink-0 ${
-            expanded ? "rotate-180" : ""
-          }`}
+          className={`w-3.5 h-3.5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          style={{ color: "var(--text-subtle)" }}
         />
       </button>
 
       {expanded && (
-        <div className="px-4 py-3 bg-[#F7F5F0] border-b border-[#E5E3D9]">
-          <div className="flex items-center gap-4 text-xs text-[#7A756D]">
-            <span>
-              Query:{" "}
-              <span className="text-[#1A1A1A]">{run.query || "N/A"}</span>
-            </span>
+        <div
+          className="px-4 py-3"
+          style={{
+            background: "rgba(0,0,0,0.04)",
+            borderBottom: "1px solid var(--glass-border)",
+          }}
+        >
+          <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span>Query: <span style={{ color: "var(--text)" }}>{run.query || "N/A"}</span></span>
           </div>
-          <div className="mt-2 flex items-center gap-3 text-xs">
-            <span className="text-emerald-600">Research: {run.leadsFound} leads</span>
-            <span className="text-[#BDBDB0]">&rarr;</span>
-            <span className="text-blue-600">Analysis: {run.leadsAnalyzed} analyzed</span>
-            <span className="text-[#BDBDB0]">&rarr;</span>
-            <span className="text-amber-600">Outreach: {run.emailsDrafted} drafted</span>
+          <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
+            <span style={{ color: "#34D399" }}>Research: {run.leadsFound} leads</span>
+            <span style={{ color: "var(--text-subtle)" }}>→</span>
+            <span style={{ color: "#60A5FA" }}>Analysis: {run.leadsAnalyzed} analyzed</span>
+            <span style={{ color: "var(--text-subtle)" }}>→</span>
+            <span style={{ color: "#FBBF24" }}>Outreach: {run.emailsDrafted} drafted</span>
           </div>
           {run.error && (
-            <p className="mt-2 text-xs text-red-500">Error: {run.error}</p>
+            <p className="mt-2 text-xs" style={{ color: "#F87171" }}>Error: {run.error}</p>
           )}
-          <div className="mt-2 flex items-center gap-3 text-[10px] text-[#BDBDB0]">
+          <div className="mt-2 flex items-center gap-3 text-[10px]" style={{ color: "var(--text-subtle)" }}>
             <span>Status: {run.status}</span>
-            {run.completedAt && (
-              <span>Completed: {new Date(run.completedAt).toLocaleString()}</span>
-            )}
+            {run.completedAt && <span>Completed: {new Date(run.completedAt).toLocaleString()}</span>}
           </div>
         </div>
       )}
@@ -138,35 +144,39 @@ function RunRow({ run, onCancelled }: { run: AgentPipelineRun; onCancelled?: () 
 }
 
 export function AgentRunHistory() {
-  const { data, isLoading } = usePolling(
-    () => getAgentRuns(),
-    5000,
-  );
-
+  const { data, isLoading } = usePolling(() => getAgentRuns(), 5000);
   const runs = data?.runs?.slice(0, 5) ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E3D9] overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E5E3D9] flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-[#1A1A1A]">
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: "var(--glass)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        border: "1px solid var(--glass-border)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.10)",
+      }}
+    >
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
+      >
+        <h3 className="text-xs font-semibold" style={{ color: "var(--text)" }}>
           Recent Pipeline Runs
         </h3>
         {data && (
-          <span className="text-[10px] text-[#BDBDB0]">
+          <span className="text-[10px]" style={{ color: "var(--text-subtle)" }}>
             {data.runs.length} total
           </span>
         )}
       </div>
 
-      <div className="overflow-y-auto" style={{ maxHeight: 300 }}>
+      <div className="overflow-y-auto kanban-scroll" style={{ maxHeight: 300 }}>
         {isLoading ? (
-          <>
-            <SkeletonRow />
-            <SkeletonRow />
-            <SkeletonRow />
-          </>
+          <>{[1,2,3].map(i => <SkeletonRow key={i} />)}</>
         ) : runs.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-[#7A756D]">
+          <div className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-subtle)" }}>
             No pipeline runs yet
           </div>
         ) : (

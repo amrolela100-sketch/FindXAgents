@@ -43,13 +43,13 @@ async function apiGet<T>(path: string): Promise<T> {
 
 function StatCard({ icon: Icon, label, value, color }: { icon: React.FC<{ className?: string }>; label: string; value: number | string; color: string }) {
   return (
-    <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-6 flex items-center gap-5">
+    <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 flex items-center gap-5">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-2xl font-serif font-bold text-[#1A1A1A]">{value}</p>
-        <p className="text-sm text-[#7A756D]">{label}</p>
+        <p className="text-2xl font-serif font-bold text-[var(--text)]">{value}</p>
+        <p className="text-sm text-[var(--text-muted)]">{label}</p>
       </div>
     </motion.div>
   );
@@ -88,52 +88,52 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-[#7A756D]" />
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="text-center space-y-3">
           <Shield className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="font-semibold text-[#1A1A1A]">{error}</p>
-          <button onClick={load} className="text-sm text-[#7A756D] hover:text-[#1A1A1A] underline">Try again</button>
+          <p className="font-semibold text-[var(--text)]">{error}</p>
+          <button onClick={load} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] underline">Try again</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F5F0] p-4 sm:p-8">
+    <div className="min-h-screen bg-[var(--bg)] p-4 sm:p-8">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-[#7A756D]" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#7A756D]">Admin</span>
+              <Shield className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Admin</span>
             </div>
-            <h1 className="text-2xl font-serif font-bold text-[#1A1A1A]">Platform Dashboard</h1>
-            <p className="text-sm text-[#7A756D] mt-0.5">Internal management page for FindX administrators.</p>
+            <h1 className="text-2xl font-serif font-bold text-[var(--text)]">Platform Dashboard</h1>
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">Internal management page for FindX administrators.</p>
           </div>
           <button
             onClick={load}
-            className="flex items-center gap-1.5 text-sm text-[#7A756D] border border-[#E5E3D9] bg-white px-3 py-2 rounded-xl hover:bg-[#F7F5F0] transition"
+            className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] border-[var(--glass-border)] bg-[var(--glass)] px-3 py-2 rounded-xl hover:bg-[var(--bg)] transition"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-[#F0EDE6] p-1 rounded-xl w-fit">
+        <div className="flex gap-1 bg-[var(--glass-raised)] p-1 rounded-xl w-fit">
           {(["overview", "users"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? "bg-white text-[#1A1A1A] shadow-sm" : "text-[#7A756D] hover:text-[#1A1A1A]"}`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? "bg-[var(--glass)] text-[var(--text)] shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text)]"}`}
             >
               {t === "overview" ? "Overview" : "Users"}
             </button>
@@ -148,8 +148,8 @@ export default function AdminPage() {
               <StatCard icon={Zap} label="Agent runs executed" value={stats.totalRuns} color="bg-violet-50 text-violet-600" />
             </div>
 
-            <motion.div variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl p-6 space-y-4">
-              <p className="font-semibold text-[#1A1A1A]">Platform health</p>
+            <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 space-y-4">
+              <p className="font-semibold text-[var(--text)]">Platform health</p>
               <div className="space-y-3">
                 {[
                   { label: "API Server", ok: true },
@@ -171,40 +171,40 @@ export default function AdminPage() {
         )}
 
         {tab === "users" && (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-white border border-[#E5E3D9] rounded-2xl overflow-hidden">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="glass-card rounded-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
-              <p className="font-semibold text-[#1A1A1A]">{users.length} users</p>
+              <p className="font-semibold text-[var(--text)]">{users.length} users</p>
               <div className="flex items-center gap-1.5">
-                <BarChart2 className="w-4 h-4 text-[#7A756D]" />
-                <span className="text-xs text-[#7A756D]">sorted by creation date</span>
+                <BarChart2 className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-xs text-[var(--text-muted)]">sorted by creation date</span>
               </div>
             </div>
             <div className="divide-y divide-[#F0EDE6]">
               {users.map((u) => (
                 <div key={u.id} className="flex items-center gap-4 px-6 py-4 hover:bg-[#FAFAF7] transition">
                   {u.avatar ? (
-                    <img src={u.avatar} alt={u.name} className="w-9 h-9 rounded-full object-cover border border-[#E5E3D9] flex-shrink-0" />
+                    <img src={u.avatar} alt={u.name} className="w-9 h-9 rounded-full object-cover border-[var(--glass-border)] flex-shrink-0" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#F0EDE6] flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#1A1A1A]">
+                    <div className="w-9 h-9 rounded-full bg-[var(--glass-raised)] flex items-center justify-center flex-shrink-0 text-xs font-bold text-[var(--text)]">
                       {u.name[0]?.toUpperCase()}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-[#1A1A1A] truncate">{u.name}</p>
+                      <p className="text-sm font-medium text-[var(--text)] truncate">{u.name}</p>
                       {u.isAdmin && (
                         <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Admin</span>
                       )}
                     </div>
-                    <p className="text-xs text-[#7A756D] truncate">{u.email}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{u.email}</p>
                   </div>
-                  <div className="hidden sm:flex items-center gap-6 text-xs text-[#7A756D] flex-shrink-0">
+                  <div className="hidden sm:flex items-center gap-6 text-xs text-[var(--text-muted)] flex-shrink-0">
                     <div className="text-center">
-                      <p className="font-semibold text-[#1A1A1A]">{u.leadCount}</p>
+                      <p className="font-semibold text-[var(--text)]">{u.leadCount}</p>
                       <p>leads</p>
                     </div>
                     <div className="text-center">
-                      <p className="font-semibold text-[#1A1A1A]">{formatDate(u.createdAt)}</p>
+                      <p className="font-semibold text-[var(--text)]">{formatDate(u.createdAt)}</p>
                       <p>joined</p>
                     </div>
                     <div className={`flex items-center gap-1 ${u.onboardingCompleted ? "text-emerald-600" : "text-amber-500"}`}>

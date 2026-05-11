@@ -14,26 +14,18 @@ function formatRelativeTime(dateStr: string): string {
   const now = Date.now();
   const then = new Date(dateStr).getTime();
   const diffMs = now - then;
-
   if (diffMs < 0) return "just now";
-
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min ago`;
-
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
-
+  if (days < 30) return `${days}d ago`;
   return new Date(dateStr).toLocaleDateString();
 }
 
-function buildActivityItems(
-  leads: Lead[],
-  runs: AgentPipelineRun[],
-): ActivityItem[] {
+function buildActivityItems(leads: Lead[], runs: AgentPipelineRun[]): ActivityItem[] {
   const items: ActivityItem[] = [];
 
   for (const lead of leads) {
@@ -43,7 +35,6 @@ function buildActivityItems(
       description: `New lead: ${lead.businessName} in ${lead.city}`,
       timestamp: lead.discoveredAt ?? lead.createdAt,
     });
-
     if (Array.isArray(lead.analyses)) {
       for (const a of lead.analyses) {
         items.push({
@@ -54,7 +45,6 @@ function buildActivityItems(
         });
       }
     }
-
     if (Array.isArray(lead.outreaches)) {
       for (const o of lead.outreaches) {
         const label = o.status === "sent" ? "sent" : o.status === "draft" ? "drafted" : o.status;
@@ -74,16 +64,13 @@ function buildActivityItems(
       id: `run-${run.id}`,
       icon: isFailed ? "⚠️" : "🤖",
       description: isFailed
-        ? `Agent pipeline run failed: ${run.error ?? "unknown error"}`
+        ? `Agent pipeline failed: ${run.error ?? "unknown error"}`
         : `Agent pipeline run ${run.status}`,
       timestamp: run.completedAt ?? run.createdAt,
     });
   }
 
-  items.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-  );
-
+  items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   return items.slice(0, 10);
 }
 
@@ -91,11 +78,11 @@ function SkeletonItems() {
   return (
     <div className="space-y-3 p-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="flex items-start gap-3 animate-pulse">
-          <div className="w-5 h-5 rounded bg-[#E5E3D9] shrink-0" />
+        <div key={i} className="flex items-start gap-3">
+          <div className="w-5 h-5 rounded-md skeleton shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 bg-[#E5E3D9] rounded w-3/4" />
-            <div className="h-2 bg-[#E5E3D9]/60 rounded w-1/3" />
+            <div className="h-3 skeleton rounded-md w-3/4" />
+            <div className="h-2 skeleton rounded-md w-1/3" />
           </div>
         </div>
       ))}
@@ -109,7 +96,6 @@ export function ActivityFeed() {
     ["leads"],
     30_000,
   );
-
   const { data: runsData, isLoading: runsLoading } = useRealtimeData(
     () => getAgentRuns(),
     ["agent_pipeline_runs"],
@@ -118,44 +104,57 @@ export function ActivityFeed() {
 
   const items = useMemo<ActivityItem[]>(() => {
     if (!leadsData && !runsData) return [];
-    return buildActivityItems(
-      leadsData?.leads ?? [],
-      runsData?.runs ?? [],
-    );
+    return buildActivityItems(leadsData?.leads ?? [], runsData?.runs ?? []);
   }, [leadsData, runsData]);
 
   const isLoading = leadsLoading || runsLoading;
 
   return (
-    <div className="bg-white border border-[#E5E3D9] rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E5E3D9]">
-        <h3 className="text-sm font-semibold text-[#1A1A1A]">
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: "var(--glass)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        border: "1px solid var(--glass-border)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.10)",
+      }}
+    >
+      <div
+        className="px-4 py-3"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
+      >
+        <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
           Recent Activity
         </h3>
       </div>
 
-      <div className="overflow-y-auto max-h-[400px]">
+      <div className="overflow-y-auto max-h-[400px] kanban-scroll">
         {isLoading && items.length === 0 ? (
           <SkeletonItems />
         ) : items.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-[#7A756D] text-sm">
+          <div
+            className="flex items-center justify-center py-12 text-sm"
+            style={{ color: "var(--text-subtle)" }}
+          >
             No recent activity
           </div>
         ) : (
-          <ul className="divide-y divide-[#E5E3D9]">
-            {items.map((item) => (
+          <ul>
+            {items.map((item, idx) => (
               <li
                 key={item.id}
-                className="flex items-start gap-3 px-4 py-3 hover:bg-[#F7F5F0] transition-colors"
+                className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[var(--glass-raised)]"
+                style={{
+                  borderBottom: idx < items.length - 1 ? "1px solid var(--glass-border)" : undefined,
+                }}
               >
-                <span className="text-base shrink-0 mt-0.5 leading-none">
-                  {item.icon}
-                </span>
+                <span className="text-base shrink-0 mt-0.5 leading-none">{item.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[#1A1A1A] truncate">
+                  <p className="text-sm truncate" style={{ color: "var(--text)" }}>
                     {item.description}
                   </p>
-                  <p className="text-xs text-[#7A756D] mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-subtle)" }}>
                     {formatRelativeTime(item.timestamp)}
                   </p>
                 </div>

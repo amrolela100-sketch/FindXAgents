@@ -33,19 +33,36 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-full flex flex-col items-center justify-center p-8 text-center bg-[#F7F5F0]">
-          <div className="bg-white p-8 rounded-2xl shadow-sm max-w-md w-full border border-red-100">
-            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+        <div className="min-h-full flex flex-col items-center justify-center p-8 text-center">
+          <div
+            className="p-8 rounded-2xl max-w-md w-full"
+            style={{
+              background: "var(--glass)",
+              backdropFilter: "blur(20px) saturate(180%)",
+              WebkitBackdropFilter: "blur(20px) saturate(180%)",
+              border: "1px solid rgba(239,68,68, 0.25)",
+              boxShadow: "0 8px 40px rgba(239,68,68, 0.10), inset 0 1px 0 rgba(255,255,255,0.10)",
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: "rgba(239,68,68, 0.12)", border: "1px solid rgba(239,68,68, 0.25)" }}
+            >
+              <AlertCircle className="w-6 h-6" style={{ color: "#F87171" }} />
             </div>
-            <h2 className="text-2xl font-serif font-bold text-[#1A1A1A] mb-2">Something went wrong</h2>
-            <p className="text-sm text-[#7A756D] mb-6 whitespace-pre-wrap">
+            <h2 className="text-2xl font-serif font-bold mb-2" style={{ color: "var(--text)" }}>
+              Something went wrong
+            </h2>
+            <p className="text-sm mb-6 whitespace-pre-wrap" style={{ color: "var(--text-muted)" }}>
               {this.state.error?.message || "An unexpected error occurred while rendering this page."}
             </p>
-            <Button onClick={this.handleRetry} className="w-full gap-2 bg-[#1A1A1A] text-white hover:bg-[#333]">
+            <button
+              onClick={this.handleRetry}
+              className="btn btn-primary w-full gap-2"
+            >
               <RefreshCw className="w-4 h-4" />
               Try again
-            </Button>
+            </button>
           </div>
         </div>
       );

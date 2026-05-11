@@ -111,7 +111,7 @@ function StatCard({
           </p>
         </div>
         <div className={`p-2.5 rounded-xl ${
-          highlight ? "bg-white/10"
+          highlight ? "bg-[var(--glass)]/10"
             : accent === "emerald" ? "bg-emerald-900/50"
             : accent === "amber" ? "bg-amber-900/50"
             : "bg-slate-800"
@@ -124,7 +124,7 @@ function StatCard({
           }`} />
         </div>
       </div>
-      <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${highlight ? "bg-white/[0.06]" : "bg-slate-800"}`} />
+      <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${highlight ? "bg-[var(--glass)]/[0.06]" : "bg-slate-800"}`} />
     </div>
   );
 }
