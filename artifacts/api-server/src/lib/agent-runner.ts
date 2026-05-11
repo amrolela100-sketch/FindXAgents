@@ -1,9 +1,11 @@
 import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders } from "@workspace/db";
 import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
+import { scrapeWebsite, isDirectoryUrl, type ScrapedWebsite } from "./website-scraper.js";
 import { logger } from "./logger.js";
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {  let lastError: unknown;
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
+  let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await fn();
@@ -29,18 +31,6 @@ async function getTavilyKey(): Promise<string | null> {
   return process.env.TAVILY_API_KEY ?? null;
 }
 
-/** Resolve OpenRouter API key — DB config takes priority over env var */
-async function getOpenRouterKey(): Promise<string | null> {
-  try {
-    const [cfg] = await db.select({ apiKey: aiProviders.apiKey })
-      .from(aiProviders)
-      .where(eq(aiProviders.providerType, "openrouter"))
-      .limit(1);
-    if (cfg?.apiKey) return cfg.apiKey;
-  } catch { /* fall through */ }
-  return process.env.OPENROUTER_API_KEY ?? null;
-}
-
 function getDomain(url?: string): string | null {
   if (!url) return null;
   try {
@@ -52,13 +42,50 @@ function getDomain(url?: string): string | null {
 }
 
 async function logToDB(agentId: string, runId: string, phase: string, level: string, message: string) {
-  await db.insert(agentLogs).values({
-    agentId,
-    pipelineRunId: runId,
-    phase,
-    level,
-    message,
-  });
+  await db.insert(agentLogs).values({ agentId, pipelineRunId: runId, phase, level, message });
+}
+
+/**
+ * Extract real companies from a directory page using Tavily's content.
+ * When Tavily returns a designrush/sortlist/etc. page, parse listed company names + URLs from the snippet.
+ */
+function extractCompaniesFromDirectoryContent(content: string, directoryUrl: string): Array<{ businessName: string; website?: string }> {
+  const results: Array<{ businessName: string; website?: string }> = [];
+
+  // Common patterns in directory snippets:
+  // "1. Agency Name - agencysite.com"
+  // "Agency Name (agencysite.com)"
+  // "Visit agencysite.com"
+  const lines = content.split(/\n|\.(?=\s+\d+\.)/).map(l => l.trim()).filter(Boolean);
+
+  for (const line of lines) {
+    // Skip lines that are clearly navigation/meta
+    if (line.length < 5 || line.length > 200) continue;
+    if (/^(see more|view all|filter|sort by|load more|next page)/i.test(line)) continue;
+
+    // Extract URL if present
+    const urlMatch = line.match(/https?:\/\/[^\s,)]+/);
+    const website = urlMatch ? urlMatch[0].replace(/[,)]+$/, "") : undefined;
+
+    // Skip if the extracted website is itself a directory
+    if (website && isDirectoryUrl(website)) continue;
+
+    // Extract name: strip numbering, bullets, URLs
+    let name = line
+      .replace(/^\d+\.\s*/, "")
+      .replace(/^[-•*]\s*/, "")
+      .replace(/https?:\/\/[^\s,)]+/g, "")
+      .replace(/\s*\(.*?\)\s*$/, "")
+      .replace(/\s*[-–|].*$/, "")
+      .trim();
+
+    // Must be a meaningful name
+    if (name.length > 3 && name.length < 100 && /[a-zA-Z\u0600-\u06FF]/.test(name)) {
+      results.push({ businessName: name, website });
+    }
+  }
+
+  return results.slice(0, 5); // max 5 per directory page
 }
 
 export class AgentRunner {
@@ -66,19 +93,14 @@ export class AgentRunner {
 
   async run(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     try {
-      // 1. Mark as running
       await db.update(agentPipelineRuns)
         .set({ status: "running" })
         .where(eq(agentPipelineRuns.id, this.runId));
 
-      // 2. Load agent & skills
-      // For business-recruitment, we'll try to find an agent by role or just the first one
+      // Load or create agent
       let [agent] = await db.select().from(agents).where(eq(agents.name, "research")).limit(1);
+      if (!agent) [agent] = await db.select().from(agents).limit(1);
       if (!agent) {
-        [agent] = await db.select().from(agents).limit(1);
-      }
-      if (!agent) {
-        // Auto-create a default agent if none exists
         const [created] = await db.insert(agents).values({
           name: "research",
           displayName: "Research Agent",
@@ -97,9 +119,9 @@ export class AgentRunner {
       }
 
       const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, agent.id));
-      
-      // If no skills are defined, we'll use a hardcoded fallback pipeline for the requirement
-      const pipelineSkills = skills.length > 0 ? skills.map(s => s.name) : ["discover-web", "qualify-ai", "generate-outreach", "stage-pipeline"];
+      const pipelineSkills = skills.length > 0
+        ? skills.map(s => s.name)
+        : ["discover-web", "qualify-ai", "generate-outreach", "stage-pipeline"];
 
       let discoveredLeadIds: string[] = [];
 
@@ -129,7 +151,6 @@ export class AgentRunner {
       await db.update(agentPipelineRuns)
         .set({ status: "failed", error: err.message, completedAt: new Date() })
         .where(eq(agentPipelineRuns.id, this.runId));
-      
       logger.error({ err, runId: this.runId }, "Pipeline run failed");
     }
   }
@@ -140,7 +161,7 @@ export class AgentRunner {
     const tavilyKey = await getTavilyKey();
     let items: any[] = [];
 
-    // 1. Try Tavily (global, Arabic-friendly web search)
+    // ── 1. Tavily search ────────────────────────────────────────────────────
     if (tavilyKey) {
       await logToDB(agentId, this.runId, "discover-web", "info", `Searching web via Tavily for: ${query}`);
       try {
@@ -149,30 +170,61 @@ export class AgentRunner {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: tavilyKey,
-            query: `${query} business contact email phone`,
-            search_depth: "basic",
-            max_results: Math.min(maxResults * 2, 20),
+            query: `${query} official website contact`,
+            search_depth: "advanced",
+            max_results: Math.min(maxResults * 3, 30),
             include_domains: [],
             exclude_domains: [],
           }),
         });
+
         if (res.ok) {
           const data: any = await res.json();
           const rawResults = data.results || [];
           await logToDB(agentId, this.runId, "discover-web", "info", `Tavily returned ${rawResults.length} raw results`);
-          items = rawResults.slice(0, maxResults * 2).map((r: any) => {
-            // Extract business name from title
-            const title = r.title?.replace(/ - .*$/, "").replace(/ \| .*$/, "").trim();
-            return {
-              businessName: title || r.url,
-              city: "—",
-              website: r.url,
-              industry: query,
-              tavilyData: r.content?.slice(0, 500),
-              source: "tavily",
-            };
-          }).filter((item: any) => item.businessName && item.businessName.length > 2);
-          await logToDB(agentId, this.runId, "discover-web", "info", `Mapped ${items.length} items from Tavily`);
+
+          let directCount = 0;
+          let extractedFromDir = 0;
+
+          for (const r of rawResults) {
+            if (isDirectoryUrl(r.url)) {
+              directCount++;
+              // Try to extract real companies listed in the directory page content
+              if (r.content) {
+                const extracted = extractCompaniesFromDirectoryContent(r.content, r.url);
+                for (const co of extracted) {
+                  items.push({
+                    businessName: co.businessName,
+                    city: "—",
+                    website: co.website,
+                    industry: query,
+                    tavilyData: `Extracted from directory: ${r.url}\n${r.content?.slice(0, 300)}`,
+                    source: "tavily_extracted",
+                  });
+                  extractedFromDir++;
+                }
+              }
+            } else {
+              // Direct result — real company website
+              const title = r.title
+                ?.replace(/ - .*$/, "")
+                .replace(/ \| .*$/, "")
+                .replace(/ – .*$/, "")
+                .trim();
+              items.push({
+                businessName: title || getDomain(r.url) || r.url,
+                city: "—",
+                website: r.url,
+                industry: query,
+                tavilyData: r.content?.slice(0, 500),
+                source: "tavily",
+              });
+            }
+          }
+
+          await logToDB(agentId, this.runId, "discover-web", "info",
+            `Filtered: ${directCount} directory pages (extracted ${extractedFromDir} companies), ${items.length - extractedFromDir} direct results. Total: ${items.length}`
+          );
         } else {
           const errText = await res.text();
           await logToDB(agentId, this.runId, "discover-web", "warn", `Tavily returned status ${res.status}: ${errText.slice(0, 200)}`);
@@ -184,12 +236,13 @@ export class AgentRunner {
       await logToDB(agentId, this.runId, "discover-web", "warn", "No Tavily API key found — skipping web search");
     }
 
-    // 2. Fallback: KVK (Netherlands only)
+    // ── 2. KVK fallback ────────────────────────────────────────────────────
     if (kvkKey && items.length === 0) {
       await logToDB(agentId, this.runId, "discover-web", "info", `Searching KVK for: ${query}`);
-      const res = await fetch(`https://api.kvk.nl/api/v1/zoeken?handelsnaam=${encodeURIComponent(query)}&type=hoofdvestiging&resultatenPerPagina=${Math.min(maxResults, 100)}`, {
-        headers: { "x-api-key": kvkKey }
-      });
+      const res = await fetch(
+        `https://api.kvk.nl/api/v1/zoeken?handelsnaam=${encodeURIComponent(query)}&type=hoofdvestiging&resultatenPerPagina=${Math.min(maxResults, 100)}`,
+        { headers: { "x-api-key": kvkKey } }
+      );
       if (res.ok) {
         const data: any = await res.json();
         items = (data.resultaten || []).map((item: any) => {
@@ -207,7 +260,7 @@ export class AgentRunner {
       }
     }
 
-    // 3. Fallback: Google Places
+    // ── 3. Google Places fallback ──────────────────────────────────────────
     if (googleKey && items.length === 0) {
       await logToDB(agentId, this.runId, "discover-web", "info", `Searching Google Places for: ${query}`);
       const res = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${googleKey}`);
@@ -226,6 +279,15 @@ export class AgentRunner {
       }
     }
 
+    // ── 4. Deduplicate & save ──────────────────────────────────────────────
+    // Remove items with no business name or name is a URL/domain only
+    items = items.filter(item =>
+      item.businessName &&
+      item.businessName.length > 2 &&
+      !item.businessName.includes("http") &&
+      !/^\d+$/.test(item.businessName)
+    );
+
     const insertedIds: string[] = [];
     let added = 0;
     let skippedDuplicates = 0;
@@ -233,14 +295,12 @@ export class AgentRunner {
     for (const lead of items) {
       if (added >= maxResults) break;
       const domain = getDomain(lead.website);
-      
-      // Scope duplicate check to the current user to avoid cross-user conflicts
       const userFilter = userId ? eq(leads.userId, userId) : sql`${leads.userId} IS NULL`;
-      
+
       const conditions = [];
       if (lead.kvkNumber) conditions.push(eq(leads.kvkNumber, lead.kvkNumber));
       if (domain) conditions.push(ilike(leads.website, `%${domain}%`));
-      
+
       let exists = false;
       if (conditions.length > 0) {
         const existing = await db.select({ id: leads.id }).from(leads).where(
@@ -260,7 +320,7 @@ export class AgentRunner {
           ...lead,
           hasWebsite: !!lead.website,
           source: lead.source ?? "web_search",
-          status: "discovered"
+          status: "discovered",
         }).returning({ id: leads.id });
         insertedIds.push(newLead.id);
         added++;
@@ -269,28 +329,47 @@ export class AgentRunner {
       }
     }
 
-    await logToDB(agentId, this.runId, "discover-web", "info", `Results: ${insertedIds.length} new leads saved, ${skippedDuplicates} duplicates skipped out of ${items.length} total`);
-
+    await logToDB(agentId, this.runId, "discover-web", "info",
+      `Results: ${insertedIds.length} new leads saved, ${skippedDuplicates} duplicates skipped out of ${items.length} total`
+    );
     await db.update(agentPipelineRuns)
       .set({ leadsFound: insertedIds.length })
       .where(eq(agentPipelineRuns.id, this.runId));
 
-    await logToDB(agentId, this.runId, "discover-web", "info", `Discovered and saved ${insertedIds.length} new leads`);
     return insertedIds;
   }
 
   private async skillQualifyAi(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     if (leadIds.length === 0) return;
-    
-    await logToDB(agentId, this.runId, "qualify-ai", "info", `Analyzing ${leadIds.length} leads with Gemini...`);
+
+    await logToDB(agentId, this.runId, "qualify-ai", "info", `Analyzing ${leadIds.length} leads (with real website scraping)...`);
     let analyzedCount = 0;
 
     for (const id of leadIds) {
       const [lead] = await db.select().from(leads).where(eq(leads.id, id));
       if (!lead) continue;
 
+      // ── Real website scrape ──────────────────────────────────────────────
+      let scrapedData: ScrapedWebsite | undefined;
+      if (lead.website) {
+        try {
+          await logToDB(agentId, this.runId, "qualify-ai", "info", `Scraping website: ${lead.website}`);
+          scrapedData = await scrapeWebsite(lead.website, 10000);
+          await logToDB(agentId, this.runId, "qualify-ai", "info",
+            `Scraped ${lead.businessName}: reachable=${scrapedData.reachable}, https=${scrapedData.isHttps}, ` +
+            `emails=${scrapedData.emailAddresses.length}, phones=${scrapedData.phoneNumbers.length}, ` +
+            `social=${Object.keys(scrapedData.socialLinks).length}, loadTime=${scrapedData.loadTimeMs}ms`
+          );
+        } catch (e: any) {
+          await logToDB(agentId, this.runId, "qualify-ai", "warn", `Scrape failed for ${lead.website}: ${e.message}`);
+        }
+      } else {
+        await logToDB(agentId, this.runId, "qualify-ai", "info", `${lead.businessName} has no website — scoring as 90`);
+      }
+
       try {
-        const result = await withRetry(() => analyzeLeadWithGemini(lead), 3, 1000);
+        const result = await withRetry(() => analyzeLeadWithGemini(lead as any, scrapedData), 3, 1000);
+
         await db.insert(analyses).values({
           leadId: lead.id,
           type: "gemini_digital",
@@ -302,18 +381,44 @@ export class AgentRunner {
             emailSubject: result.emailSubject,
             digitalMaturity: result.digitalMaturity,
             estimatedRevenueImpact: result.estimatedRevenueImpact,
+            // Store scraping metrics for transparency
+            scrapingMetrics: scrapedData ? {
+              reachable: scrapedData.reachable,
+              isHttps: scrapedData.isHttps,
+              loadTimeMs: scrapedData.loadTimeMs,
+              emailsFound: scrapedData.emailAddresses.length,
+              phonesFound: scrapedData.phoneNumbers.length,
+              hasSocialMedia: scrapedData.hasSocialMedia,
+              hasBlog: scrapedData.hasBlog,
+              hasContactPage: scrapedData.hasContactPage,
+              wordCount: scrapedData.wordCount,
+            } : null,
           },
           opportunities: result.opportunities,
         });
 
-        await db.update(leads).set({
+        // Update lead with enriched data from scraping
+        const updatePayload: any = {
           status: "analyzed",
           leadScore: result.score,
           updatedAt: new Date(),
-        }).where(eq(leads.id, lead.id));
+        };
+
+        if (scrapedData) {
+          if (scrapedData.emailAddresses.length > 0 && !lead.email) {
+            updatePayload.email = scrapedData.emailAddresses[0];
+          }
+          if (scrapedData.phoneNumbers.length > 0 && !lead.phone) {
+            updatePayload.phone = scrapedData.phoneNumbers[0];
+          }
+        }
+
+        await db.update(leads).set(updatePayload).where(eq(leads.id, lead.id));
 
         analyzedCount++;
-        await logToDB(agentId, this.runId, "qualify-ai", "info", `Analyzed ${lead.businessName}: Score ${result.score}`);
+        await logToDB(agentId, this.runId, "qualify-ai", "info",
+          `Analyzed ${lead.businessName}: Score ${result.score} (grounded from real scraping)`
+        );
       } catch (e: any) {
         await logToDB(agentId, this.runId, "qualify-ai", "error", `Failed to analyze ${lead.businessName}: ${e.message}`);
       }
@@ -339,7 +444,9 @@ export class AgentRunner {
 
       if (newStatus !== lead.status) {
         await db.update(leads).set({ status: newStatus, updatedAt: new Date() }).where(eq(leads.id, id));
-        await logToDB(agentId, this.runId, "stage-pipeline", "info", `${lead.businessName} moved to ${newStatus} (Score: ${lead.leadScore})`);
+        await logToDB(agentId, this.runId, "stage-pipeline", "info",
+          `${lead.businessName} moved to ${newStatus} (Score: ${lead.leadScore})`
+        );
       }
     }
   }
@@ -347,7 +454,9 @@ export class AgentRunner {
   private async skillGenerateOutreach(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     if (leadIds.length === 0) return;
 
-    await logToDB(agentId, this.runId, "generate-outreach", "info", `Generating outreach emails for ${leadIds.length} leads in ${language}...`);
+    await logToDB(agentId, this.runId, "generate-outreach", "info",
+      `Generating personalized outreach emails for ${leadIds.length} leads in ${language}...`
+    );
     let emailCount = 0;
 
     for (const id of leadIds) {
@@ -355,18 +464,18 @@ export class AgentRunner {
         const [lead] = await db.select().from(leads).where(eq(leads.id, id));
         if (!lead) continue;
 
-        // Get the latest analysis
         const [analysis] = await db.select().from(analyses)
           .where(eq(analyses.leadId, id))
           .orderBy(analyses.createdAt)
           .limit(1);
 
         if (!analysis) {
-          await logToDB(agentId, this.runId, "generate-outreach", "warn", `No analysis found for ${lead.businessName}, skipping outreach`);
+          await logToDB(agentId, this.runId, "generate-outreach", "warn",
+            `No analysis found for ${lead.businessName}, skipping outreach`
+          );
           continue;
         }
 
-        // Build analysis result object
         const findings = analysis.findings as Record<string, any>;
         const analysisResult = {
           score: analysis.score ?? 50,
@@ -379,7 +488,30 @@ export class AgentRunner {
           estimatedRevenueImpact: findings?.estimatedRevenueImpact ?? "",
         };
 
-        const outreach = await withRetry(() => generateOutreachWithGemini(lead as any, analysisResult, language), 2, 1000);
+        // Reconstruct scrapedData from stored metrics for outreach personalization
+        let scrapedSummary: any = null;
+        if (findings?.scrapingMetrics) {
+          scrapedSummary = {
+            url: lead.website ?? "",
+            reachable: findings.scrapingMetrics.reachable,
+            isHttps: findings.scrapingMetrics.isHttps,
+            emailAddresses: findings.scrapingMetrics.emailsFound > 0 ? ["found"] : [],
+            phoneNumbers: findings.scrapingMetrics.phonesFound > 0 ? ["found"] : [],
+            socialLinks: findings.scrapingMetrics.hasSocialMedia ? { linkedin: "found" } : {},
+            hasBlog: findings.scrapingMetrics.hasBlog,
+            hasContactPage: findings.scrapingMetrics.hasContactPage,
+            hasPrivacyPolicy: false,
+            hasSocialMedia: findings.scrapingMetrics.hasSocialMedia,
+            loadTimeMs: findings.scrapingMetrics.loadTimeMs,
+            wordCount: findings.scrapingMetrics.wordCount,
+          };
+        }
+
+        const outreach = await withRetry(
+          () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary),
+          2,
+          1000
+        );
 
         await db.insert(outreaches).values({
           leadId: id,
@@ -389,13 +521,16 @@ export class AgentRunner {
           personalizedDetails: { language: outreach.language, generatedBy: "pipeline" },
         });
 
-        // Update lead status to contacting
         await db.update(leads).set({ status: "contacting", updatedAt: new Date() }).where(eq(leads.id, id));
 
         emailCount++;
-        await logToDB(agentId, this.runId, "generate-outreach", "info", `Generated email for ${lead.businessName}`);
+        await logToDB(agentId, this.runId, "generate-outreach", "info",
+          `Generated personalized email for ${lead.businessName}`
+        );
       } catch (e: any) {
-        await logToDB(agentId, this.runId, "generate-outreach", "error", `Failed to generate outreach for lead ${id}: ${e.message}`);
+        await logToDB(agentId, this.runId, "generate-outreach", "error",
+          `Failed to generate outreach for lead ${id}: ${e.message}`
+        );
       }
     }
 
@@ -403,6 +538,8 @@ export class AgentRunner {
       .set({ emailsDrafted: emailCount })
       .where(eq(agentPipelineRuns.id, this.runId));
 
-    await logToDB(agentId, this.runId, "generate-outreach", "info", `Generated ${emailCount} outreach emails`);
+    await logToDB(agentId, this.runId, "generate-outreach", "info",
+      `Generated ${emailCount} grounded outreach emails`
+    );
   }
 }
