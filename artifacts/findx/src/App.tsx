@@ -17,6 +17,7 @@ import ClientsPage from "./pages/ClientsPage";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { useLang } from "./lib/lang-context";
+import { useTheme } from "./lib/theme-context";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -60,8 +61,8 @@ function AuthGuard() {
 
   if (loading || !onboardingChecked) {
     return (
-      <div className="min-h-screen bg-[#16130f] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#e4c285]" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -84,10 +85,11 @@ function AuthGuard() {
 
   const isAdmin = ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) || user.role === "admin";
   const { isRtl } = useLang();
+  const { isDark } = useTheme();
 
   return (
     <WorkspaceProvider>
-      <div className="min-h-screen bg-surface text-on-surface">
+      <div className={`min-h-screen ${isDark ? "dark bg-background" : "bg-base-cream"} text-on-surface`}>
         <Sidebar isAdmin={isAdmin} />
         <main className={`${isRtl ? "mr-64" : "ml-64"} min-h-screen`}>
           <ErrorBoundary key={location}>
