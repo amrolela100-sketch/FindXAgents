@@ -43,6 +43,13 @@
       "when": 1778459994000,
       "tag": "0005_add_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1747000000000,
+      "tag": "0006_add_notifications",
+      "breakpoints": true
     }
   ]
 }
