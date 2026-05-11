@@ -1,35 +1,124 @@
+import { useState } from "react";
 import { PageShell } from "../components/page-shell";
+import { KanbanBoard } from "../components/kanban-board";
+import { LeadDetailPanel } from "../components/lead-detail-panel";
+import type { Lead } from "../lib/types";
+import { getLeads, runAgentPipeline } from "../lib/api";
+import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { Zap, RefreshCw, Activity } from "lucide-react";
 
 export default function PipelinePage() {
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+
+  const { data, refresh } = useRealtimeData(
+    () => getLeads({ pageSize: 500 }),
+    ["leads", "pipeline"],
+    20_000
+  );
+  const leads = data?.leads ?? [];
+
+  const statusCounts = {
+    discovered: leads.filter((l) => l.status === "discovered").length,
+    analyzing: leads.filter((l) => l.status === "analyzing").length,
+    analyzed: leads.filter((l) => l.status === "analyzed").length,
+    contacting: leads.filter((l) => l.status === "contacting").length,
+    responded: leads.filter((l) => l.status === "responded").length,
+    qualified: leads.filter((l) => l.status === "qualified").length,
+    won: leads.filter((l) => l.status === "won").length,
+    lost: leads.filter((l) => l.status === "lost").length,
+  };
+
+  async function handleRunPipeline() {
+    if (!query.trim()) return;
+    setIsRunning(true);
+    try {
+      await runAgentPipeline({ query, maxResults: 20, language: "nl" });
+      setQuery("");
+      // refresh will pick up changes via polling
+    } catch {
+      // handled in api.ts
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
   return (
-    <PageShell title="Sales Pipelines" subtitle="Active pipeline management" noPadding>
-      <style>{`.kanban-shadow {
-            box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
-        }
-        .kanban-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 45px rgba(139, 111, 58, 0.08);
-            transition: all 0.3s ease-in-out;
-        }
-        .typewriter {
-            overflow: hidden;
-            border-right: .15em solid #8B6F3A;
-            white-space: nowrap;
-            margin: 0 auto;
-            letter-spacing: .15em;
-            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
-        }
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: #8B6F3A; }
-        }`}</style>
-      <div
-        className="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter"
-        dangerouslySetInnerHTML={{ __html: '<!-- TopNavBar (Mobile mainly, but integrated for structure) -->\n<header class="bg-surface flex justify-between items-center w-full px-8 py-6 md:px-margin-page border-b border-outline-variant/30 z-40">\n<div class="flex items-center gap-4">\n<h2 class="font-headline-lg text-headline-lg text-primary tracking-tight">Active Pipelines</h2>\n<div class="h-6 w-px bg-outline-variant/50 hidden md:block"></div>\n<span class="text-text-muted font-body-sm hidden md:block typewriter">Q3 Enterprise Targets</span>\n</div>\n<div class="flex items-center gap-6">\n<button class="text-on-surface-variant hover:text-primary transition-colors duration-300">\n<span class="material-symbols-outlined">search</span>\n</button>\n<button class="text-on-surface-variant hover:text-primary transition-colors duration-300 relative">\n<span class="material-symbols-outlined">notifications</span>\n<span class="absolute top-0 right-0 w-2 h-2 bg-accent-gold rounded-full"></span>\n</button>\n<img alt="User profile avatar" class="w-10 h-10 rounded-full border border-outline-variant/30 object-cover" data-alt="A close up, high quality headshot of a professional businessman wearing a tailored charcoal suit and crisp white shirt. The background is a soft, out of focus, warm toned office environment. The lighting is natural and flattering, evoking a sense of trust and authority, fitting perfectly within a premium, minimal corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbb5Kqx6vEpy6D_wfGImr8ca7Jg6eBIjmYA7DSqmdxEzzDVj0jLzHRkvowaL_Q-qSeQj6_tECJXDQSg7c2sSFOPpC9qpufsiIjtJBqo3F7tpEVhaxXyrCfRR3iSjYkdWdylUKKhrg3ccZXVGBYF1oO3QVbr-Bxafr04jduB2YDhthBIgww7qVfA1iFL2v7VSec3FyiTpF_1ZEk_P-Sr-P-_CtjrY9sk7bhzPnkooDJY-5dtSRmXeyvfUzUUbEf-YRvt2446HqKem0J"/>\n</div>\n</header>\n<!-- Kanban Board -->\n<div class="flex-1 overflow-x-auto overflow-y-hidden p-8 md:p-margin-page bg-base-cream">\n<div class="flex gap-8 h-full min-w-max pb-8">\n<!-- Stage: Discovery -->\n<div class="w-[380px] flex flex-col h-full">\n<div class="flex items-center justify-between mb-6 border-b border-outline-variant/30 pb-4">\n<h3 class="font-title-md text-title-md text-on-background">Discovery</h3>\n<span class="bg-surface-container-high text-text-muted font-label-caps text-label-caps px-3 py-1 rounded">4 Leads</span>\n</div>\n<div class="flex-col space-y-4 overflow-y-auto pr-2 pb-4">\n<!-- Card 1 -->\n<div class="bg-surface-white p-6 rounded kanban-shadow kanban-hover border-l-2 border-transparent">\n<div class="flex justify-between items-start mb-4">\n<div>\n<h4 class="font-title-md text-title-md text-text-ink">Aura Technologies</h4>\n<p class="font-body-sm text-text-muted mt-1">SaaS Infrastructure</p>\n</div>\n<span class="material-symbols-outlined text-outline">more_horiz</span>\n</div>\n<div class="flex items-center gap-2 mb-4">\n<span class="material-symbols-outlined text-accent-gold text-sm">schedule</span>\n<span class="font-body-sm text-text-muted">Last contact: 2 days ago</span>\n</div>\n<div class="flex justify-between items-center mt-6 pt-4 border-t border-surface-container-high">\n<div class="flex -space-x-2">\n<div class="w-6 h-6 rounded-full bg-secondary-container border border-surface-white"></div>\n<div class="w-6 h-6 rounded-full bg-tertiary-container border border-surface-white"></div>\n</div>\n<span class="font-label-caps text-label-caps text-accent-gold">$120k Est.</span>\n</div>\n</div>\n<!-- Card 2 -->\n<div class="bg-surface-white p-6 rounded kanban-shadow kanban-hover border-l-2 border-transparent">\n<div class="flex justify-between items-start mb-4">\n<div>\n<h4 class="font-title-md text-title-md text-text-ink">Meridian Finance</h4>\n<p class="font-body-sm text-text-muted mt-1">Wealth Management</p>\n</div>\n<span class="material-symbols-outlined text-outline">more_horiz</span>\n</div>\n<div class="flex items-center gap-2 mb-4">\n<span class="material-symbols-outlined text-outline text-sm">mail</span>\n<span class="font-body-sm text-text-muted">Awaiting response</span>\n</div>\n<div class="flex justify-between items-center mt-6 pt-4 border-t border-surface-container-high">\n<div class="w-6 h-6 rounded-full bg-surface-tint border border-surface-white"></div>\n<span class="font-label-caps text-label-caps text-text-muted">$85k Est.</span>\n</div>\n</div>\n</div>\n</div>\n<!-- Stage: Negotiation -->\n<div class="w-[380px] flex flex-col h-full">\n<div class="flex items-center justify-between mb-6 border-b border-outline-variant/30 pb-4">\n<div class="flex items-center gap-2">\n<h3 class="font-title-md text-title-md text-on-background">Negotiation</h3>\n<div class="w-2 h-2 rounded-full bg-accent-gold"></div>\n</div>\n<span class="bg-surface-container-high text-text-muted font-label-caps text-label-caps px-3 py-1 rounded">2 Leads</span>\n</div>\n<div class="flex-col space-y-4 overflow-y-auto pr-2 pb-4">\n<!-- Card 3 Priority -->\n<div class="bg-surface-white p-6 rounded kanban-shadow kanban-hover border-l-4 border-accent-gold relative overflow-hidden">\n<div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-surface-tint/10 to-transparent"></div>\n<div class="flex justify-between items-start mb-4 relative z-10">\n<div>\n<div class="flex items-center gap-2 mb-1">\n<h4 class="font-title-md text-title-md text-text-ink">Nexus Global</h4>\n<span class="material-symbols-outlined text-accent-gold text-sm" style="font-variation-settings: \'FILL\' 1;">star</span>\n</div>\n<p class="font-body-sm text-text-muted">Logistics Network</p>\n</div>\n<span class="material-symbols-outlined text-outline">more_horiz</span>\n</div>\n<div class="bg-surface-container-low p-3 rounded mb-4">\n<p class="font-body-sm text-text-ink">"Reviewing proposed SLA terms. Expecting feedback by Thursday."</p>\n</div>\n<div class="flex justify-between items-center mt-6 pt-4 border-t border-surface-container-high relative z-10">\n<div class="flex -space-x-2">\n<div class="w-6 h-6 rounded-full bg-tertiary-container border border-surface-white"></div>\n</div>\n<span class="font-label-caps text-label-caps text-accent-gold font-bold">$450k Est.</span>\n</div>\n</div>\n<!-- Card 4 -->\n<div class="bg-surface-white p-6 rounded kanban-shadow kanban-hover border-l-2 border-transparent">\n<div class="flex justify-between items-start mb-4">\n<div>\n<h4 class="font-title-md text-title-md text-text-ink">Apex Retail</h4>\n<p class="font-body-sm text-text-muted mt-1">E-commerce Platform</p>\n</div>\n<span class="material-symbols-outlined text-outline">more_horiz</span>\n</div>\n<div class="flex items-center gap-2 mb-4">\n<span class="material-symbols-outlined text-accent-gold text-sm">contract</span>\n<span class="font-body-sm text-text-muted">Drafting proposal</span>\n</div>\n<div class="flex justify-between items-center mt-6 pt-4 border-t border-surface-container-high">\n<div class="w-6 h-6 rounded-full bg-secondary-container border border-surface-white"></div>\n<span class="font-label-caps text-label-caps text-text-muted">$150k Est.</span>\n</div>\n</div>\n</div>\n</div>\n<!-- Stage: Closing -->\n<div class="w-[380px] flex flex-col h-full">\n<div class="flex items-center justify-between mb-6 border-b border-outline-variant/30 pb-4">\n<h3 class="font-title-md text-title-md text-on-background">Closing</h3>\n<span class="bg-surface-container-high text-text-muted font-label-caps text-label-caps px-3 py-1 rounded">1 Lead</span>\n</div>\n<div class="flex-col space-y-4 overflow-y-auto pr-2 pb-4">\n<!-- Card 5 Success -->\n<div class="bg-surface-white p-6 rounded kanban-shadow kanban-hover border-l-2 border-transparent">\n<div class="flex justify-between items-start mb-4">\n<div>\n<h4 class="font-title-md text-title-md text-text-ink">Vanguard Health</h4>\n<p class="font-body-sm text-text-muted mt-1">Medical Supply</p>\n</div>\n<span class="material-symbols-outlined text-outline">more_horiz</span>\n</div>\n<div class="flex items-center gap-2 mb-4 bg-surface-container-low p-2 rounded w-max border border-outline-variant/20">\n<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: \'FILL\' 1;">check_circle</span>\n<span class="font-label-caps text-label-caps text-primary">Verbal Commit</span>\n</div>\n<div class="w-full bg-surface-container-high h-1 rounded-full mb-6">\n<div class="bg-accent-gold h-1 rounded-full w-[90%]"></div>\n</div>\n<div class="flex justify-between items-center pt-4 border-t border-surface-container-high">\n<div class="flex -space-x-2">\n<div class="w-6 h-6 rounded-full bg-secondary-container border border-surface-white"></div>\n<div class="w-6 h-6 rounded-full bg-surface-tint border border-surface-white"></div>\n<div class="w-6 h-6 rounded-full bg-tertiary-container border border-surface-white"></div>\n</div>\n<span class="font-label-caps text-label-caps text-text-ink">$800k Est.</span>\n</div>\n</div>\n</div>\n</div>\n<!-- Add Stage Placeholder -->\n<div class="w-[380px] flex flex-col h-full border-2 border-dashed border-outline-variant/30 rounded flex items-center justify-center bg-transparent hover:bg-surface-container-low transition-colors duration-300 cursor-pointer">\n<span class="material-symbols-outlined text-outline mb-2">add</span>\n<span class="font-label-caps text-label-caps tracking-widest text-text-muted">Add Stage</span>\n</div>\n</div>\n</div>' }}
+    <PageShell
+      title="Pipeline"
+      subtitle={`${leads.length} leads across all stages`}
+    >
+      {/* Pipeline Summary Bar */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        {[
+          { label: "New", key: "discovered", color: "bg-slate-100 text-slate-700" },
+          { label: "Analyzing", key: "analyzing", color: "bg-yellow-100 text-yellow-700" },
+          { label: "Analyzed", key: "analyzed", color: "bg-indigo-100 text-indigo-700" },
+          { label: "Contacted", key: "contacting", color: "bg-blue-100 text-blue-700" },
+          { label: "Responded", key: "responded", color: "bg-amber-100 text-amber-700" },
+          { label: "Qualified", key: "qualified", color: "bg-purple-100 text-purple-700" },
+          { label: "Won", key: "won", color: "bg-emerald-100 text-emerald-700" },
+          { label: "Lost", key: "lost", color: "bg-red-100 text-red-700" },
+        ].map((s) => (
+          <span
+            key={s.key}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.color}`}
+          >
+            {s.label}
+            <span className="font-bold">{statusCounts[s.key as keyof typeof statusCounts]}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* Run Pipeline */}
+      <div className="flex gap-3 mb-6">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleRunPipeline()}
+          placeholder='Run AI pipeline — e.g. "IT consultancy Amsterdam"'
+          className="flex-1 px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={handleRunPipeline}
+          disabled={isRunning || !query.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+        >
+          {isRunning ? (
+            <>
+              <Activity className="w-4 h-4 animate-pulse" />
+              Running...
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4" />
+              Run Pipeline
+            </>
+          )}
+        </button>
+        <button
+          onClick={refresh}
+          className="p-2.5 border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Kanban Board */}
+      <KanbanBoard
+        leads={leads}
+        onSelectLead={(lead: Lead) => setSelectedLeadId(lead.id)}
+        onLeadMoved={refresh}
+      />
+
+      {/* Detail Panel */}
+      <LeadDetailPanel
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onLeadUpdated={refresh}
       />
     </PageShell>
   );

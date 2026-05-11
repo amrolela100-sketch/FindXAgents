@@ -91,7 +91,8 @@ function AuthGuard() {
     <WorkspaceProvider>
       <div className={`min-h-screen ${isDark ? "dark bg-background" : "bg-base-cream"} text-on-surface`}>
         <Sidebar isAdmin={isAdmin} />
-        <main className={`${isRtl ? "mr-64" : "ml-64"} min-h-screen`}>
+        {/* Desktop: offset by sidebar width. Mobile: no offset (sidebar is a drawer) */}
+        <main className={`md:${isRtl ? "mr-64" : "ml-64"} min-h-screen`}>
           <ErrorBoundary key={location}>
             <Switch>
               <Route path="/" component={HomePage} />

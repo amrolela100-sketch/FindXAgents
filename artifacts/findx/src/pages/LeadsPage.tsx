@@ -1,29 +1,152 @@
+import { useState } from "react";
 import { PageShell } from "../components/page-shell";
+import { LeadList } from "../components/lead-list";
+import { LeadDetailPanel } from "../components/lead-detail-panel";
+import { KanbanBoard } from "../components/kanban-board";
+import { DashboardCards } from "../components/dashboard-cards";
+import type { Lead } from "../lib/types";
+import { getLeads, discoverLeads, importLeads, exportLeads, bulkAnalyzeLeads } from "../lib/api";
+import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { LayoutList, LayoutGrid, Zap, Upload, Download, RefreshCw } from "lucide-react";
+
+type ViewMode = "list" | "kanban";
 
 export default function LeadsPage() {
+  const [view, setView] = useState<ViewMode>("list");
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+
+  const { data, refresh } = useRealtimeData(
+    () => getLeads({ pageSize: 200 }),
+    ["leads"],
+    30_000
+  );
+  const leads = data?.leads ?? [];
+
+  async function handleDiscover() {
+    setIsDiscovering(true);
+    try {
+      await discoverLeads();
+      await refresh();
+    } catch {
+      // error handled in api.ts via toast
+    } finally {
+      setIsDiscovering(false);
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const blob = await exportLeads();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // handled in api.ts
+    }
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      await importLeads(text);
+      await refresh();
+    } catch {
+      // handled in api.ts
+    }
+    e.target.value = "";
+  }
+
   return (
-    <PageShell title="Lead Insights" subtitle="Synthesized lead intelligence" noPadding>
-      <style>{`body {
-            background-color: #F9F7F2; /* base-cream fallback */
-            color: #1A1A1A; /* text-ink fallback */
-        }
-        .card-ambient-shadow {
-            box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
-        }
-        .card-hover-effect:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 45px rgba(139, 111, 58, 0.08);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        /* Simulated typewriter effect for visual styling only, no JS animation */
-        .typewriter-sim {
-            border-right: 2px solid #8B6F3A;
-            padding-right: 4px;
-            display: inline-block;
-        }`}</style>
-      <div
-        className="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter"
-        dangerouslySetInnerHTML={{ __html: '<!-- Page Header -->\n<div class="mb-stack-lg border-b border-outline-variant/30 pb-stack-md flex justify-between items-end">\n<div>\n<span class="font-label-caps text-label-caps text-accent-gold mb-2 block">Deep Dive Analysis</span>\n<h2 class="font-display-lg text-display-lg text-text-ink">Aurelius Dynamics</h2>\n<p class="font-title-md text-title-md text-text-muted mt-2">Enterprise SaaS • Series B • Evaluation Phase</p>\n</div>\n<div class="flex gap-4">\n<button class="px-6 py-2 border border-outline text-text-ink font-label-caps text-label-caps tracking-widest uppercase hover:bg-surface-variant transition-colors duration-300 rounded">Export PDF</button>\n<button class="px-6 py-2 bg-accent-gold text-surface-white font-label-caps text-label-caps tracking-widest uppercase hover:bg-surface-tint transition-colors duration-300 rounded shadow-sm">Initiate Contact</button>\n</div>\n</div>\n<!-- Bento Grid Layout -->\n<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-grid">\n<!-- Main AI Analysis Column -->\n<div class="lg:col-span-8 space-y-gutter-grid">\n<!-- Synthesized Intelligence Card -->\n<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">\n<div class="flex items-center gap-3 mb-6">\n<span class="material-symbols-outlined text-accent-gold">storm</span>\n<h3 class="font-headline-lg text-headline-lg text-text-ink">Synthesized Intelligence</h3>\n</div>\n<div class="prose max-w-none">\n<p class="font-body-lg text-body-lg text-text-muted leading-relaxed">\n<span class="font-bold text-text-ink">Current Posture:</span> Aurelius Dynamics recently secured $42M in Series B funding, signaling aggressive expansion into the APAC region. Their current technology stack heavily relies on legacy infrastructure, presenting a significant friction point for scaling operations.\n                            </p>\n<p class="font-body-lg text-body-lg text-text-muted leading-relaxed mt-4">\n<span class="font-bold text-text-ink">Strategic Vulnerability:</span> Recent leadership changes in the C-suite (notably the appointment of a new CTO from a competitive firm) indicate a shift towards modernizing their data architecture. The window for introducing our integration suite is currently optimal.\n                            </p>\n<p class="font-body-lg text-body-lg text-accent-gold leading-relaxed mt-4 bg-surface-container-low p-4 rounded border-l-4 border-accent-gold typewriter-sim">\n                                Likelihood of conversion assessed at 84% given historical buying patterns of similar firms post-funding round...\n                            </p>\n</div>\n</div>\n<!-- Market Sentiment & Action Plan Grid -->\n<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-grid">\n<!-- Market Sentiment -->\n<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect flex flex-col">\n<div class="flex items-center justify-between mb-6">\n<h3 class="font-title-md text-title-md text-text-ink font-bold">Market Sentiment</h3>\n<span class="font-label-caps text-label-caps text-accent-gold bg-accent-gold/10 px-2 py-1 rounded">Bullish</span>\n</div>\n<div class="flex-1 flex flex-col justify-center items-center py-6">\n<div class="relative w-32 h-32 rounded-full border-[12px] border-surface-container-highest flex items-center justify-center">\n<div class="absolute inset-0 rounded-full border-[12px] border-accent-gold border-t-transparent border-l-transparent rotate-45"></div>\n<span class="font-headline-lg text-headline-lg text-text-ink">78<span class="text-title-md text-text-muted">%</span></span>\n</div>\n<p class="font-body-sm text-body-sm text-text-muted mt-4 text-center">Positive coverage in Q3 tech press</p>\n</div>\n</div>\n<!-- Action Plan -->\n<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">\n<div class="flex items-center gap-2 mb-6 border-b border-outline-variant/30 pb-2">\n<span class="material-symbols-outlined text-accent-gold text-body-lg">flag</span>\n<h3 class="font-title-md text-title-md text-text-ink font-bold">Action Plan</h3>\n</div>\n<ul class="space-y-4">\n<li class="flex gap-3">\n<div class="w-6 h-6 rounded-full border border-accent-gold flex-shrink-0 flex items-center justify-center bg-accent-gold text-surface-white">\n<span class="material-symbols-outlined text-[14px]">check</span>\n</div>\n<div>\n<p class="font-body-sm text-body-sm font-bold text-text-ink">Initial Mapping</p>\n<p class="font-label-caps text-label-caps text-text-muted mt-1">Completed Oct 12</p>\n</div>\n</li>\n<li class="flex gap-3">\n<div class="w-6 h-6 rounded-full border-2 border-accent-gold flex-shrink-0"></div>\n<div>\n<p class="font-body-sm text-body-sm font-bold text-text-ink">Executive Briefing</p>\n<p class="font-label-caps text-label-caps text-text-muted mt-1">Pending C-Suite alignment</p>\n</div>\n</li>\n<li class="flex gap-3">\n<div class="w-6 h-6 rounded-full border border-outline-variant flex-shrink-0"></div>\n<div>\n<p class="font-body-sm text-body-sm text-text-muted">Technical Discovery</p>\n<p class="font-label-caps text-label-caps text-outline mt-1">Scheduled Nov 05</p>\n</div>\n</li>\n</ul>\n</div>\n</div>\n</div>\n<!-- Secondary Column -->\n<div class="lg:col-span-4 space-y-gutter-grid">\n<!-- Strategic Fit -->\n<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow card-hover-effect">\n<div class="mb-4">\n<h3 class="font-title-md text-title-md text-text-ink font-bold">Strategic Fit</h3>\n<p class="font-body-sm text-body-sm text-text-muted mt-1">Alignment with core offering</p>\n</div>\n<div class="space-y-4 mt-6">\n<div>\n<div class="flex justify-between font-label-caps text-label-caps mb-1">\n<span class="text-text-ink">Technological Synergy</span>\n<span class="text-accent-gold">High</span>\n</div>\n<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">\n<div class="h-full bg-accent-gold w-[90%]"></div>\n</div>\n</div>\n<div>\n<div class="flex justify-between font-label-caps text-label-caps mb-1">\n<span class="text-text-ink">Budget Readiness</span>\n<span class="text-primary-fixed-dim">Moderate</span>\n</div>\n<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">\n<div class="h-full bg-primary-fixed-dim w-[65%]"></div>\n</div>\n</div>\n<div>\n<div class="flex justify-between font-label-caps text-label-caps mb-1">\n<span class="text-text-ink">Timeline Urgency</span>\n<span class="text-text-muted">Low</span>\n</div>\n<div class="h-1 w-full bg-surface-container-high rounded overflow-hidden">\n<div class="h-full bg-outline-variant w-[30%]"></div>\n</div>\n</div>\n</div>\n</div>\n<!-- Key Stakeholders List -->\n<div class="bg-surface-white rounded-lg p-stack-md card-ambient-shadow">\n<h3 class="font-title-md text-title-md text-text-ink font-bold mb-4">Key Stakeholders</h3>\n<div class="space-y-4">\n<div class="flex items-center gap-3 p-3 bg-surface-container-low rounded border border-outline-variant/20 hover:border-accent-gold/50 transition-colors cursor-pointer">\n<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">\n<img alt="Stakeholder Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged executive. The style is editorial and clean, featuring soft, diffused lighting against an ivory backdrop. The tones are warm and sophisticated, aligning perfectly with a premium, minimalist corporate identity and ivory-gold palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALbxZi6H-OWPB8XesVZoAnb4f7aDgctjX4Wob8VzRqP4TceJ5jfXig417jLnXvzdn8VxljS6cTmiBjW0mUeMdV8mWroaadPUdEpzONfvB6LlilYO2heRwYbe7tLAxmaOsg3IBz-60kbwZHgU4NVIzmHJiIj8MImGAJlS1S_XoUtYA9-uMSz6r7vgvEmWHz3gKLC8Nuus7t0X9LAvT95ozLp93DTcGDmteOE3dTAfaMMf3vh79QBu2VmaliK0aP9UVLbVh9HuPdBQ7b"/>\n</div>\n<div>\n<p class="font-body-sm text-body-sm font-bold text-text-ink leading-tight">Sarah Jenkins</p>\n<p class="font-label-caps text-label-caps text-text-muted mt-1">Chief Technology Officer</p>\n</div>\n</div>\n<div class="flex items-center gap-3 p-3 hover:bg-surface-container-low rounded transition-colors cursor-pointer border border-transparent hover:border-outline-variant/20">\n<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden">\n<img alt="Stakeholder Avatar" class="w-full h-full object-cover" data-alt="A polished corporate portrait of a young executive. The aesthetic is modern and minimalist, with a creamy white background and gentle, sophisticated lighting. The image evokes a sense of quiet authority and craftsmanship, fitting seamlessly into an ivory and gold high-end UI design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeaMux_MaskbFqEtfTEc8XkPxxsrPufUKKs9YuSoXnztup3gI2_SdsFSj-mpU9VuQJbumIhbSM_zAccFEAluKCHMuzZ6-WqB0AiFraSC0P6oMLhlroUd3mW-Qyv0XP234Va4zhHCvNv53x2Og4ZXUzYKdecZ8kqGQG30kDeZ1qBVAg__cRYgAf63m2p2ZuavVZfi56kZ2TSRLXcWv8Pv5DRcKlcsFC3kx6KAyu016uOtoadALFia2Wz0ka6Vn72FOqUPuCgSwAd_sf"/>\n</div>\n<div>\n<p class="font-body-sm text-body-sm font-bold text-text-ink leading-tight">Marcus Vance</p>\n<p class="font-label-caps text-label-caps text-text-muted mt-1">VP of Operations</p>\n</div>\n</div>\n</div>\n</div>\n</div>\n</div>' }}
+    <PageShell
+      title="Leads"
+      subtitle={`${data?.total ?? 0} total leads`}
+    >
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* View Toggle */}
+        <div className="flex items-center gap-1 bg-surface-container-high rounded-xl p-1">
+          <button
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              view === "list"
+                ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                : "text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            <LayoutList className="w-4 h-4" />
+            List
+          </button>
+          <button
+            onClick={() => setView("kanban")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              view === "kanban"
+                ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                : "text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Kanban
+          </button>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Actions */}
+        <button
+          onClick={handleDiscover}
+          disabled={isDiscovering}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {isDiscovering ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : (
+            <Zap className="w-4 h-4" />
+          )}
+          {isDiscovering ? "Discovering..." : "Discover"}
+        </button>
+
+        <label className="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-variant cursor-pointer transition-colors">
+          <Upload className="w-4 h-4" />
+          Import CSV
+          <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+        </label>
+
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-variant transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="mb-6">
+        <DashboardCards />
+      </div>
+
+      {/* Main View */}
+      {view === "list" ? (
+        <LeadList onSelectLead={(lead) => setSelectedLeadId(lead.id)} />
+      ) : (
+        <KanbanBoard
+          leads={leads}
+          onSelectLead={(lead) => setSelectedLeadId(lead.id)}
+          onLeadMoved={refresh}
+        />
+      )}
+
+      {/* Detail Panel */}
+      <LeadDetailPanel
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onLeadUpdated={refresh}
       />
     </PageShell>
   );

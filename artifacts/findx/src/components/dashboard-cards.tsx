@@ -4,7 +4,7 @@ import { getDashboardStats } from "../lib/api";
 import type { DashboardStats } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
 
-/* ─── Animated counter hook (inline, self-contained per card) ─── */
+/* ─── Animated counter hook ─── */
 function useAnimatedCounter(
   target: number | string,
   duration = 1800
@@ -17,18 +17,17 @@ function useAnimatedCounter(
     if (!el || animatedRef.current) return;
     animatedRef.current = true;
 
-    // Handle percentage strings like "7.3%"
     const rawStr = String(target);
     const isPct = rawStr.endsWith("%");
     const numericTarget = parseFloat(rawStr.replace("%", ""));
     const isFloat = isPct || numericTarget % 1 !== 0;
 
-    const node = el; // stable non-null reference for the closure
+    const node = el;
     const start = performance.now();
     function update(time: number) {
       const elapsed = time - start;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       const current = eased * numericTarget;
       node.textContent = isPct
         ? current.toFixed(1) + "%"
@@ -44,7 +43,6 @@ function useAnimatedCounter(
     animatedRef.current = false;
     const el = elRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -68,6 +66,7 @@ interface CardConfig {
   getValue: (stats: DashboardStats) => number | string;
   icon: typeof Database;
   getTrend: (stats: DashboardStats) => string;
+  isPositiveTrend: (stats: DashboardStats) => boolean;
 }
 
 const CARDS: CardConfig[] = [
@@ -76,47 +75,46 @@ const CARDS: CardConfig[] = [
     getValue: (s) => s.totalLeads,
     icon: Database,
     getTrend: (s) =>
-      s.leadsThisWeek > 0
-        ? `+${s.leadsThisWeek} this week`
-        : "No new leads this week",
+      s.leadsThisWeek > 0 ? `+${s.leadsThisWeek} this week` : "No new leads this week",
+    isPositiveTrend: (s) => s.leadsThisWeek > 0,
   },
   {
     label: "Analyzed",
     getValue: (s) => s.leadsAnalyzed,
     icon: Search,
     getTrend: (s) => {
-      const pct =
-        s.totalLeads > 0
-          ? Math.round((s.leadsAnalyzed / s.totalLeads) * 100)
-          : 0;
+      const pct = s.totalLeads > 0 ? Math.round((s.leadsAnalyzed / s.totalLeads) * 100) : 0;
       return `${pct}% of total`;
     },
+    isPositiveTrend: (s) => s.leadsAnalyzed > 0,
   },
   {
     label: "Contacted",
     getValue: (s) => s.leadsContacted,
     icon: Mail,
     getTrend: (s) => `${s.leadsResponded} responded`,
+    isPositiveTrend: (s) => s.leadsResponded > 0,
   },
   {
-    label: "Conversion Rate",
+    label: "Conversion",
     getValue: (s) => s.conversionRate + "%",
     icon: TrendingUp,
     getTrend: (s) => `${s.leadsWon} won deals`,
+    isPositiveTrend: (s) => s.leadsWon > 0,
   },
 ];
 
 function SkeletonCard() {
   return (
-    <div className="bg-white border border-[#E5E3D9] rounded-xl p-5 animate-pulse">
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 animate-pulse">
       <div className="flex items-start justify-between mb-4">
-        <div className="p-2 rounded-lg bg-[#F0EDE6]">
-          <div className="w-5 h-5 bg-[#E5E3D9] rounded" />
+        <div className="p-2 rounded-xl bg-surface-container-high">
+          <div className="w-5 h-5 bg-surface-container rounded" />
         </div>
       </div>
-      <div className="h-9 w-20 bg-[#E5E3D9] rounded mb-2" />
-      <div className="h-4 w-28 bg-[#E5E3D9] rounded" />
-      <div className="h-3 w-24 bg-[#E5E3D9] rounded mt-3" />
+      <div className="h-9 w-20 bg-surface-container rounded mb-2" />
+      <div className="h-4 w-28 bg-surface-container rounded" />
+      <div className="h-3 w-24 bg-surface-container rounded mt-3" />
     </div>
   );
 }
@@ -133,32 +131,24 @@ function KpiCard({
   const Icon = card.icon;
   const value = card.getValue(stats);
   const trend = card.getTrend(stats);
-  const isPositive =
-    trend.startsWith("+") ||
-    trend.includes("won") ||
-    trend.includes("responded");
-
+  const positive = card.isPositiveTrend(stats);
   const counterRef = useAnimatedCounter(value);
 
   return (
     <div
-      className="reveal-item bg-white border border-[#E5E3D9] rounded-xl p-5 lift-card kpi-card"
+      className="reveal-item bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 kpi-card"
       style={{ transitionDelay: `${index * 80}ms` }}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg bg-[#F0EDE6]">
-          <Icon className="w-5 h-5 text-[#1A1A1A]" />
+        <div className="p-2 rounded-xl bg-primary-container/20">
+          <Icon className="w-5 h-5 text-on-primary-container" />
         </div>
       </div>
-      <p className="text-3xl font-serif font-bold text-[#1A1A1A]">
+      <p className="text-3xl font-bold text-on-surface">
         <span ref={counterRef}>{value}</span>
       </p>
-      <p className="text-sm text-[#7A756D] mt-1">{card.label}</p>
-      <p
-        className={`text-xs mt-3 font-medium ${
-          isPositive ? "text-emerald-600" : "text-red-500"
-        }`}
-      >
+      <p className="text-sm text-on-surface-variant mt-1">{card.label}</p>
+      <p className={`text-xs mt-3 font-medium ${positive ? "text-emerald-600" : "text-on-surface-variant"}`}>
         {trend}
       </p>
     </div>
@@ -170,7 +160,6 @@ export function DashboardCards() {
   const { data, isLoading } = usePolling(() => getDashboardStats(), 15_000);
   const stats = data?.stats ?? null;
 
-  /* Scroll reveal for cards */
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;

@@ -1,27 +1,198 @@
 import { PageShell } from "../components/page-shell";
+import { DashboardCards } from "../components/dashboard-cards";
+import { ActivityFeed } from "../components/activity-feed";
+import { usePolling } from "../lib/hooks/use-polling";
+import { getDashboardStats, getScoreDistribution, getAgentRuns } from "../lib/api";
+import { Link } from "wouter";
+import {
+  TrendingUp, Zap, ChevronRight, Award, Target, Activity,
+  CheckCircle2, AlertCircle, Clock
+} from "lucide-react";
 
 export default function HomePage() {
+  const { data: statsData } = usePolling(() => getDashboardStats(), 15_000);
+  const { data: scoreData } = usePolling(() => getScoreDistribution(), 30_000);
+  const { data: runsData } = usePolling(() => getAgentRuns(), 10_000);
+
+  const stats = statsData?.stats;
+  const scoreDistribution = scoreData?.buckets;
+  const avgScore = scoreData?.avgScore ?? 0;
+  const recentRuns = runsData?.runs?.slice(0, 3) ?? [];
+  const activeRun = runsData?.runs?.find((r) => r.status === "running" || r.status === "queued");
+
   return (
-    <PageShell title="Intelligence Dashboard" subtitle="A curated synthesis of market signals" noPadding>
-      <style>{`/* Minimal custom CSS for things Tailwind config can't handle purely via classes without clutter */
-        .ambient-shadow {
-            box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
-        }
-        .ambient-shadow-hover:hover {
-            box-shadow: 0 15px 50px rgba(139, 111, 58, 0.08);
-            transform: translateY(-2px);
-        }
-        .typewriter-cursor {
-            border-right: 2px solid #8B6F3A;
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            50% { border-color: transparent; }
-        }`}</style>
-      <div
-        className="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter"
-        dangerouslySetInnerHTML={{ __html: '<header class="mb-10 max-w-4xl">\n<h2 class="font-display-lg text-display-lg text-on-surface mb-2">Intelligence</h2>\n<p class="font-body-lg text-body-lg text-on-surface-variant">A curated synthesis of market signals, relationship vectors, and high-probability conversion pathways.</p>\n</header>\n<!-- Bento Grid -->\n<div class="grid grid-cols-12 gap-gutter">\n<!-- Score Card -->\n<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-8 ambient-shadow ambient-shadow-hover transition-all duration-500 flex flex-col items-center justify-center border border-outline-variant/20 relative overflow-hidden">\n<h3 class="font-label-caps text-label-caps tracking-widest uppercase text-on-surface-variant w-full text-left absolute top-8 left-8">Prospecting Score</h3>\n<div class="relative w-48 h-48 mt-8 flex items-center justify-center">\n<!-- Simulated Gold Dial via layered borders -->\n<div class="absolute inset-0 rounded-full border-2 border-surface-container-highest"></div>\n<div class="absolute inset-0 rounded-full border-[6px] border-transparent border-t-primary-container border-r-primary-container rotate-45"></div>\n<div class="text-center z-10">\n<span class="font-display-lg text-display-lg text-primary block leading-none mb-1">87</span>\n<span class="font-label-caps text-label-caps text-primary-container tracking-widest uppercase">Apex</span>\n</div>\n</div>\n</div>\n<!-- Pipeline Status -->\n<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-8 ambient-shadow ambient-shadow-hover transition-all duration-500 border border-outline-variant/20 flex flex-col justify-between">\n<h3 class="font-label-caps text-label-caps tracking-widest uppercase text-on-surface-variant mb-4">Active Pipelines</h3>\n<div>\n<span class="font-display-lg text-display-lg text-on-surface block">14</span>\n<span class="font-body-md text-body-md text-primary-container">+2 organically warming</span>\n</div>\n<!-- Abstract Bar Chart -->\n<div class="mt-8 flex items-end gap-3 h-24">\n<div class="w-1/4 bg-surface-container-highest h-1/4 rounded-t-sm"></div>\n<div class="w-1/4 bg-surface-container-highest h-2/4 rounded-t-sm"></div>\n<div class="w-1/4 bg-surface-container-highest h-3/4 rounded-t-sm"></div>\n<div class="w-1/4 bg-primary-container h-full rounded-t-sm"></div>\n</div>\n</div>\n<!-- Contextual Image Card -->\n<div class="col-span-12 md:col-span-4 rounded-xl overflow-hidden ambient-shadow ambient-shadow-hover transition-all duration-500 border border-outline-variant/20 relative group">\n<img alt="Contextual Brand Image" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" data-alt="A sophisticated macro photograph of a vintage gold-nib fountain pen resting on a stack of thick, cream-colored, textured parchment paper. The lighting is soft, warm, and natural, creating gentle shadows that highlight the tactile quality of the paper and the metallic gleam of the gold pen. The overall aesthetic is highly premium, minimalist, and analog, perfectly aligning with a \'warm intelligence\' and crafted precision brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg4yLkkjNm61V5H3AsyPyz4omGxM4LxqxnJIKZx7g-Tm8ytlJItIICrLxA1bciPlNw9aXK2Q18foZzDUbZjR_MsPOEvBL6aFB2_aM5rOm8tY8D68_kg0VrNsOGIR8wIZX4d5RxYQRYrlgSwIDpW98uhG4-JPghqC8yc7pZSaCDkxToO2lihKifA_E9KclEYKxXaWy2A_g3mot88c_zHkNU_r90RuGERGg3_jf7DWcnx_-9kpxDSynYbj3lnIsHhElwl9Oj_WCIxbe9"/>\n<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex flex-col justify-end p-6">\n<span class="font-label-caps text-label-caps text-on-surface tracking-widest uppercase mb-1">Methodology</span>\n<h4 class="font-headline-sm text-headline-sm text-on-surface">The Art of the Warm Intro</h4>\n</div>\n</div>\n<!-- Insights Feed -->\n<div class="col-span-12 bg-surface-container-lowest rounded-xl p-8 ambient-shadow border border-outline-variant/20 mt-4">\n<div class="flex justify-between items-center mb-8 pb-4 border-b border-surface-container">\n<h3 class="font-headline-md text-headline-md text-on-surface">Curated Signals</h3>\n<button class="font-label-caps text-label-caps tracking-widest uppercase text-primary hover:text-surface-tint transition-colors flex items-center gap-1">\n                            View Archive <span class="material-symbols-outlined text-[14px]">arrow_forward</span>\n</button>\n</div>\n<div class="flex flex-col gap-8">\n<!-- Insight 1 -->\n<div class="flex gap-6 group cursor-pointer">\n<div class="w-12 h-12 rounded bg-surface shrink-0 flex items-center justify-center text-primary-container border border-outline-variant/20 group-hover:bg-primary-container group-hover:text-surface-container-lowest transition-colors duration-300">\n<span class="material-symbols-outlined" style="font-variation-settings: \'FILL\' 1;">psychology</span>\n</div>\n<div class="flex-1">\n<div class="flex justify-between items-baseline mb-1">\n<span class="font-label-caps text-label-caps tracking-widest uppercase text-primary-container">Intent Spike • Meridian Capital</span>\n<span class="font-label-caps text-label-caps text-on-surface-variant">2 hrs ago</span>\n</div>\n<h4 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Executive movement detected alongside infrastructure inquiries.</h4>\n<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl leading-relaxed typewriter-cursor inline-block">System analysis indicates a high probability of impending vendor evaluation. Recommend initiating contact via Warm Intro path established last quarter.</p>\n</div>\n</div>\n<!-- Divider -->\n<div class="h-px w-full bg-surface-container max-w-3xl ml-18"></div>\n<!-- Insight 2 -->\n<div class="flex gap-6 group cursor-pointer">\n<div class="w-12 h-12 rounded bg-surface shrink-0 flex items-center justify-center text-primary-container border border-outline-variant/20 group-hover:bg-primary-container group-hover:text-surface-container-lowest transition-colors duration-300">\n<span class="material-symbols-outlined">trending_up</span>\n</div>\n<div class="flex-1">\n<div class="flex justify-between items-baseline mb-1">\n<span class="font-label-caps text-label-caps tracking-widest uppercase text-primary-container">Vector Shift • Global Industries</span>\n<span class="font-label-caps text-label-caps text-on-surface-variant">5 hrs ago</span>\n</div>\n<h4 class="font-headline-sm text-headline-sm text-on-surface mb-2 group-hover:text-primary transition-colors">Q3 Earnings call highlighted supply chain inefficiencies.</h4>\n<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl leading-relaxed">Direct alignment with FindX core value proposition. Narrative crafted and queued for your review prior to outreach.</p>\n</div>\n</div>\n</div>\n</div>\n</div>' }}
-      />
+    <PageShell title="Dashboard" subtitle="Overview of your prospecting intelligence">
+      {/* Active pipeline banner */}
+      {activeRun && (
+        <div className="flex items-center gap-3 mb-6 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="relative flex-shrink-0">
+            <Activity className="w-5 h-5 text-blue-500" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-blue-800">AI Pipeline is running</p>
+            <p className="text-xs text-blue-600 truncate">"{activeRun.query}"</p>
+          </div>
+          <Link href="/agents">
+            <a className="text-xs font-semibold text-blue-700 hover:underline flex items-center gap-1">
+              View <ChevronRight className="w-3 h-3" />
+            </a>
+          </Link>
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="mb-8">
+        <DashboardCards />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Score Distribution */}
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-on-surface">Lead Scores</h3>
+            <div className="flex items-center gap-1 text-sm font-bold text-on-surface-variant">
+              <Award className="w-4 h-4 text-amber-500" />
+              Avg: {avgScore.toFixed(0)}
+            </div>
+          </div>
+          {scoreDistribution ? (
+            <div className="space-y-3">
+              {[
+                { label: "🔥 Hot", key: "hot", color: "bg-emerald-500", total: (scoreDistribution.hot + scoreDistribution.warm + scoreDistribution.cold + scoreDistribution.unscored) },
+                { label: "🌡️ Warm", key: "warm", color: "bg-amber-400", total: (scoreDistribution.hot + scoreDistribution.warm + scoreDistribution.cold + scoreDistribution.unscored) },
+                { label: "❄️ Cold", key: "cold", color: "bg-blue-400", total: (scoreDistribution.hot + scoreDistribution.warm + scoreDistribution.cold + scoreDistribution.unscored) },
+                { label: "⬜ Unscored", key: "unscored", color: "bg-slate-300", total: (scoreDistribution.hot + scoreDistribution.warm + scoreDistribution.cold + scoreDistribution.unscored) },
+              ].map((item) => {
+                const count = scoreDistribution[item.key as keyof typeof scoreDistribution];
+                const pct = item.total > 0 ? Math.round((count / item.total) * 100) : 0;
+                return (
+                  <div key={item.key}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-on-surface-variant">{item.label}</span>
+                      <span className="font-semibold text-on-surface">{count} ({pct}%)</span>
+                    </div>
+                    <div className="h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${item.color} rounded-full transition-all duration-700`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-24 flex items-center justify-center text-sm text-on-surface-variant">
+              No scored leads yet
+            </div>
+          )}
+        </div>
+
+        {/* Conversion Funnel */}
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-on-surface">Conversion Funnel</h3>
+            <Target className="w-4 h-4 text-on-surface-variant" />
+          </div>
+          {stats ? (
+            <div className="space-y-2">
+              {[
+                { label: "Total Leads", count: stats.totalLeads, icon: "🎯" },
+                { label: "Analyzed", count: stats.leadsAnalyzed, icon: "🔍" },
+                { label: "Contacted", count: stats.leadsContacted, icon: "✉️" },
+                { label: "Responded", count: stats.leadsResponded, icon: "💬" },
+                { label: "Won", count: stats.leadsWon, icon: "🏆" },
+              ].map((item, i, arr) => {
+                const pct = i === 0 ? 100 : arr[0].count > 0 ? Math.round((item.count / arr[0].count) * 100) : 0;
+                return (
+                  <div key={item.label} className="flex items-center gap-3">
+                    <span className="text-lg w-6">{item.icon}</span>
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-on-surface-variant">{item.label}</span>
+                        <span className="font-semibold text-on-surface">{item.count}</span>
+                      </div>
+                      <div className="h-1 bg-surface-container-high rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary-container rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-24 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Recent Pipeline Runs */}
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-on-surface">Recent Runs</h3>
+            <Link href="/agents">
+              <a className="text-xs text-on-surface-variant hover:text-on-surface flex items-center gap-0.5 transition-colors">
+                View all <ChevronRight className="w-3 h-3" />
+              </a>
+            </Link>
+          </div>
+          {recentRuns.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Zap className="w-8 h-8 text-on-surface-variant opacity-30 mb-2" />
+              <p className="text-xs text-on-surface-variant">No pipeline runs yet</p>
+              <Link href="/agents">
+                <a className="mt-2 text-xs font-semibold text-primary-container hover:underline">
+                  Start your first run →
+                </a>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentRuns.map((run) => (
+                <div key={run.id} className="flex items-start gap-3 p-3 bg-surface-container-low rounded-xl">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {run.status === "completed" ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    ) : run.status === "failed" ? (
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    ) : run.status === "running" ? (
+                      <Activity className="w-4 h-4 text-blue-500 animate-pulse" />
+                    ) : (
+                      <Clock className="w-4 h-4 text-amber-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-on-surface truncate">{run.query}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-on-surface-variant">
+                        {run.leadsFound} leads found
+                      </span>
+                      <span className="text-[10px] text-on-surface-variant">·</span>
+                      <span className="text-[10px] text-on-surface-variant">
+                        {new Date(run.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-on-surface">Recent Activity</h3>
+          <TrendingUp className="w-4 h-4 text-on-surface-variant" />
+        </div>
+        <ActivityFeed />
+      </div>
     </PageShell>
   );
 }

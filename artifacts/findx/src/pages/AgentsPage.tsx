@@ -1,21 +1,199 @@
+import { useState } from "react";
 import { PageShell } from "../components/page-shell";
+import { AgentRunHistory } from "../components/agent-run-history";
+import { LeadDetailPanel } from "../components/lead-detail-panel";
+import { getAgents, runAgentPipeline, getAgentRuns } from "../lib/api";
+import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { usePolling } from "../lib/hooks/use-polling";
+import type { Agent } from "../lib/types";
+import {
+  Zap, Activity, CheckCircle2, XCircle, Clock, ChevronRight,
+  Bot, Search, Mail, BarChart3
+} from "lucide-react";
+
+const AGENT_ICONS: Record<string, typeof Bot> = {
+  discovery: Search,
+  analysis: BarChart3,
+  outreach: Mail,
+};
 
 export default function AgentsPage() {
+  const [query, setQuery] = useState("");
+  const [maxResults, setMaxResults] = useState(10);
+  const [language, setLanguage] = useState<"nl" | "en">("nl");
+  const [isRunning, setIsRunning] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const { data: agentsData } = useRealtimeData(() => getAgents(), ["agents"], 60_000);
+  const { data: runsData, refresh: refreshRuns } = usePolling(() => getAgentRuns(), 10_000);
+
+  const agents = agentsData?.agents ?? [];
+  const runs = runsData?.runs ?? [];
+  const activeRun = runs.find((r) => r.status === "running" || r.status === "queued");
+
+  async function handleRun() {
+    if (!query.trim()) return;
+    setIsRunning(true);
+    try {
+      await runAgentPipeline({ query: query.trim(), maxResults, language });
+      setQuery("");
+      refreshRuns();
+    } catch {
+      // handled in api.ts
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
   return (
-    <PageShell title="Business Prospects" subtitle="High-probability conversion pathways" noPadding>
-      <style>{`.material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-          }
-          /* Custom subtle shadow matching accent-gold */
-          .shadow-tactile {
-              box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
-          }
-          .shadow-tactile-hover {
-              box-shadow: 0 15px 50px rgba(139, 111, 58, 0.08);
-          }`}</style>
-      <div
-        className="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter"
-        dangerouslySetInnerHTML={{ __html: '<!-- TopNavBar -->\n<header class="bg-surface flex justify-between items-center w-full px-8 md:px-margin-page py-4 sticky top-0 z-10">\n<!-- Search Bar (Left aligned as per JSON) -->\n<div class="flex-1 max-w-md relative group">\n<span class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-accent-gold transition-colors">search</span>\n<input class="w-full bg-transparent border-b border-outline-variant/30 py-2 pl-8 pr-4 outline-none focus:border-accent-gold font-body-sm text-body-sm text-on-surface transition-colors placeholder:text-outline-variant" placeholder="Search parameters..." type="text"/>\n</div>\n<!-- Trailing Icons -->\n<div class="flex items-center gap-4 ml-8">\n<button class="text-on-surface-variant hover:text-primary transition-colors duration-300 w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-bright">\n<span class="material-symbols-outlined">notifications</span>\n</button>\n<button class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/30 overflow-hidden ml-2">\n<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A close up, professional headshot of a businessperson looking directly at the camera. The lighting is soft and studio-quality, casting a warm, confident glow. The background is slightly out of focus, maintaining a premium, editorial aesthetic that aligns with a high-end corporate identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN7RBboU5jnI_TnVl_axBT_HBqQ6yy8sw2ixCm63UtB-PSfeVjh3HVulr8JBjrJL5Ri5wfx4Z5bQ847IJnbZIlwfrq9d5zhfTffSm7jX1zMkKZO8mi2tNS4yopVFsx4ECcoOLg88-7xyvImklhLxEUIZ9HxF_lzAHVWQ6EdCdJNwZJm-iB96ALI_wXkqAHf0Sd9Fus2mo94JJLWBqjdZPvZheqzO8ecNZXgZ4jlEk8JdRdNqF8-sidHquggCrdSXy7IEXeQYO_6ki8"/>\n</button>\n</div>\n</header>\n<!-- Page Canvas -->\n<div class="flex-1 px-8 md:px-margin-page py-12 max-w-7xl mx-auto w-full">\n<!-- Header Section -->\n<div class="flex flex-col md:flex-row md:items-end justify-between mb-stack-lg border-b border-outline-variant/20 pb-8">\n<div>\n<h2 class="font-display-lg text-display-lg text-on-background tracking-tight mb-2">Prospects</h2>\n<p class="font-body-lg text-body-lg text-text-muted max-w-2xl">Curated intelligence on emerging targets. Refine parameters to reveal high-probability pipelines.</p>\n</div>\n<!-- Refined Filter Area -->\n<div class="mt-6 md:mt-0 flex gap-4">\n<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded text-on-surface-variant font-body-sm text-body-sm hover:border-accent-gold hover:text-accent-gold transition-colors">\n<span class="material-symbols-outlined text-[18px]">tune</span>\n                        Filters\n                    </button>\n<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded text-on-surface-variant font-body-sm text-body-sm hover:border-accent-gold hover:text-accent-gold transition-colors">\n<span class="material-symbols-outlined text-[18px]">sort</span>\n                        Warmth\n                    </button>\n</div>\n</div>\n<!-- Prospects Grid -->\n<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter-grid">\n<!-- Card 1 -->\n<article class="bg-surface-white rounded-xl p-stack-md shadow-tactile hover:-translate-y-1 hover:shadow-tactile-hover transition-all duration-500 cursor-pointer border border-transparent hover:border-outline-variant/30 flex flex-col h-full">\n<div class="flex justify-between items-start mb-4">\n<span class="font-label-caps text-label-caps text-tertiary-container uppercase tracking-widest">Fintech Infrastructure</span>\n<div class="flex items-center gap-1 text-accent-gold">\n<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: \'FILL\' 1;">local_fire_department</span>\n<span class="font-title-md text-title-md font-bold">94</span>\n</div>\n</div>\n<h3 class="font-headline-lg text-[24px] font-semibold text-on-surface leading-tight mb-2">Aura Networks</h3>\n<p class="font-body-sm text-body-sm text-text-muted mb-6 flex-1 line-clamp-3">Recent leadership changes indicate a pivot towards enterprise-grade API solutions. Strong signals of imminent Series C funding.</p>\n<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center mt-auto">\n<span class="font-body-sm text-body-sm text-secondary">San Francisco, CA</span>\n<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>\n</div>\n</article>\n<!-- Card 2 -->\n<article class="bg-surface-white rounded-xl p-stack-md shadow-tactile hover:-translate-y-1 hover:shadow-tactile-hover transition-all duration-500 cursor-pointer border border-transparent hover:border-outline-variant/30 flex flex-col h-full">\n<div class="flex justify-between items-start mb-4">\n<span class="font-label-caps text-label-caps text-tertiary-container uppercase tracking-widest">Sustainable Logistics</span>\n<div class="flex items-center gap-1 text-accent-gold">\n<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: \'FILL\' 1;">local_fire_department</span>\n<span class="font-title-md text-title-md font-bold">88</span>\n</div>\n</div>\n<h3 class="font-headline-lg text-[24px] font-semibold text-on-surface leading-tight mb-2">Verdant Freight</h3>\n<p class="font-body-sm text-body-sm text-text-muted mb-6 flex-1 line-clamp-3">Expanding fleet operations in the EU corridor. Key decision-maker recently engaged with our whitepaper on regulatory compliance.</p>\n<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center mt-auto">\n<span class="font-body-sm text-body-sm text-secondary">Rotterdam, NL</span>\n<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>\n</div>\n</article>\n<!-- Card 3 -->\n<article class="bg-surface-white rounded-xl p-stack-md shadow-tactile hover:-translate-y-1 hover:shadow-tactile-hover transition-all duration-500 cursor-pointer border border-transparent hover:border-outline-variant/30 flex flex-col h-full">\n<div class="flex justify-between items-start mb-4">\n<span class="font-label-caps text-label-caps text-tertiary-container uppercase tracking-widest">Healthcare AI</span>\n<div class="flex items-center gap-1 text-accent-gold">\n<span class="material-symbols-outlined text-[16px]">local_fire_department</span>\n<span class="font-title-md text-title-md font-bold">72</span>\n</div>\n</div>\n<h3 class="font-headline-lg text-[24px] font-semibold text-on-surface leading-tight mb-2">Synapse Diagnostics</h3>\n<p class="font-body-sm text-body-sm text-text-muted mb-6 flex-1 line-clamp-3">Steady organic growth. Searching for scalable cloud architecture partners according to recent job postings.</p>\n<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center mt-auto">\n<span class="font-body-sm text-body-sm text-secondary">Boston, MA</span>\n<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>\n</div>\n</article>\n<!-- Card 4 -->\n<article class="bg-surface-white rounded-xl p-stack-md shadow-tactile hover:-translate-y-1 hover:shadow-tactile-hover transition-all duration-500 cursor-pointer border border-transparent hover:border-outline-variant/30 flex flex-col h-full">\n<div class="flex justify-between items-start mb-4">\n<span class="font-label-caps text-label-caps text-tertiary-container uppercase tracking-widest">Enterprise Security</span>\n<div class="flex items-center gap-1 text-accent-gold opacity-60">\n<span class="material-symbols-outlined text-[16px]">local_fire_department</span>\n<span class="font-title-md text-title-md font-bold text-outline-variant">45</span>\n</div>\n</div>\n<h3 class="font-headline-lg text-[24px] font-semibold text-on-surface leading-tight mb-2">Shield Systems</h3>\n<p class="font-body-sm text-body-sm text-text-muted mb-6 flex-1 line-clamp-3">Currently locked in a multi-year vendor contract. Monitor for renewal windows in Q3 2025.</p>\n<div class="pt-4 border-t border-outline-variant/20 flex justify-between items-center mt-auto">\n<span class="font-body-sm text-body-sm text-secondary">Austin, TX</span>\n<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>\n</div>\n</article>\n</div>\n<!-- Load More / Editorial Spacer -->\n<div class="mt-16 text-center">\n<button class="inline-flex items-center gap-2 text-primary font-label-caps text-label-caps tracking-widest uppercase hover:text-accent-gold transition-colors group">\n                    Load Additional Profiles\n                    <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">south</span>\n</button>\n</div>\n</div>' }}
+    <PageShell
+      title="AI Agents"
+      subtitle="Autonomous 3-agent pipeline: Discovery → Analysis → Outreach"
+    >
+      {/* Active Run Banner */}
+      {activeRun && (
+        <div className="flex items-center gap-3 mb-6 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="relative flex-shrink-0">
+            <Activity className="w-5 h-5 text-blue-500" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-blue-800">Pipeline running</p>
+            <p className="text-xs text-blue-600 truncate">"{activeRun.query}"</p>
+          </div>
+          <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded-full">LIVE</span>
+        </div>
+      )}
+
+      {/* Run Pipeline */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 mb-8">
+        <h2 className="font-semibold text-sm text-on-surface-variant uppercase tracking-wider mb-4">
+          Run New Pipeline
+        </h2>
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRun()}
+            placeholder='Search query — e.g. "IT consultancy Amsterdam" or "Marketing agencies Utrecht"'
+            className="w-full px-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-on-surface-variant font-medium">Max results:</label>
+              <select
+                value={maxResults}
+                onChange={(e) => setMaxResults(Number(e.target.value))}
+                className="px-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none"
+              >
+                {[5, 10, 20, 50].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-on-surface-variant font-medium">Email language:</label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as "nl" | "en")}
+                className="px-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none"
+              >
+                <option value="nl">🇳🇱 Dutch</option>
+                <option value="en">🇬🇧 English</option>
+              </select>
+            </div>
+            <div className="flex-1" />
+            <button
+              onClick={handleRun}
+              disabled={isRunning || !query.trim()}
+              className="flex items-center gap-2 px-6 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+            >
+              {isRunning ? (
+                <>
+                  <Activity className="w-4 h-4 animate-pulse" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Run Pipeline
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Agent Cards */}
+      {agents.length > 0 && (
+        <div className="mb-8">
+          <h2 className="font-semibold text-sm text-on-surface-variant uppercase tracking-wider mb-4">
+            Active Agents
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {agents
+              .filter((a) => a.isActive)
+              .sort((a, b) => a.pipelineOrder - b.pipelineOrder)
+              .map((agent: Agent) => {
+                const Icon = AGENT_ICONS[agent.name] ?? Bot;
+                return (
+                  <div
+                    key={agent.id}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2.5 bg-primary-container/30 rounded-xl">
+                        <Icon className="w-5 h-5 text-on-primary-container" />
+                      </div>
+                      <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Active
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-on-surface mb-1">{agent.displayName}</h3>
+                    <p className="text-xs text-on-surface-variant line-clamp-2">{agent.description}</p>
+                    <div className="mt-3 pt-3 border-t border-outline-variant flex items-center justify-between">
+                      <span className="text-xs text-on-surface-variant">Model: {agent.model?.split("/").pop()?.split(":")[0]}</span>
+                      <span className="text-xs text-on-surface-variant">Step {agent.pipelineOrder}</span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Run History */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-sm text-on-surface-variant uppercase tracking-wider">
+            Pipeline Runs
+          </h2>
+          <span className="text-xs text-on-surface-variant">{runs.length} total</span>
+        </div>
+        {runs.length === 0 ? (
+          <div className="text-center py-16 bg-surface-container-lowest border border-outline-variant rounded-2xl">
+            <Bot className="w-10 h-10 text-on-surface-variant mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium text-on-surface">No pipeline runs yet</p>
+            <p className="text-xs text-on-surface-variant mt-1">
+              Enter a query above and click "Run Pipeline" to start.
+            </p>
+          </div>
+        ) : (
+          <AgentRunHistory
+            runs={runs}
+            onRunSelect={(runId) => {
+              // Handled in run history component
+            }}
+          />
+        )}
+      </div>
+
+      <LeadDetailPanel
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onLeadUpdated={() => {}}
       />
     </PageShell>
   );

@@ -1,26 +1,204 @@
+import { useState } from "react";
 import { PageShell } from "../components/page-shell";
+import { LeadDetailPanel } from "../components/lead-detail-panel";
+import { getLeads } from "../lib/api";
+import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import type { Lead } from "../lib/types";
+import {
+  Building2, MapPin, Globe, Phone, Mail, ExternalLink,
+  TrendingUp, Award, Search
+} from "lucide-react";
+
+function InitialAvatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+
+  const sizeClasses = {
+    sm: "w-8 h-8 text-xs",
+    md: "w-12 h-12 text-sm",
+    lg: "w-16 h-16 text-lg",
+  };
+
+  // Deterministic color based on name
+  const colors = [
+    "bg-blue-100 text-blue-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-purple-100 text-purple-700",
+    "bg-amber-100 text-amber-700",
+    "bg-rose-100 text-rose-700",
+    "bg-indigo-100 text-indigo-700",
+    "bg-teal-100 text-teal-700",
+  ];
+  const color = colors[name.charCodeAt(0) % colors.length];
+
+  return (
+    <div className={`${sizeClasses[size]} ${color} rounded-xl flex items-center justify-center font-bold flex-shrink-0`}>
+      {initials || "?"}
+    </div>
+  );
+}
+
+function ScoreRing({ score }: { score: number | null }) {
+  if (score == null) return <span className="text-xs text-on-surface-variant">—</span>;
+  const color = score >= 70 ? "text-emerald-600" : score >= 40 ? "text-amber-600" : "text-red-500";
+  return <span className={`text-sm font-bold ${color}`}>{score}</span>;
+}
 
 export default function ClientsPage() {
+  const [search, setSearch] = useState("");
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  // Clients = leads that are "won" or "qualified"
+  const { data, refresh } = useRealtimeData(
+    () => getLeads({ pageSize: 200 }),
+    ["leads", "clients"],
+    30_000
+  );
+
+  const allLeads = data?.leads ?? [];
+  const clients = allLeads.filter((l) =>
+    l.status === "won" || l.status === "qualified" || l.status === "responded"
+  );
+
+  const filtered = search
+    ? clients.filter(
+        (l) =>
+          l.businessName.toLowerCase().includes(search.toLowerCase()) ||
+          l.city.toLowerCase().includes(search.toLowerCase()) ||
+          (l.industry ?? "").toLowerCase().includes(search.toLowerCase())
+      )
+    : clients;
+
+  const wonCount = clients.filter((l) => l.status === "won").length;
+  const qualifiedCount = clients.filter((l) => l.status === "qualified").length;
+
   return (
-    <PageShell title="Client Profile" subtitle="Aura Networks" noPadding>
-      <style>{`body {
-    background-color: theme('colors.surface');
-    color: theme('colors.on-surface');
-  }
-  .card-shadow {
-    box-shadow: 0 10px 40px rgba(139, 111, 58, 0.05);
-  }
-  .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 50px rgba(139, 111, 58, 0.08);
-  }
-  .nav-transition {
-    transition: all 300ms ease-in-out;
-  }`}</style>
-      <div
-        className="flex-1 overflow-y-auto px-margin-mobile md:px-margin-desktop py-gutter"
-        dangerouslySetInnerHTML={{ __html: '<!-- Header Section -->\n<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">\n<div>\n<div class="flex items-center gap-3 mb-2">\n<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-caps text-[10px] rounded border border-outline-variant/30">تكنولوجيا المعلومات</span>\n<span class="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-caps text-[10px] rounded border border-outline-variant/30">مؤسسة كبرى</span>\n</div>\n<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Aura Networks</h1>\n<p class="font-body-lg text-body-lg text-on-surface-variant flex items-center gap-2">\n<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: \'FILL\' 0;">location_on</span>\n                الرياض، المملكة العربية السعودية\n            </p>\n</div>\n<div class="flex gap-3 w-full md:w-auto">\n<button class="flex-1 md:flex-none border border-primary text-primary px-6 py-3 rounded font-label-caps text-label-caps hover:bg-surface-container-high transition-colors">\n                سجل نشاط\n            </button>\n<button class="flex-1 md:flex-none bg-primary-container text-on-primary-container px-6 py-3 rounded font-label-caps text-label-caps hover:bg-surface-tint transition-colors">\n                بدء التواصل\n            </button>\n</div>\n</div>\n<!-- Layout Grid -->\n<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-grid">\n<!-- Main Column (8 cols) -->\n<div class="lg:col-span-8 space-y-gutter-grid">\n<!-- Company Intelligence Card -->\n<section class="bg-surface-white rounded-lg p-8 card-shadow card-hover nav-transition">\n<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6 border-b border-outline-variant/20 pb-4">الذكاء المؤسسي</h2>\n<div class="prose max-w-none font-body-lg text-body-lg text-on-surface-variant leading-relaxed">\n<p class="mb-4">تعتبر Aura Networks لاعباً رئيسياً في قطاع البنية التحتية السحابية في الشرق الأوسط. تشير تحليلاتنا الأخيرة إلى تحول استراتيجي نحو حلول الذكاء الاصطناعي المدمجة، مما يمثل فرصة توافق مثالية مع خدماتنا الاستشارية.</p>\n<p>المؤشرات الحالية تدل على استعداد عالٍ لتبني تقنيات جديدة، خاصة في مجال أمن البيانات والتحليلات التنبؤية.</p>\n</div>\n</section>\n<!-- Key Contacts -->\n<section class="bg-surface-white rounded-lg p-8 card-shadow">\n<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6 border-b border-outline-variant/20 pb-4 flex justify-between items-center">\n                    ج��ات الاتصال الرئيسية\n                    <button class="text-primary hover:text-surface-tint font-label-caps text-label-caps transition-colors">إضافة+</button>\n</h2>\n<div class="grid grid-cols-1 md:grid-cols-2 gap-6">\n<!-- Contact 1 -->\n<div class="flex items-center gap-4 p-4 rounded bg-surface-container-low border border-outline-variant/10">\n<img alt="صورة احترافية لمدير تنفيذي بملامح شرق أوسطية يرتدي بدلة داكنة، خلفية مكتبية مضاءة جيداً." class="w-16 h-16 rounded object-cover border border-outline-variant/30" data-alt="A highly detailed professional portrait of a Middle Eastern male executive wearing a sharp dark suit and tie. He has a confident, approachable expression. The background is a slightly blurred, bright modern office setting with warm natural light filtering in. The overall aesthetic is polished, high-end corporate photography, fitting the \'Warm Intelligence\' style with subtle cream and gold tones in the environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDevt2S-UpMmonzT3zJb6dRpdMNRYBNIYCFf4VcJCs9w3e7gOs1HnwCbfV-S3MTl5sr7GRmPSpTooH0dvRDBvx7ONUL78KcXhfeMAyVmAgq-e55do4B4NyFhvYFyBr3oMZBKE1jRd1sd2kppQOdo8-aznObBR57R_37Dfjm9S-M0Xp2b8_7HrKKMDYZp_adZL2MTn7y0OqwFyy-mPhnj1Y676-o4m1A85qPZgarUvLhXDkPeT8F9tYAwJfLiABJvcmfxBG-1gwk8AxO"/>\n<div>\n<h3 class="font-title-md text-title-md text-on-surface">أحمد السعيد</h3>\n<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">الرئيس التنفيذي للتكنولوجيا</p>\n<div class="flex gap-2">\n<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: \'FILL\' 0;">mail</span>\n<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: \'FILL\' 0;">call</span>\n</div>\n</div>\n</div>\n<!-- Contact 2 -->\n<div class="flex items-center gap-4 p-4 rounded bg-surface-container-low border border-outline-variant/10">\n<img alt="صورة احترافية لمديرة بملامح شرق أوسطية، ترتدي ملابس عمل أنيقة، إضاءة طبيعية." class="w-16 h-16 rounded object-cover border border-outline-variant/30" data-alt="A highly detailed professional portrait of a Middle Eastern female executive wearing elegant business attire. She exudes professionalism and warmth. The background is a soft, out-of-focus modern corporate environment with subtle architectural details. The lighting is natural and flattering, emphasizing a premium editorial look consistent with the ivory and gold minimalist theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvNIm9XbLdVG2CKrxbFEViYx-wxGIn12aSm57sqynvYIOy1nBEaQ5j2va8IHn89v-ritS6pKsNQk-IgJ_uLMyX7906UC0wjDFQZAhUmlpqVPOUJshmggUjfes4Jdtvlqkk1X-O0vf4yUu6KC0BTX_B-FwoX7PmoS5VvuvzzJzcBNfI9k2d4dTUxfzrCfBFowyCxUnDl8io2oIJOPy1FihMqNZAvX9qdGSGi3vMXw8IvDsQA5IOvV1ds3JBmAr-Bo4HulV75HCPXexQ"/>\n<div>\n<h3 class="font-title-md text-title-md text-on-surface">سارة العبدالله</h3>\n<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">مديرة المشتريات الاستراتيجية</p>\n<div class="flex gap-2">\n<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: \'FILL\' 0;">mail</span>\n<span class="material-symbols-outlined text-primary text-sm cursor-pointer" style="font-variation-settings: \'FILL\' 0;">call</span>\n</div>\n</div>\n</div>\n</div>\n</section>\n<!-- Engagement History -->\n<section class="bg-surface-white rounded-lg p-8 card-shadow">\n<h2 class="font-headline-lg text-headline-lg text-on-surface mb-8 border-b border-outline-variant/20 pb-4">تاريخ التفاعل</h2>\n<div class="relative border-r-2 border-primary/20 pr-6 space-y-8">\n<!-- Event 1 -->\n<div class="relative">\n<div class="absolute -right-[31px] top-1 w-4 h-4 rounded-full bg-primary-container border-4 border-surface-white"></div>\n<div class="flex items-start gap-4">\n<div class="mt-1 text-primary">\n<span class="material-symbols-outlined" style="font-variation-settings: \'FILL\' 0;">handshake</span>\n</div>\n<div>\n<div class="flex items-center gap-3 mb-1">\n<h3 class="font-title-md text-title-md text-on-surface">اجتماع استراتيجي</h3>\n<span class="font-label-caps text-[10px] text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">15 مايو 2024</span>\n</div>\n<p class="font-body-sm text-body-sm text-on-surface-variant">تمت مناقشة تحديات التوسع الإقليمي. السيد أحمد أبدى اهتماماً كبيراً بحلولنا الم��صصة.</p>\n</div>\n</div>\n</div>\n<!-- Event 2 -->\n<div class="relative">\n<div class="absolute -right-[31px] top-1 w-4 h-4 rounded-full bg-surface-container-high border-4 border-surface-white"></div>\n<div class="flex items-start gap-4">\n<div class="mt-1 text-outline">\n<span class="material-symbols-outlined" style="font-variation-settings: \'FILL\' 0;">mail</span>\n</div>\n<div>\n<div class="flex items-center gap-3 mb-1">\n<h3 class="font-title-md text-title-md text-on-surface">إرسال مقترح مبدئي</h3>\n<span class="font-label-caps text-[10px] text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">02 مايو 2024</span>\n</div>\n<p class="font-body-sm text-body-sm text-on-surface-variant">تم إرسال ملخص تنفيذي بناءً على المكالمة الاستكشافية الأولى.</p>\n</div>\n</div>\n</div>\n</div>\n</section>\n</div>\n<!-- Sidebar Column (4 cols) -->\n<div class="lg:col-span-4 space-y-gutter-grid">\n<!-- Prospecting Score Widget -->\n<div class="bg-surface-white rounded-lg p-6 card-shadow flex flex-col items-center text-center">\n<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">مؤشر الجاهزية</h3>\n<div class="relative w-32 h-32 flex items-center justify-center mb-4">\n<!-- Fake Dial -->\n<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">\n<path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>\n<path class="text-primary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="85, 100" stroke-linecap="round" stroke-width="3"></path>\n</svg>\n<div class="absolute inset-0 flex flex-col items-center justify-center">\n<span class="font-display-lg text-display-lg text-primary">85</span>\n</div>\n</div>\n<p class="font-body-sm text-body-sm text-on-surface-variant">فرصة عالية التحويل. التوقيت مثالي للتدخل.</p>\n</div>\n<!-- Market Sentiment -->\n<div class="bg-surface-white rounded-lg p-6 card-shadow">\n<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">المزاج العام للسوق</h3>\n<div class="space-y-4">\n<div>\n<div class="flex justify-between text-sm mb-1">\n<span class="font-body-sm text-on-surface">الاستقرار المالي</span>\n<span class="font-body-sm text-primary">قوي</span>\n</div>\n<div class="w-full bg-surface-container-high h-1 rounded-full">\n<div class="bg-primary-container h-1 rounded-full" style="width: 90%"></div>\n</div>\n</div>\n<div>\n<div class="flex justify-between text-sm mb-1">\n<span class="font-body-sm text-on-surface">النمو التكنولوجي</span>\n<span class="font-body-sm text-primary">متسارع</span>\n</div>\n<div class="w-full bg-surface-container-high h-1 rounded-full">\n<div class="bg-primary-container h-1 rounded-full" style="width: 75%"></div>\n</div>\n</div>\n</div>\n</div>\n<!-- Metadata Info -->\n<div class="bg-surface-white rounded-lg p-6 card-shadow">\n<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 border-b border-outline-variant/20 pb-2">معلومات أساسية</h3>\n<ul class="space-y-3 font-body-sm text-on-surface">\n<li class="flex justify-between">\n<span class="text-on-surface-variant">تاريخ التأسيس:</span>\n<span>2012</span>\n</li>\n<li class="flex justify-between">\n<span class="text-on-surface-variant">حجم الشركة:</span>\n<span>500-1000 موظف</span>\n</li>\n<li class="flex justify-between">\n<span class="text-on-surface-variant">الإيرادات التقديرية:</span>\n<span>$50M+</span>\n</li>\n</ul>\n</div>\n</div>\n</div>' }}
+    <PageShell
+      title="Clients"
+      subtitle={`${clients.length} active client relationships`}
+    >
+      {/* Summary Row */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[
+          { label: "Won", count: wonCount, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+          { label: "Qualified", count: qualifiedCount, color: "text-purple-600 bg-purple-50 border-purple-200" },
+          { label: "Responded", count: clients.filter((l) => l.status === "responded").length, color: "text-amber-600 bg-amber-50 border-amber-200" },
+        ].map((s) => (
+          <div key={s.label} className={`flex flex-col items-center py-4 rounded-2xl border ${s.color}`}>
+            <span className={`text-2xl font-bold ${s.color.split(" ")[0]}`}>{s.count}</span>
+            <span className="text-xs font-medium mt-0.5 opacity-80">{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+        <input
+          type="text"
+          placeholder="Search clients by name, city or industry..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+        />
+      </div>
+
+      {/* Client Grid */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-surface-container-lowest border border-outline-variant rounded-2xl">
+          <Building2 className="w-12 h-12 text-on-surface-variant opacity-25 mb-3" />
+          <p className="text-sm font-medium text-on-surface">
+            {search ? "No clients match your search" : "No clients yet"}
+          </p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            {search
+              ? "Try a different search term"
+              : "Leads with Won, Qualified or Responded status will appear here"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map((lead) => (
+            <ClientCard
+              key={lead.id}
+              lead={lead}
+              onClick={() => setSelectedLeadId(lead.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      <LeadDetailPanel
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onLeadUpdated={refresh}
       />
     </PageShell>
+  );
+}
+
+function ClientCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
+  const statusColors: Record<string, string> = {
+    won: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    qualified: "bg-purple-100 text-purple-700 border-purple-200",
+    responded: "bg-amber-100 text-amber-700 border-amber-200",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className="text-left w-full bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex flex-col gap-4"
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <InitialAvatar name={lead.businessName} />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-on-surface truncate">{lead.businessName}</h3>
+          {lead.industry && (
+            <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+              <Building2 className="w-3 h-3" />
+              {lead.industry}
+            </p>
+          )}
+        </div>
+        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border flex-shrink-0 ${statusColors[lead.status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
+          {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+        </span>
+      </div>
+
+      {/* Info */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+          {lead.city}{lead.address ? `, ${lead.address}` : ""}
+        </div>
+        {lead.email && (
+          <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+            <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">{lead.email}</span>
+          </div>
+        )}
+        {lead.website && (
+          <div className="flex items-center gap-2 text-xs text-blue-500">
+            <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">{lead.website.replace(/^https?:\/\//, "")}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="pt-3 border-t border-outline-variant flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+          <Award className="w-3.5 h-3.5" />
+          Score: <ScoreRing score={lead.leadScore} />
+        </div>
+        <span className="text-xs text-on-surface-variant">
+          {new Date(lead.updatedAt).toLocaleDateString()}
+        </span>
+      </div>
+    </button>
   );
 }
