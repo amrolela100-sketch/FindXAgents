@@ -6,11 +6,14 @@ Exposes two endpoints:
 """
 
 import asyncio
+import ipaddress
 import logging
 import os
+import socket
 from typing import Optional
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, field_validator
 
@@ -26,6 +29,65 @@ from scorer import calculate_deep_score
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("scrapy_auditor")
+
+
+# ── SSRF Protection ───────────────────────────────────────────────────────────
+
+def _is_private_ip(addr: str) -> bool:
+    """Return True if the address is private, loopback, link-local, or reserved."""
+    try:
+        ip = ipaddress.ip_address(addr)
+        return (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        )
+    except ValueError:
+        return True  # unparseable → block
+
+
+def assert_public_url(url: str) -> None:
+    """
+    Resolve the hostname in *url* and raise HTTPException(400) if it maps to
+    a private / reserved IP address.  Call this before passing a URL to Scrapy.
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname or ""
+    except Exception:
+        raise HTTPException(status_code=400, detail="SSRF_BLOCKED: malformed URL")
+
+    if not hostname:
+        raise HTTPException(status_code=400, detail="SSRF_BLOCKED: missing hostname")
+
+    # Bare-IP fast path — reject immediately without DNS
+    try:
+        bare = hostname.strip("[]")  # strip IPv6 brackets
+        if _is_private_ip(bare):
+            raise HTTPException(status_code=400, detail=f"SSRF_BLOCKED: direct private IP {hostname}")
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # not a bare IP; fall through to DNS
+
+    # DNS resolution — blocks DNS rebinding to internal IPs
+    try:
+        results = socket.getaddrinfo(hostname, None)
+        for _family, _type, _proto, _canonname, sockaddr in results:
+            ip_str = sockaddr[0]
+            if _is_private_ip(ip_str):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"SSRF_BLOCKED: {hostname} resolves to private IP {ip_str}",
+                )
+    except HTTPException:
+        raise
+    except OSError as e:
+        # DNS failure → treat as unreachable, not a security error
+        raise HTTPException(status_code=400, detail=f"DNS_FAILED: {str(e)[:80]}")
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -44,6 +106,10 @@ app.add_middleware(
 # ── Scrapy settings ───────────────────────────────────────────────────────────
 SCRAPY_SETTINGS = {
     "ROBOTSTXT_OBEY":           False,
+    # SSRF protection: validate every request (including redirects) at the spider level
+    "DOWNLOADER_MIDDLEWARES": {
+        "spider.SSRFBlockerMiddleware": 100,
+    },
     "CONCURRENT_REQUESTS":      8,
     "CONCURRENT_REQUESTS_PER_DOMAIN": 4,
     "DOWNLOAD_TIMEOUT":         12,
@@ -141,8 +207,20 @@ async def health():
     return {"status": "ok", "service": "scrapy-auditor"}
 
 
+_AUDITOR_SECRET = os.environ.get("SCRAPY_AUDITOR_SECRET", "")
+
+
 @app.post("/audit", response_model=AuditResponse)
-async def audit_website(req: AuditRequest):
+async def audit_website(req: AuditRequest, request: Request):
+    # ── Shared-secret authentication ──────────────────────────────────────────
+    if _AUDITOR_SECRET:
+        provided = request.headers.get("X-Auditor-Secret", "")
+        if provided != _AUDITOR_SECRET:
+            raise HTTPException(status_code=401, detail="Unauthorized: invalid or missing X-Auditor-Secret header")
+
+    # ── SSRF guard — validate before handing off to Scrapy ───────────────────
+    assert_public_url(req.url)
+
     log.info(f"Audit request: {req.url} (max_pages={req.max_pages})")
 
     try:

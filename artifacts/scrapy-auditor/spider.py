@@ -309,3 +309,52 @@ class DeepAuditSpider(scrapy.Spider):
                 "found_on": found_on,
                 "error": str(failure.value)[:80],
             })
+
+
+# ── SSRF-safe Download Middleware ────────────────────────────────────────────
+# Scrapy follows redirects internally; we intercept every request to reject
+# any that resolves to a private IP (DNS-rebinding prevention at spider level).
+
+import ipaddress as _ipaddress
+import socket as _socket
+
+class SSRFBlockerMiddleware:
+    """
+    Scrapy downloader middleware that rejects requests whose hostname resolves
+    to a private / reserved IP.  Installed in DOWNLOADER_MIDDLEWARES.
+    """
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def process_request(self, request, spider):
+        from urllib.parse import urlparse
+        from scrapy.exceptions import IgnoreRequest
+
+        try:
+            hostname = urlparse(request.url).hostname or ""
+            if not hostname:
+                raise IgnoreRequest(f"SSRF_BLOCKED: missing hostname in {request.url}")
+
+            # Skip check for bare IPs already caught by main.py; re-check here
+            # covers redirects to new hostnames discovered during crawl.
+            try:
+                results = _socket.getaddrinfo(hostname, None)
+                for _fam, _type, _proto, _canon, sockaddr in results:
+                    ip_str = sockaddr[0]
+                    ip = _ipaddress.ip_address(ip_str)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                        raise IgnoreRequest(f"SSRF_BLOCKED: {hostname} → {ip_str}")
+            except IgnoreRequest:
+                raise
+            except OSError:
+                raise IgnoreRequest(f"DNS_FAILED: cannot resolve {hostname}")
+
+        except IgnoreRequest:
+            raise
+        except Exception as e:
+            from scrapy.exceptions import IgnoreRequest as IR
+            raise IR(f"SSRF middleware error: {e}")
+
+        return None  # allow request

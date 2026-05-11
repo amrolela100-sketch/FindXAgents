@@ -393,33 +393,63 @@ export async function scrapeWebsite(url: string, timeoutMs = 8000): Promise<Scra
   const startTime = Date.now();
 
   try {
-    const response = await fetch(normalizedUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; FindXBot/1.0; +https://findx.app/bot)",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-      },
-      redirect: "follow",
-    });
+    // Use redirect:"manual" so we can validate every hop before following.
+    // This closes the DNS-rebinding redirect bypass where the initial URL
+    // resolves to a public IP, but a redirect points to 169.254.x.x / 10.x etc.
+    let currentUrl = normalizedUrl;
+    let response!: Response;
+    const MAX_REDIRECTS = 5;
+
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      // Re-validate IP at every redirect hop
+      await assertPublicHost(currentUrl);
+
+      const res = await fetch(currentUrl, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; FindXBot/1.0; +https://findx.app/bot)",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Accept-Encoding": "gzip, deflate",
+          "Connection": "keep-alive",
+          "Upgrade-Insecure-Requests": "1",
+        },
+        redirect: "manual",   // inspect every redirect ourselves
+      });
+
+      const isRedirect = res.status >= 300 && res.status < 400;
+      if (!isRedirect) {
+        response = res;
+        break;
+      }
+
+      const location = res.headers.get("location");
+      if (!location) { response = res; break; }
+
+      // Resolve relative redirects against current URL
+      currentUrl = new URL(location, currentUrl).href;
+
+      if (hop === MAX_REDIRECTS) {
+        throw new Error("SSRF_BLOCKED: Too many redirects");
+      }
+    }
 
     clearTimeout(timeout);
 
     base.reachable = true;
     base.statusCode = response.status;
     base.loadTimeMs = Date.now() - startTime;
-    // Check if final URL is HTTPS (after redirect)
-    const finalUrl = response.url || normalizedUrl;
-    base.isHttps = finalUrl.startsWith("https://");
+    // Final URL after manual redirect chain
+    base.isHttps = currentUrl.startsWith("https://");
 
     if (response.ok) {
       const html = await response.text();
 
-      base.title = extractTitle(html);
-      base.metaDescription = extractMetaDescription(html);
+      // Sanitize title/meta before storing — both are embedded in AI prompts
+      const rawTitle = extractTitle(html);
+      const rawMeta  = extractMetaDescription(html);
+      base.title           = rawTitle  ? sanitizeScrapedContent(rawTitle, 200)  : undefined;
+      base.metaDescription = rawMeta   ? sanitizeScrapedContent(rawMeta, 300)   : undefined;
       base.language = detectLanguage(html);
       base.emailAddresses = extractEmails(html);
       base.phoneNumbers = extractPhones(html);
@@ -436,7 +466,7 @@ export async function scrapeWebsite(url: string, timeoutMs = 8000): Promise<Scra
       // Content snippet for AI
       const text = stripHtml(html);
       base.wordCount = text.split(/\s+/).filter(Boolean).length;
-      base.contentSnippet = text.slice(0, 800);
+      base.contentSnippet = sanitizeScrapedContent(text, 800);
     }
   } catch (err: any) {
     clearTimeout(timeout);
@@ -475,6 +505,68 @@ export function calculateGroundedScore(scraped: ScrapedWebsite): number {
   // Cap at 95
   return Math.min(Math.max(score, 10), 95);
 }
+
+// ── Prompt-injection sanitizer for scraped content ───────────────────────────
+
+/**
+ * Sanitize text scraped from external websites before embedding it into
+ * AI prompts.  Attackers can publish pages with hidden prompt-injection
+ * payloads.  This function neutralises the most common patterns:
+ *
+ *  - LLM special tokens  (<|im_start|>, [INST], <<SYS>>, etc.)
+ *  - Role-hijacking prefixes  (system:, assistant:, user:, HUMAN:, AI:)
+ *  - Injection phrases  ("ignore all previous instructions", "forget above", …)
+ *  - Persona override patterns  ("act as", "pretend you are", …)
+ *  - Null bytes and dangerous control chars
+ *  - Excessive whitespace / blank lines (collapse to max 2)
+ *
+ * The sanitization is intentionally lossy for adversarial text; legitimate
+ * website copy is almost never affected.
+ */
+function sanitizeScrapedContent(raw: string, maxLength = 800): string {
+  let s = raw
+    // Null bytes + non-printable control chars (keep \n \t \r)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, " ")
+    // Collapse excessive blank lines
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  // ── LLM special tokens ────────────────────────────────────────────────────
+  s = s
+    .replace(/<\|im_(start|end|sep)\|>/gi, "")
+    .replace(/\[INST\]|\[\/INST\]/gi, "")
+    .replace(/<<SYS>>|<\/SYS>/gi, "")
+    .replace(/<\|begin_of_text\|>|<\|end_of_text\|>/gi, "")
+    .replace(/<\|start_header_id\|>.*?<\|end_header_id\|>/gi, "")
+    .replace(/\{%-?\s*system\s*-?%\}/gi, "");
+
+  // ── Role hijacking ────────────────────────────────────────────────────────
+  // Replace "system:", "assistant:", "user:", "human:", "ai:" at line start
+  s = s.replace(/^[ \t]*(system|assistant|user|human|ai)\s*:/gim, "[role-redacted]:");
+
+  // ── Injection / override phrases ──────────────────────────────────────────
+  s = s.replace(
+    /\b(ignore|forget|disregard|override|bypass|skip|suppress)\b.{0,80}\b(above|previous|prior|all|every|instructions?|prompt|context|rules?|constraints?|guidelines?)\b/gi,
+    "[injection-redacted]",
+  );
+  s = s.replace(
+    /\b(now\s+)?(act|pretend|behave|respond|answer|reply|roleplay)\s+(as|like|you\s+are|you're)\b/gi,
+    "[injection-redacted]",
+  );
+  s = s.replace(
+    /\bdo\s+not\s+(follow|obey|respect|adhere\s+to)\b.{0,60}\b(rules?|instructions?|guidelines?|constraints?)\b/gi,
+    "[injection-redacted]",
+  );
+  s = s.replace(
+    /\b(jailbreak|dan\s+mode|developer\s+mode|unrestricted\s+mode)\b/gi,
+    "[injection-redacted]",
+  );
+
+  // Truncate
+  return s.slice(0, maxLength);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Build a grounded context string to pass to the AI.
@@ -641,16 +733,39 @@ export async function auditWithScrapy(
  * Smart scraper: tries Scrapy deep audit first, falls back to built-in scraper.
  * Use this in agent-runner.ts instead of calling scrapeWebsite() directly.
  */
+/**
+ * Smart scraper with Redis caching.
+ *
+ * Cache hit  → return stored result immediately (no network call).
+ * Cache miss → run deep/basic scrape, store result, return it.
+ *
+ * TTL is 24 h — see cache.ts.  Pass forceRefresh=true to bypass cache.
+ */
 export async function smartScrape(
   url: string,
   timeoutMs = 10_000,
+  forceRefresh = false,
 ): Promise<ScrapedWebsite | ScrapyAuditResult> {
-  // Try deep audit first (if service is configured)
-  const deep = await auditWithScrapy(url, 30, 90_000);
-  if (deep) return deep;
+  const { getCachedScrape, setCachedScrape } = await import("./cache.js");
 
-  // Fallback: built-in single-page scraper
-  return scrapeWebsite(url, timeoutMs);
+  const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+
+  // ── Cache read ────────────────────────────────────────────────────────────
+  if (!forceRefresh) {
+    const cached = await getCachedScrape<ScrapedWebsite | ScrapyAuditResult>(normalizedUrl);
+    if (cached) return cached;
+  }
+
+  // ── Live fetch ────────────────────────────────────────────────────────────
+  const deep = await auditWithScrapy(normalizedUrl, 30, 90_000);
+  const result = deep ?? await scrapeWebsite(normalizedUrl, timeoutMs);
+
+  // ── Cache write (only if reachable — no point caching failures) ───────────
+  if (result.reachable) {
+    await setCachedScrape(normalizedUrl, result);
+  }
+
+  return result;
 }
 
 /**

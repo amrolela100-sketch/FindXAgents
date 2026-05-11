@@ -28,6 +28,7 @@ router.use(requireAuth);
 // ─── Lead CRUD ────────────────────────────────────────────────────────────────
 
 import { sanitizeString, validateEmail, validateWebsiteUrl } from "../lib/sanitize.js";
+import { invalidateLeadCache } from "../lib/cache.js";
 
 const createLeadSchema = z.object({
   businessName: z.string().min(1),
@@ -636,6 +637,11 @@ router.patch("/leads/:id", async (req, res) => {
     if (!checkLeadOwnership(existing, req, res)) return;
 
     const [lead] = await db.update(leads).set(updateData as Partial<typeof leads.$inferInsert>).where(eq(leads.id, req.params.id)).returning();
+
+    // Invalidate cache when website URL changes so next analysis uses fresh data
+    const websiteChanged = "website" in updateData;
+    await invalidateLeadCache(lead.id, websiteChanged ? (lead.website ?? undefined) : undefined);
+
     return res.json({ lead });
   } catch (err) {
     return safeError(res, err, "Internal server error");

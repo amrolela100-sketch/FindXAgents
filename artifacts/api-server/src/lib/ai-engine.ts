@@ -159,12 +159,34 @@ export interface OutreachResult {
 /**
  * Analyze a lead using GROUNDED data from real website scraping.
  * The AI only comments on things we actually verified — no hallucination.
+ * Results are cached in Redis for 6h (see cache.ts).
  */
 export async function analyzeLeadWithGemini(
   lead: LeadForAnalysis,
-  scrapedData?: ScrapedWebsite | ScrapyAuditResult
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult,
+  forceRefresh = false,
 ): Promise<AnalysisResult> {
+  // ── Cache read ────────────────────────────────────────────────────────────
+  if (!forceRefresh && lead.id) {
+    const { getCachedAnalysis, setCachedAnalysis } = await import("./cache.js");
+    const cached = await getCachedAnalysis<AnalysisResult>(lead.id);
+    if (cached) return cached;
+
+    const client = await getClient();
+    const result = await _doAnalyze(client, lead, scrapedData);
+    await setCachedAnalysis(lead.id, result);
+    return result;
+  }
+
   const client = await getClient();
+  return _doAnalyze(client, lead, scrapedData);
+}
+
+async function _doAnalyze(
+  client: OpenAI,
+  lead: LeadForAnalysis,
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult,
+): Promise<AnalysisResult> {
 
   // Sanitize all untrusted user-supplied fields before embedding in prompt
   const safeLead = sanitizeLead(lead);
@@ -240,7 +262,7 @@ Respond ONLY with valid JSON, no markdown, no code blocks:
   return parsed;
 }
 
-type SupportedLanguage = "ar" | "en" | "nl" | "fr" | "es" | "de";
+export type SupportedLanguage = "ar" | "en" | "nl" | "fr" | "es" | "de";
 
 const LANG_INSTRUCTIONS: Record<SupportedLanguage, string> = {
   ar: "اكتب بالعربية الفصحى المهنية. استخدم أسلوباً احترافياً ودوداً. ابدأ البريد بتحية مناسبة.",
@@ -255,9 +277,32 @@ export async function generateOutreachWithGemini(
   lead: LeadForAnalysis,
   analysis: AnalysisResult,
   language: SupportedLanguage = "en",
-  scrapedData?: ScrapedWebsite | ScrapyAuditResult
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult,
+  forceRefresh = false,
 ): Promise<OutreachResult> {
+  // ── Cache read ────────────────────────────────────────────────────────────
+  if (!forceRefresh && lead.id) {
+    const { getCachedOutreach, setCachedOutreach } = await import("./cache.js");
+    const cached = await getCachedOutreach<OutreachResult>(lead.id, language);
+    if (cached) return cached;
+
+    const client = await getClient();
+    const result = await _doOutreach(client, lead, analysis, language, scrapedData);
+    await setCachedOutreach(lead.id, language, result);
+    return result;
+  }
+
   const client = await getClient();
+  return _doOutreach(client, lead, analysis, language, scrapedData);
+}
+
+async function _doOutreach(
+  client: OpenAI,
+  lead: LeadForAnalysis,
+  analysis: AnalysisResult,
+  language: SupportedLanguage,
+  scrapedData?: ScrapedWebsite | ScrapyAuditResult,
+): Promise<OutreachResult> {
 
   // Sanitize all untrusted fields before embedding in prompt
   const safeLead = sanitizeLead(lead);
