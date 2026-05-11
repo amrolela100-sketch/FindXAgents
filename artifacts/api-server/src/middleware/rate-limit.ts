@@ -10,7 +10,7 @@
  *     local dev and single-instance deployments.
  */
 
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { RedisStore, type RedisReply } from "rate-limit-redis";
 import { getRedisClient } from "../lib/redis.js";
 import { logger } from "../lib/logger.js";
@@ -55,7 +55,7 @@ export const globalLimiter = makeLimiter({
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many requests, please try again later." },
-  keyGenerator:   (req) => req.ip ?? "unknown",
+  keyGenerator:   (req) => ipKeyGenerator(req),
 });
 
 /** 5 req / min — login / auth endpoints */
@@ -65,7 +65,7 @@ export const authLimiter = makeLimiter({
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many authentication attempts, please try again after a minute." },
-  keyGenerator:   (req) => req.ip ?? "unknown",
+  keyGenerator:   (req) => ipKeyGenerator(req),
 });
 
 /** 10 req / hr — lead discovery (Tavily + AI) */
@@ -75,7 +75,7 @@ export const discoveryLimiter = makeLimiter({
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Discovery limit reached. Please try again after an hour." },
-  keyGenerator:   (req) => req.user?.userId ?? req.ip ?? "unknown",
+  keyGenerator:   (req) => req.user?.userId ?? ipKeyGenerator(req),
 });
 
 /** 20 req / hr — bulk AI analyze / outreach */
@@ -85,7 +85,7 @@ export const aiLimiter = makeLimiter({
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "AI operation limit reached. Please try again after an hour." },
-  keyGenerator:   (req) => req.user?.userId ?? req.ip ?? "unknown",
+  keyGenerator:   (req) => req.user?.userId ?? ipKeyGenerator(req),
 });
 
 /** 5 req / min — Telegram & integration test endpoints */
@@ -95,5 +95,5 @@ export const integrationTestLimiter = makeLimiter({
   standardHeaders: true,
   legacyHeaders:  false,
   message:        { error: "Too many test requests. Please wait a minute before retrying." },
-  keyGenerator:   (req) => req.ip ?? "unknown",
+  keyGenerator:   (req) => ipKeyGenerator(req),
 });
