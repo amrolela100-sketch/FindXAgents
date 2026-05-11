@@ -1,29 +1,148 @@
 import { Link } from "wouter";
+import { useEffect, useRef } from "react";
 import { useLang } from "../lib/lang-context";
 import { useTheme } from "../lib/theme-context";
-import { Zap, Search, BarChart3, Mail, ArrowRight, ArrowLeft, Sun, Moon, Globe, ChevronRight } from "lucide-react";
+import {
+  Zap, Search, BarChart3, Mail,
+  ArrowRight, ArrowLeft, Sun, Moon, Globe, ChevronRight,
+} from "lucide-react";
 
+/* ── Animated counter on scroll ── */
+function useCounterOnScroll(
+  targetStr: string,
+  duration = 1600
+): React.RefObject<HTMLSpanElement | null> {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const done = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const isPct   = targetStr.endsWith("%");
+    const hasPlus = targetStr.endsWith("+");
+    const suffix  = isPct ? "%" : hasPlus ? "+" : "";
+    const num     = parseFloat(targetStr.replace(/[%+]/g, "").replace("K", ""));
+    const isK     = targetStr.includes("K");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting || done.current) return;
+        done.current = true;
+        const start = performance.now();
+
+        function tick(now: number) {
+          const p     = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - p, 3);
+          const cur   = eased * num;
+          const display = isK
+            ? Math.floor(cur) + "K" + suffix
+            : isPct
+            ? cur.toFixed(0) + suffix
+            : Math.floor(cur) + suffix;
+          if (el) el.textContent = display;
+          if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [targetStr, duration]);
+
+  return ref;
+}
+
+/* ── Scroll reveal hook ── */
+function useScrollReveal(deps: unknown[] = []) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = ref.current;
+    if (!container) return;
+
+    const items = container.querySelectorAll<HTMLElement>(".reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    items.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return ref;
+}
+
+/* ── Stat counter card ── */
+function StatCounter({ value, label }: { value: string; label: string }) {
+  const ref = useCounterOnScroll(value);
+  return (
+    <div>
+      <div className="text-3xl md:text-4xl font-bold gradient-text-brand mb-1">
+        <span ref={ref}>0</span>
+      </div>
+      <div className="text-sm" style={{ color: "var(--text-muted)" }}>{label}</div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   LANDING PAGE
+════════════════════════════════════════ */
 export default function LandingPage() {
   const { t, lang, toggleLang, isRtl } = useLang();
   const { isDark, toggleTheme } = useTheme();
 
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
+  /* scroll reveal ref for feature cards */
+  const featuresRef = useScrollReveal([lang]);
+
   const features = [
-    { icon: Search,   key: "discover" as const, color: "var(--color-info)" },
-    { icon: BarChart3,key: "analyze"  as const, color: "var(--brand)" },
-    { icon: Mail,     key: "outreach" as const, color: "var(--color-success)" },
+    { icon: Search,    key: "discover" as const, color: "var(--color-info)" },
+    { icon: BarChart3, key: "analyze"  as const, color: "var(--brand)" },
+    { icon: Mail,      key: "outreach" as const, color: "var(--color-success)" },
   ];
 
-  const stats = [
-    { value: "50K+", key: "leads" as const },
-    { value: "94%",  key: "accuracy" as const },
-    { value: "18h",  key: "timeSaved" as const },
+  const stats: { value: string; key: keyof typeof t.landing.stats }[] = [
+    { value: "50K+", key: "leads" },
+    { value: "94%",  key: "accuracy" },
+    { value: "18",   key: "timeSaved" },
+  ];
+
+  /* mock dashboard labels — translated */
+  const mockKpis = [
+    { n: "50", label: t.landing.mockStats.leads },
+    { n: "32", label: t.landing.mockStats.analyzed },
+    { n: "18", label: t.landing.mockStats.contacted },
+    { n: "7.3%", label: t.landing.mockStats.conv },
+  ];
+
+  const mockCols = [
+    { label: `${t.landing.mockStats.new} (12)`,        cards: 3 },
+    { label: `${t.landing.mockStats.analyzing} (4)`,   cards: 2 },
+    { label: `${t.landing.mockStats.contacted2} (8)`,  cards: 2 },
+    { label: `${t.landing.mockStats.won} (3)`,         cards: 1 },
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      {/* ── NAV ── */}
+    <div
+      className="min-h-screen"
+      style={{ background: "var(--bg)" }}
+      dir={isRtl ? "rtl" : "ltr"}
+    >
+      {/* ══ NAV ══ */}
       <nav
         className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-14 glass"
         style={{ borderBottom: "1px solid var(--border)" }}
@@ -52,62 +171,76 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* ══ HERO ══ */}
       <section className="flex flex-col items-center text-center px-6 py-24 md:py-32">
         {/* Badge */}
         <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8 animate-fade-in"
           style={{
             background: "var(--brand-subtle)",
             color: "var(--brand-subtle-fg)",
             border: "1px solid rgba(217,119,6,0.2)",
           }}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" style={{ background: "var(--brand)" }} />
-          AI-powered B2B Prospecting
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: "var(--brand)", animation: "pulse 2s infinite" }}
+          />
+          {t.landing.badge}
         </div>
 
+        {/* Headline */}
         <h1
-          className="text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-6 text-balance"
-          style={{ color: "var(--text)", fontFamily: isRtl ? "Noto Sans Arabic" : "Inter" }}
+          className="text-4xl md:text-6xl font-bold leading-tight tracking-tight mb-6 text-balance animate-slide-up"
+          style={{ color: "var(--text)" }}
         >
           {t.landing.heroTitle.split("\n").map((line, i) => (
             <span key={i}>
-              {i === 0 ? line : (
-                <><br /><span className="gradient-text-brand">{line}</span></>
+              {i === 0 ? (
+                line
+              ) : (
+                <>
+                  <br />
+                  <span className="gradient-text-brand">{line}</span>
+                </>
               )}
             </span>
           ))}
         </h1>
 
         <p
-          className="text-base md:text-lg max-w-2xl leading-relaxed mb-10 text-balance"
-          style={{ color: "var(--text-muted)" }}
+          className="text-base md:text-lg max-w-2xl leading-relaxed mb-10 text-balance animate-slide-up"
+          style={{ color: "var(--text-muted)", animationDelay: "80ms" }}
         >
           {t.landing.heroSubtitle}
         </p>
 
-        <div className="flex flex-wrap gap-3 justify-center">
+        {/* CTAs */}
+        <div
+          className="flex flex-wrap gap-3 justify-center animate-slide-up"
+          style={{ animationDelay: "160ms" }}
+        >
           <Link href="/login">
             <a className="btn btn-primary px-6 py-2.5 text-sm shadow-md">
               {t.landing.getStarted}
               <ArrowIcon className="w-4 h-4" />
             </a>
           </Link>
-          <a
-            href="#how"
-            className="btn btn-secondary px-6 py-2.5 text-sm"
-          >
+          <a href="#how" className="btn btn-secondary px-6 py-2.5 text-sm">
             {t.landing.learnMore}
           </a>
         </div>
 
-        {/* Hero visual */}
+        {/* ── Mock Dashboard Preview ── */}
         <div
-          className="mt-16 w-full max-w-4xl rounded-2xl overflow-hidden"
-          style={{ border: "1px solid var(--border)", boxShadow: "0 24px 80px rgba(0,0,0,0.08)" }}
+          className="mt-16 w-full max-w-4xl rounded-2xl overflow-hidden animate-slide-up"
+          style={{
+            border: "1px solid var(--border)",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.08)",
+            animationDelay: "240ms",
+          }}
         >
-          {/* Mock dashboard header */}
+          {/* Browser chrome */}
           <div
             className="flex items-center gap-2 px-4 py-3"
             style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
@@ -123,36 +256,46 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mock app content */}
-          <div
-            className="p-6 grid grid-cols-4 gap-4"
-            style={{ background: "var(--bg)" }}
-          >
-            {["50 leads", "32 analyzed", "18 contacted", "7.3% conv."].map((s, i) => (
-              <div
-                key={i}
-                className="rounded-xl p-4 skeleton"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-              >
-                <div className="h-2 w-16 rounded skeleton mb-3" style={{ background: "var(--bg-inset)" }} />
-                <div className="text-lg font-bold" style={{ color: "var(--text)" }}>{s.split(" ")[0]}</div>
-                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{s.split(" ").slice(1).join(" ")}</div>
-              </div>
-            ))}
+          {/* Mock content */}
+          <div className="p-5" style={{ background: "var(--bg)" }}>
+            {/* KPI row */}
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              {mockKpis.map(({ n, label }, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl p-3"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                >
+                  <div
+                    className="h-1.5 w-12 rounded mb-2"
+                    style={{ background: "var(--bg-inset)" }}
+                  />
+                  <div className="text-base font-bold" style={{ color: "var(--text)" }}>{n}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mini Kanban */}
             <div
-              className="col-span-4 rounded-xl p-4"
+              className="rounded-xl p-4"
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
-              <div className="h-2 w-24 rounded mb-4" style={{ background: "var(--bg-inset)" }} />
+              <div
+                className="h-2 w-20 rounded mb-3"
+                style={{ background: "var(--bg-inset)" }}
+              />
               <div className="flex gap-3 overflow-hidden">
-                {["New (12)", "Analyzing (4)", "Contacted (8)", "Won (3)"].map((col, i) => (
+                {mockCols.map(({ label, cards }, i) => (
                   <div key={i} className="flex-1 min-w-0">
-                    <div className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>{col}</div>
-                    <div className="space-y-2">
-                      {[...Array(i === 0 ? 3 : i === 1 ? 2 : i === 2 ? 2 : 1)].map((_, j) => (
+                    <div className="text-[10px] font-medium mb-2" style={{ color: "var(--text-muted)" }}>
+                      {label}
+                    </div>
+                    <div className="space-y-1.5">
+                      {[...Array(cards)].map((_, j) => (
                         <div
                           key={j}
-                          className="h-12 rounded-lg"
+                          className="h-9 rounded-lg"
                           style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
                         />
                       ))}
@@ -165,27 +308,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* ══ FEATURES ══ */}
       <section id="how" className="px-6 md:px-12 py-20">
         <div className="max-w-5xl mx-auto">
+          {/* Section header */}
           <div className="text-center mb-14">
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand)" }}>
-              How it works
+            <p
+              className="text-xs font-semibold uppercase tracking-wider mb-3"
+              style={{ color: "var(--brand)" }}
+            >
+              {t.landing.howItWorks}
             </p>
-            <h2 className="text-3xl font-bold text-balance" style={{ color: "var(--text)" }}>
-              3 agents. Full pipeline.
+            <h2
+              className="text-3xl font-bold text-balance"
+              style={{ color: "var(--text)" }}
+            >
+              {t.landing.agentsFull}
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Cards — scroll reveal applied here */}
+          <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {features.map(({ icon: Icon, key, color }, i) => (
               <div
                 key={key}
                 className="card p-6 card-hover reveal"
+                style={{ transitionDelay: `${i * 100}ms` }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: `${color}15` }}
+                  style={{ background: `${color}18` }}
                 >
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
@@ -193,7 +345,7 @@ export default function LandingPage() {
                   className="text-xs font-semibold uppercase tracking-wider mb-2"
                   style={{ color: "var(--text-subtle)" }}
                 >
-                  Step {i + 1}
+                  {t.landing.step} {i + 1}
                 </div>
                 <h3 className="font-bold mb-2" style={{ color: "var(--text)" }}>
                   {t.landing.features[key].title}
@@ -207,28 +359,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── STATS ── */}
+      {/* ══ STATS ══ */}
       <section
         className="px-6 md:px-12 py-16"
-        style={{ background: "var(--bg-subtle)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
+        style={{
+          background: "var(--bg-subtle)",
+          borderTop: "1px solid var(--border)",
+          borderBottom: "1px solid var(--border)",
+        }}
       >
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-8 text-center">
           {stats.map(({ value, key }) => (
-            <div key={key}>
-              <div className="text-3xl md:text-4xl font-bold gradient-text-brand mb-1">{value}</div>
-              <div className="text-sm" style={{ color: "var(--text-muted)" }}>{t.landing.stats[key]}</div>
-            </div>
+            <StatCounter key={key} value={value} label={t.landing.stats[key]} />
           ))}
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* ══ CTA ══ */}
       <section className="px-6 py-24 text-center">
-        <h2 className="text-3xl font-bold mb-4 text-balance" style={{ color: "var(--text)" }}>
-          Ready to find your next client?
+        <h2
+          className="text-3xl font-bold mb-4 text-balance"
+          style={{ color: "var(--text)" }}
+        >
+          {t.landing.ctaTitle}
         </h2>
         <p className="text-base mb-8" style={{ color: "var(--text-muted)" }}>
-          Start for free. No credit card required.
+          {t.landing.ctaSubtitle}
         </p>
         <Link href="/login">
           <a className="btn btn-primary px-8 py-3 text-sm shadow-lg">
@@ -238,7 +394,7 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* ══ FOOTER ══ */}
       <footer
         className="px-6 py-6 text-center text-xs"
         style={{ borderTop: "1px solid var(--border)", color: "var(--text-subtle)" }}
