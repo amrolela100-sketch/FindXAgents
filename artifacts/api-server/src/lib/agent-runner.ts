@@ -168,11 +168,19 @@ export class AgentRunner {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: tavilyKey,
-            query: `${query} official website contact`,
+            // "company site" intent → Tavily returns homepages, not articles or directories
+            query: `${query} company official website`,
             search_depth: "advanced",
-            max_results: Math.min(maxResults * 3, 30),
+            max_results: Math.min(maxResults * 4, 40),
             include_domains: [],
-            exclude_domains: [],
+            exclude_domains: [
+              // Hard-exclude noisiest aggregators at the API level
+              "clutch.co", "sortlist.com", "designrush.com", "goodfirms.co",
+              "bark.com", "trustpilot.com", "yelp.com", "yellowpages.com",
+              "capterra.com", "g2.com", "techbehemoths.com",
+              "linkedin.com", "facebook.com", "instagram.com", "twitter.com",
+              "medium.com", "reddit.com", "quora.com",
+            ],
           }),
         });
 
@@ -182,12 +190,28 @@ export class AgentRunner {
           await logToDB(agentId, this.runId, "discover-web", "info", `Tavily returned ${rawResults.length} raw results`);
 
           let directCount = 0;
+          // One result per domain per run
+          const seenDomains = new Set<string>();
 
           for (const r of rawResults) {
             if (isDirectoryUrl(r.url)) {
               // Skip directory pages entirely — they produce garbage leads
               directCount++;
               continue;
+            }
+
+            // Skip article / list / search-result URLs that slipped past the domain filter
+            {
+              const lowerUrl = r.url.toLowerCase();
+              const isArticleUrl = (
+                /\/20[0-9]{2}\//.test(lowerUrl) ||
+                /[?&](q|query|search|s)=/i.test(lowerUrl) ||
+                /\/(tag|category|author)\//.test(lowerUrl) ||
+                /\/p=\d+/.test(lowerUrl) ||
+                /\/(top|best|how|why|what|when|where|who)[-_]/.test(lowerUrl) ||
+                /\/\d{4,}-[a-z]/.test(lowerUrl)
+              );
+              if (isArticleUrl) { directCount++; continue; }
             }
 
             // Direct result — real company website
@@ -199,12 +223,39 @@ export class AgentRunner {
 
             const name = title || getDomain(r.url) || r.url;
 
+            // Reject article / listicle titles — NOT company names
+            {
+              const isArticleTitle = (
+                /^(top|best|worst|most|least)\b/i.test(name) ||
+                /\b\d+\s+(best|top|free|paid|cheap)/i.test(name) ||
+                /^how\s+to\b/i.test(name) ||
+                /^(what|why|when|where|who)\s+/i.test(name) ||
+                /\b(guide|tutorial|tips|tricks)\b/i.test(name) ||
+                /\bvs\.?\s/i.test(name) ||
+                /\breview[s]?\b/i.test(name) ||
+                /\b20[0-9]{2}\b/.test(name)
+              );
+              if (isArticleTitle) {
+                await logToDB(agentId, this.runId, "discover-web", "warn",
+                  `Rejected article title: "${name}" (from ${r.url})`);
+                directCount++;
+                continue;
+              }
+            }
+
             // Validate name before accepting
             if (!isValidBusinessName(name)) {
               await logToDB(agentId, this.runId, "discover-web", "warn",
                 `Rejected fake name: "${name}" (from ${r.url})`
               );
               continue;
+            }
+
+            // One result per domain — no same company twice
+            {
+              const d = getDomain(r.url);
+              if (d && seenDomains.has(d)) { directCount++; continue; }
+              if (d) seenDomains.add(d);
             }
 
             items.push({
