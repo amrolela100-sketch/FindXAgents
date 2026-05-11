@@ -1,6 +1,6 @@
-import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses } from "@workspace/db";
+import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches } from "@workspace/db";
 import { eq, sql, and, ilike } from "drizzle-orm";
-import { analyzeLeadWithGemini } from "./ai-engine.js";
+import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { logger } from "./logger.js";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
@@ -76,7 +76,7 @@ export class AgentRunner {
       const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, agent.id));
       
       // If no skills are defined, we'll use a hardcoded fallback pipeline for the requirement
-      const pipelineSkills = skills.length > 0 ? skills.map(s => s.name) : ["discover-web", "qualify-ai", "stage-pipeline"];
+      const pipelineSkills = skills.length > 0 ? skills.map(s => s.name) : ["discover-web", "qualify-ai", "generate-outreach", "stage-pipeline"];
 
       let discoveredLeadIds: string[] = [];
 
@@ -87,6 +87,8 @@ export class AgentRunner {
           discoveredLeadIds = await this.skillDiscoverWeb(agent.id, query, maxResults, userId);
         } else if (skill === "qualify-ai") {
           await this.skillQualifyAi(agent.id, discoveredLeadIds, language);
+        } else if (skill === "generate-outreach") {
+          await this.skillGenerateOutreach(agent.id, discoveredLeadIds, language);
         } else if (skill === "stage-pipeline") {
           await this.skillStagePipeline(agent.id, discoveredLeadIds);
         } else {
@@ -299,5 +301,67 @@ export class AgentRunner {
         await logToDB(agentId, this.runId, "stage-pipeline", "info", `${lead.businessName} moved to ${newStatus} (Score: ${lead.leadScore})`);
       }
     }
+  }
+
+  private async skillGenerateOutreach(agentId: string, leadIds: string[], language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
+    if (leadIds.length === 0) return;
+
+    await logToDB(agentId, this.runId, "generate-outreach", "info", `Generating outreach emails for ${leadIds.length} leads in ${language}...`);
+    let emailCount = 0;
+
+    for (const id of leadIds) {
+      try {
+        const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+        if (!lead) continue;
+
+        // Get the latest analysis
+        const [analysis] = await db.select().from(analyses)
+          .where(eq(analyses.leadId, id))
+          .orderBy(analyses.createdAt)
+          .limit(1);
+
+        if (!analysis) {
+          await logToDB(agentId, this.runId, "generate-outreach", "warn", `No analysis found for ${lead.businessName}, skipping outreach`);
+          continue;
+        }
+
+        // Build analysis result object
+        const findings = analysis.findings as Record<string, any>;
+        const analysisResult = {
+          score: analysis.score ?? 50,
+          summary: findings?.summary ?? "",
+          opportunities: (analysis.opportunities as string[]) ?? [],
+          weaknesses: findings?.weaknesses ?? [],
+          recommendations: findings?.recommendations ?? [],
+          emailSubject: findings?.emailSubject ?? `Partnership opportunity for ${lead.businessName}`,
+          digitalMaturity: findings?.digitalMaturity ?? "medium",
+          estimatedRevenueImpact: findings?.estimatedRevenueImpact ?? "",
+        };
+
+        const outreach = await withRetry(() => generateOutreachWithGemini(lead as any, analysisResult, language), 2, 1000);
+
+        await db.insert(outreaches).values({
+          leadId: id,
+          subject: outreach.subject,
+          body: outreach.body,
+          status: "draft",
+          personalizedDetails: { language: outreach.language, generatedBy: "pipeline" },
+        });
+
+        // Update lead status to contacting
+        await db.update(leads).set({ status: "contacting", updatedAt: new Date() }).where(eq(leads.id, id));
+
+        emailCount++;
+        await logToDB(agentId, this.runId, "generate-outreach", "info", `Generated email for ${lead.businessName}`);
+      } catch (e: any) {
+        await logToDB(agentId, this.runId, "generate-outreach", "error", `Failed to generate outreach for lead ${id}: ${e.message}`);
+      }
+    }
+
+    await db.update(agentPipelineRuns)
+      .set({ emailsDrafted: emailCount })
+      .where(eq(agentPipelineRuns.id, this.runId));
+
+    await logToDB(agentId, this.runId, "generate-outreach", "info", `Generated ${emailCount} outreach emails`);
   }
 }
