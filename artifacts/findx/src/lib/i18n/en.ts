@@ -223,6 +223,6 @@ export const en = {
       toggleLang:  "Switch language",
     },
   },
-} as const;
+};
 
 export type Translations = typeof en;

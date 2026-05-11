@@ -10,6 +10,8 @@ interface UseRealtimeDataResult<T> {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  /** Alias for refetch — kept for backward compatibility */
+  refresh: () => void;
 }
 
 export function useRealtimeData<T>(
@@ -64,5 +66,5 @@ export function useRealtimeData<T>(
     };
   }, [enabled, executeFetch, fallbackIntervalMs]);
 
-  return { data, isLoading, error, refetch: executeFetch };
+  return { data, isLoading, error, refetch: executeFetch, refresh: executeFetch };
 }

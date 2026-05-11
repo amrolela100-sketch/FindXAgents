@@ -166,7 +166,7 @@ export default function AgentsPage() {
             <p className="text-xs mt-1" style={{ color: "var(--text-subtle)" }}>{t.agents.noRunsHint}</p>
           </div>
         ) : (
-          <AgentRunHistory runs={runs} onRunSelect={() => {}} />
+          <AgentRunHistory />
         )}
       </div>
     </PageShell>
