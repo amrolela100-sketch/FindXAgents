@@ -138,6 +138,10 @@ export const ar: Translations = {
     score:       "التقييم",
     website:     "الموقع",
     none:        "لا يوجد",
+    deleteSelected:   "حذف المحدد",
+    deleteConfirmTitle: "حذف العملاء؟",
+    deleteConfirmDesc:  "سيُزيل هذا أيضاً جميع التحليلات ورسائل التواصل. لا يمكن التراجع.",
+    deleting:    "جارٍ الحذف…",
     status: {
       discovered: "جديد",
       analyzing:  "قيد التحليل",

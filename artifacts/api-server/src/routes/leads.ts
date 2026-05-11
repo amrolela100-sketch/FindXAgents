@@ -815,4 +815,86 @@ router.post("/leads/:id/outreach/send", async (req, res) => {
   }
 });
 
+// ─── Delete endpoints ─────────────────────────────────────────────────────────
+
+const ADMIN_EMAILS_LIST = (process.env.ADMIN_EMAILS ?? "")
+  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+function isAdminUser(email: string): boolean {
+  return ADMIN_EMAILS_LIST.includes(email.toLowerCase());
+}
+
+/**
+ * DELETE /leads/:id
+ * User can delete their own leads only.
+ * Admin can delete any lead.
+ */
+router.delete("/leads/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [lead] = await db.select({ id: leads.id, userId: leads.userId })
+      .from(leads).where(eq(leads.id, id)).limit(1);
+
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+    // Admin can delete any lead; user can only delete their own
+    const admin = isAdminUser(req.user!.email);
+    if (!admin && lead.userId !== req.user!.userId) {
+      return res.status(403).json({ error: "Forbidden — not your lead" });
+    }
+
+    // Cascade: delete related analyses and outreaches first
+    await db.delete(outreaches).where(eq(outreaches.leadId, id));
+    await db.delete(analyses).where(eq(analyses.leadId, id));
+    await db.delete(leads).where(eq(leads.id, id));
+
+    return res.json({ deleted: true, id });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
+/**
+ * DELETE /leads/bulk
+ * User can bulk-delete their own leads only.
+ * Admin can bulk-delete any leads.
+ */
+router.delete("/leads/bulk", async (req, res) => {
+  const schema = z.object({ leadIds: z.array(z.string().uuid()).min(1).max(200) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "leadIds must be an array of UUIDs (max 200)", details: parsed.error.flatten() });
+  }
+
+  const { leadIds } = parsed.data;
+  const admin = isAdminUser(req.user!.email);
+
+  try {
+    // Fetch only IDs the caller is allowed to delete
+    let allowedIds: string[];
+    if (admin) {
+      const rows = await db.select({ id: leads.id }).from(leads).where(inArray(leads.id, leadIds));
+      allowedIds = rows.map((r) => r.id);
+    } else {
+      const rows = await db.select({ id: leads.id }).from(leads).where(
+        and(inArray(leads.id, leadIds), eq(leads.userId, req.user!.userId))
+      );
+      allowedIds = rows.map((r) => r.id);
+    }
+
+    if (allowedIds.length === 0) {
+      return res.status(404).json({ error: "No leads found to delete" });
+    }
+
+    // Cascade delete
+    await db.delete(outreaches).where(inArray(outreaches.leadId, allowedIds));
+    await db.delete(analyses).where(inArray(analyses.leadId, allowedIds));
+    await db.delete(leads).where(inArray(leads.id, allowedIds));
+
+    return res.json({ deleted: allowedIds.length, skipped: leadIds.length - allowedIds.length });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
 export default router;

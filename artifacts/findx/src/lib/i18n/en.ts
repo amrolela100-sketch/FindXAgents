@@ -142,6 +142,10 @@ export const en = {
     score:       "Score",
     website:     "Website",
     none:        "None",
+    deleteSelected:   "Delete selected",
+    deleteConfirmTitle: "Delete leads?",
+    deleteConfirmDesc:  "This will also remove all analyses and outreach emails. Cannot be undone.",
+    deleting:    "Deleting…",
     status: {
       discovered: "New",
       analyzing:  "Analyzing",

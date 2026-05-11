@@ -402,3 +402,16 @@ export function updateAgent(name: string, data: Partial<Agent>): Promise<{ agent
 }
 
 
+
+// ─── Lead Delete ──────────────────────────────────────────────────────────────
+
+export function deleteLead(id: string): Promise<{ deleted: boolean; id: string }> {
+  return fetchApi(`/leads/${id}`, { method: "DELETE" });
+}
+
+export function bulkDeleteLeads(leadIds: string[]): Promise<{ deleted: number; skipped: number }> {
+  return fetchApi("/leads/bulk", {
+    method: "DELETE",
+    body: JSON.stringify({ leadIds }),
+  });
+}
