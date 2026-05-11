@@ -52,8 +52,7 @@ router.post("/notifications", requireAuth, async (req, res) => {
       })
       .returning();
 
-    // Trim old notifications — keep latest MAX_NOTIFICATIONS per user
-    // Use raw SQL with properly typed parameter (not template literal interpolation of a number)
+    // Trim old notifications — keep latest 50 per user
     await db.execute(
       sql`DELETE FROM notifications
           WHERE user_id = ${req.user!.userId}
@@ -61,7 +60,7 @@ router.post("/notifications", requireAuth, async (req, res) => {
               SELECT id FROM notifications
               WHERE user_id = ${req.user!.userId}
               ORDER BY created_at DESC
-              LIMIT 50
+              LIMIT ${MAX_NOTIFICATIONS}
             )`
     );
 
@@ -92,13 +91,15 @@ router.patch("/notifications/read-all", requireAuth, async (req, res) => {
 // ── PATCH /notifications/:id/read ─────────────────────────────────────────────
 router.patch("/notifications/:id/read", requireAuth, async (req, res) => {
   try {
+    const notifId = String(req.params.id);
+    const userId  = String(req.user!.userId);
     await db
       .update(notifications)
       .set({ read: true })
       .where(
         and(
-          eq(notifications.id, req.params.id),
-          eq(notifications.userId, req.user!.userId),
+          eq(notifications.id, notifId),
+          eq(notifications.userId, userId),
         )
       );
     return res.json({ ok: true });
