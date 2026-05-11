@@ -78,7 +78,81 @@ const DIRECTORY_DOMAINS = new Set([
   "webfx.com",
   "digitalagencynetwork.com",
   "toprankmarketing.com",
+  // listing/review/directory aggregators
+  "topdevelopers.co",
+  "toptal.com",
+  "guru.com",
+  "99designs.com",
+  "themanifest.com",
+  "upcity.com",
+  "agencyspotter.com",
+  "digitalagencymatch.com",
+  "softwaredevelopment.co",
+  "manifest.com",
+  "topseos.com",
+  "wadline.com",
+  "superbcompanies.com",
+  "gartner.com",
+  "softwareadvice.com",
+  "getapp.com",
+  "glassdoor.com",
+  "indeed.com",
+  "rocketreach.co",
+  "prospeo.io",
+  "zoominfo.com",
+  "apollo.io",
+  "leadsforge.ai",
+  "tanqeeb.com",
+  "bayt.com",
+  "wuzzuf.net",
+  "naukrigulf.com",
+  "biggerpockets.com",
+  "businessemailetiquette.com",
+  "qrcode-generator.app",
+  "instagram.com",
+  "facebook.com",
+  "twitter.com",
+  "x.com",
+  "tiktok.com",
+  "youtube.com",
+  "pinterest.com",
+  "snapchat.com",
 ]);
+
+/** URL path segments that indicate a blog/article/list page — not a real company */
+const CONTENT_PAGE_PATHS = [
+  "/blog/",
+  "/articles/",
+  "/article/",
+  "/news/",
+  "/post/",
+  "/posts/",
+  "/resources/",
+  "/insights/",
+  "/guides/",
+  "/tips/",
+  "/how-to/",
+  "/top-",
+  "/best-",
+  "/list/",
+  "/directory/",
+  "/companies/",
+  "/agencies/",
+  "/directory",
+  "/ranking",
+  "/rankings",
+  "/compare",
+  "/comparison",
+  "/vs-",
+  "/forum",
+  "/forums/",
+  "/topics/",
+  "/community/",
+  "/s/",       // search results (e.g. tanqeeb.com/ar/s/...)
+  "/search",
+  "/reel/",    // instagram reels
+  "/watch",    // youtube
+];
 
 const BLOG_INDICATORS = ["/blog", "/news", "/articles", "/insights", "/resources", "/posts"];
 const CONTACT_INDICATORS = ["/contact", "/contact-us", "/get-in-touch", "/reach-us", "/contactez", "/kontakt"];
@@ -86,10 +160,25 @@ const PRIVACY_INDICATORS = ["/privacy", "/privacy-policy", "/datenschutz", "/pri
 
 export function isDirectoryUrl(url: string): boolean {
   try {
-    const hostname = new URL(url.startsWith("http") ? url : `https://${url}`).hostname
-      .replace(/^www\./, "")
-      .toLowerCase();
-    return DIRECTORY_DOMAINS.has(hostname);
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const hostname = parsed.hostname.toLowerCase();
+    const pathname = parsed.pathname.toLowerCase();
+
+    // Strip www. and check exact domain
+    const bare = hostname.replace(/^www\./, "");
+    if (DIRECTORY_DOMAINS.has(bare)) return true;
+
+    // Check parent domain — catches subdomains like agencies.semrush.com
+    const parts = bare.split(".");
+    if (parts.length >= 2) {
+      const parent = parts.slice(-2).join(".");
+      if (DIRECTORY_DOMAINS.has(parent)) return true;
+    }
+
+    // Check path — blog posts, articles, listing pages, search results, etc.
+    if (CONTENT_PAGE_PATHS.some(p => pathname.includes(p))) return true;
+
+    return false;
   } catch {
     return false;
   }
