@@ -8,6 +8,46 @@ const port = Number(env.PORT);
 
 import { runMigrations } from "@workspace/db";
 
+/**
+ * Recover "ghost" pipeline runs that were left in "running" or "queued" state
+ * after a server crash or restart. Any run older than 30 minutes that is still
+ * running/queued is marked as failed with an explanatory error message.
+ *
+ * This runs once at startup — no queue, no cron, no extra deps.
+ */
+async function recoverStuckRuns(): Promise<void> {
+  try {
+    const { db } = await import("@workspace/db");
+    const { agentPipelineRuns } = await import("@workspace/db");
+    const { inArray, lt, sql } = await import("drizzle-orm");
+
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+
+    const result = await db
+      .update(agentPipelineRuns)
+      .set({
+        status: "failed",
+        error: "Server restarted while this run was in progress. Please re-run.",
+        completedAt: new Date(),
+      })
+      .where(
+        sql`${agentPipelineRuns.status} IN ('running', 'queued')
+            AND ${agentPipelineRuns.createdAt} < ${cutoff.toISOString()}`
+      )
+      .returning({ id: agentPipelineRuns.id });
+
+    if (result.length > 0) {
+      logger.warn(
+        { recovered: result.length, ids: result.map((r) => r.id) },
+        "Recovered ghost pipeline runs from previous server instance"
+      );
+    }
+  } catch (err) {
+    // Non-fatal — log and continue starting the server
+    logger.error({ err }, "Failed to recover stuck runs on startup");
+  }
+}
+
 async function startServer() {
   try {
     if (process.env.SKIP_MIGRATIONS !== "true") {
@@ -15,6 +55,9 @@ async function startServer() {
     } else {
       logger.info("Skipping migrations");
     }
+
+    // Recover any runs stuck in "running"/"queued" from a previous crash
+    await recoverStuckRuns();
 
     const server = app.listen(port, () => {
       logger.info({ port }, "Server listening");
