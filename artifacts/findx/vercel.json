@@ -5,6 +5,7 @@
   "installCommand": "echo 'install handled by buildCommand'",
   "framework": null,
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://findx-api.onrender.com/api/:path*" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
