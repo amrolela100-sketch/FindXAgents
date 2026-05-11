@@ -60,8 +60,9 @@ app.use(
 
 app.use(helmet());
 app.use(cors(buildCorsOptions()));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Limit request body to 1 MB to prevent DoS via oversized JSON payloads
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 import { globalLimiter } from "./middleware/rate-limit.js";
 
