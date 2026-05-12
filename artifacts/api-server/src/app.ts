@@ -94,7 +94,7 @@ app.use(
     // Permissions policy — disable unused browser features
     permittedCrossDomainPolicies: { permittedPolicies: "none" },
     crossOriginEmbedderPolicy:   false, // API doesn't serve documents
-    crossOriginResourcePolicy:   { policy: "same-site" },
+    crossOriginResourcePolicy:   { policy: "cross-origin" }, // API is consumed by cross-origin frontend (Vercel ↔ Render)
     crossOriginOpenerPolicy:     { policy: "same-origin" },
   }),
 );
