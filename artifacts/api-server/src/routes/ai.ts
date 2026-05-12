@@ -6,6 +6,7 @@ import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -114,8 +115,13 @@ router.post("/ai/providers", async (req, res) => {
   try {
     const data = parsed.data;
     const defaults = PROVIDER_DEFAULTS[data.providerType];
+
+    // workspaceId may be null if the workspace migration hasn't run yet —
+    // allow null so the insert still succeeds (workspace_id is nullable in schema)
+    const workspaceId = req.user!.activeWorkspaceId ?? null;
+
     const [provider] = await db.insert(aiProviders).values({
-      workspaceId: req.user!.activeWorkspaceId,
+      workspaceId,
       name: data.name,
       providerType: data.providerType,
       apiKey: data.apiKey ?? null,
@@ -127,8 +133,11 @@ router.post("/ai/providers", async (req, res) => {
       isDefault: false,
     }).returning();
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
-  } catch (err) {
-    return safeError(res, err, "Internal server error");
+  } catch (err: any) {
+    // Always expose the actual DB error message so issues are diagnosable
+    const message = err?.message ?? "Internal server error";
+    logger.error({ err }, "POST /ai/providers failed");
+    return res.status(500).json({ error: message });
   }
 });
 
