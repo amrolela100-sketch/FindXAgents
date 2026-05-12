@@ -176,7 +176,62 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
     if (!provider.apiKey && provider.providerType !== "ollama") {
       return res.json({ ok: false, error: "No API key configured for this provider" });
     }
-    return res.json({ ok: true, model: provider.model });
+
+    // ── Real API call to verify the key actually works ────────────────────
+    const PROVIDER_BASE_URLS: Record<string, string> = {
+      openai:     "https://api.openai.com/v1",
+      anthropic:  "https://api.anthropic.com/v1",
+      gemini:     "https://generativelanguage.googleapis.com/v1beta/openai",
+      google:     "https://generativelanguage.googleapis.com/v1beta/openai",
+      groq:       "https://api.groq.com/openai/v1",
+      deepseek:   "https://api.deepseek.com/v1",
+      glm:        "https://open.bigmodel.cn/api/paas/v4",
+      minimax:    "https://api.minimax.chat/v1",
+      kimi:       "https://api.moonshot.cn/v1",
+      ollama:     "http://localhost:11434/v1",
+      openrouter: "https://openrouter.ai/api/v1",
+      mistral:    "https://api.mistral.ai/v1",
+      together:   "https://api.together.xyz/v1",
+    };
+
+    const baseURL = provider.baseUrl || PROVIDER_BASE_URLS[provider.providerType] || "https://api.openai.com/v1";
+    const apiKey  = provider.apiKey || "ollama";
+
+    const headers: Record<string, string> = {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    };
+    if (provider.providerType === "openrouter") {
+      headers["HTTP-Referer"] = "https://find-x-agents-findx.vercel.app";
+      headers["X-Title"]      = "FindX";
+    }
+
+    let ok = false;
+    let errorMsg: string | undefined;
+
+    try {
+      const response = await fetch(`${baseURL}/chat/completions`, {
+        method:  "POST",
+        headers,
+        body:    JSON.stringify({
+          model:      provider.model,
+          messages:   [{ role: "user", content: "Hi" }],
+          max_tokens: 5,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (response.ok) {
+        ok = true;
+      } else {
+        const body = await response.json().catch(() => ({}));
+        errorMsg = (body as any)?.error?.message ?? `HTTP ${response.status}`;
+      }
+    } catch (fetchErr: any) {
+      errorMsg = fetchErr?.message ?? "Connection failed";
+    }
+
+    return res.json({ ok, model: provider.model, ...(errorMsg ? { error: errorMsg } : {}) });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
