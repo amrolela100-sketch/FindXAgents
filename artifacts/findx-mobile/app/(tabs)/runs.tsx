@@ -1,48 +1,40 @@
+import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
+import { useMutation, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import type { ComponentProps } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInDown, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassCard } from "@/components/ui/GlassCard";
+import { RunStatusBadge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { useColors } from "@/hooks/useColors";
-import { cancelAgentRun, getAgentRuns, triggerAgentRun } from "@/lib/api";
-import { RUN_STATUS_BG, RUN_STATUS_COLORS } from "@/lib/types";
-import type { AgentPipelineRun, AgentRunStatus } from "@/lib/types";
-
-type FeatherName = ComponentProps<typeof Feather>["name"];
-
-const STATUS_ICONS: Record<AgentRunStatus, FeatherName> = {
-  running: "loader",
-  completed: "check-circle",
-  partial: "alert-circle",
-  failed: "x-circle",
-  queued: "clock",
-  cancelled: "slash",
-};
+import { getAgentRunsM, startAgentRun, cancelRunM } from "@/lib/api-helpers";
+import type { AgentPipelineRun } from "@/lib/types";
 
 const QUICK_QUERIES = [
-  "Restaurants in Amsterdam",
-  "Marketing agencies in Rotterdam",
-  "IT companies in The Hague",
-  "Retail shops in Utrecht",
-  "Construction companies in Eindhoven",
+  "Restaurants in Amsterdam that need a website",
+  "Hair salons in Rotterdam without social media",
+  "Plumbers in Utrecht without online reviews",
+  "Bakeries in The Hague with poor SEO",
+  "Gyms in Eindhoven without a booking system",
 ];
+
+// ── Run Card ───────────────────────────────────────────────────────────────
 
 function RunCard({
   run,
@@ -54,643 +46,401 @@ function RunCard({
   onCancel?: () => void;
 }) {
   const colors = useColors();
-  const statusColor = RUN_STATUS_COLORS[run.status];
-  const statusBg = RUN_STATUS_BG[run.status];
-  const icon = STATUS_ICONS[run.status];
-  const date = new Date(run.createdAt);
-  const duration =
-    run.completedAt
-      ? (() => {
-          const ms = new Date(run.completedAt).getTime() - date.getTime();
-          const mins = Math.floor(ms / 60000);
-          const secs = Math.floor((ms % 60000) / 1000);
-          return mins < 1 ? `${secs}s` : `${mins}m`;
-        })()
-      : null;
-  const isActive = run.status === "running" || run.status === "queued";
+  const ts = new Date(run.createdAt).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const isRunning = run.status === "running" || run.status === "queued";
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.75 : 1 },
-      ]}
-      onPress={onPress}
-      testID={`run-card-${run.id}`}
-    >
-      <View style={styles.cardTop}>
-        <View style={styles.cardLeft}>
-          <Text
-            style={[styles.query, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
-            numberOfLines={2}
+    <Animated.View entering={FadeInDown.duration(400)}>
+      <GlassCard
+        style={styles.runCard}
+        onPress={onPress}
+        glow={isRunning}
+        noPadding
+      >
+        <View style={styles.runCardInner}>
+          <View
+            style={[
+              styles.runIcon,
+              {
+                backgroundColor: isRunning
+                  ? colors.runRunningBg
+                  : run.status === "completed"
+                  ? colors.runCompletedBg
+                  : run.status === "failed"
+                  ? colors.runFailedBg
+                  : colors.statusDiscoveredBg,
+              },
+            ]}
           >
-            {run.query}
-          </Text>
-          <Text
-            style={[styles.dateText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            {date.toLocaleDateString()} ·{" "}
-            {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            {duration ? ` · ${duration}` : ""}
-          </Text>
-        </View>
-        <View style={styles.cardRight}>
-          <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-            <Feather name={icon} size={12} color={statusColor} />
-            <Text
-              style={[styles.statusText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}
-            >
-              {run.status}
-            </Text>
+            <Feather
+              name={
+                isRunning
+                  ? "loader"
+                  : run.status === "completed"
+                  ? "check-circle"
+                  : run.status === "failed"
+                  ? "alert-circle"
+                  : "clock"
+              }
+              size={18}
+              color={
+                isRunning
+                  ? colors.runRunningText
+                  : run.status === "completed"
+                  ? colors.runCompletedText
+                  : run.status === "failed"
+                  ? colors.runFailedText
+                  : colors.foregroundMuted
+              }
+            />
           </View>
-          {isActive && onCancel && (
-            <Pressable
-              onPress={onCancel}
-              style={[styles.cancelBtn, { borderColor: "#FCA5A5" }]}
-              hitSlop={8}
-            >
-              <Feather name="x" size={11} color="#DC2626" />
-              <Text style={[styles.cancelBtnText, { color: "#DC2626", fontFamily: "Inter_500Medium" }]}>
-                Cancel
-              </Text>
-            </Pressable>
-          )}
+          <View style={styles.runInfo}>
+            <Text style={[styles.runQuery, { color: colors.foreground }]} numberOfLines={2}>
+              {run.query}
+            </Text>
+            <Text style={[styles.runDate, { color: colors.foregroundMuted }]}>{ts}</Text>
+            <View style={styles.runStats}>
+              <RunStatChip icon="users" value={run.leadsFound} label="found" colors={colors} />
+              <RunStatChip icon="bar-chart-2" value={run.leadsAnalyzed} label="analyzed" colors={colors} />
+              <RunStatChip icon="mail" value={run.emailsDrafted} label="drafted" colors={colors} />
+            </View>
+          </View>
+          <View style={styles.runActions}>
+            <RunStatusBadge status={run.status} />
+            {isRunning && onCancel && (
+              <Pressable
+                onPress={() => {
+                  Alert.alert("Cancel Run", "Stop this run?", [
+                    { text: "Keep Running", style: "cancel" },
+                    { text: "Cancel Run", style: "destructive", onPress: onCancel },
+                  ]);
+                }}
+                style={[styles.cancelBtn, { backgroundColor: colors.runFailedBg }]}
+              >
+                <Feather name="x" size={13} color={colors.runFailedText} />
+              </Pressable>
+            )}
+          </View>
         </View>
-      </View>
-
-      <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
-        <View style={styles.statItem}>
-          <Text
-            style={[styles.statNum, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}
-          >
-            {run.leadsFound}
-          </Text>
-          <Text
-            style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            discovered
-          </Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statItem}>
-          <Text
-            style={[styles.statNum, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}
-          >
-            {run.leadsAnalyzed}
-          </Text>
-          <Text
-            style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            analyzed
-          </Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statItem}>
-          <Text
-            style={[styles.statNum, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}
-          >
-            {run.emailsDrafted}
-          </Text>
-          <Text
-            style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            emailed
-          </Text>
-        </View>
-      </View>
-
-      {run.error && (
-        <View
-          style={[styles.errorRow, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
-        >
-          <Feather name={"alert-triangle" satisfies FeatherName} size={12} color="#DC2626" />
-          <Text
-            style={[styles.errorText, { color: "#DC2626", fontFamily: "Inter_400Regular" }]}
-            numberOfLines={2}
-          >
-            {run.error}
-          </Text>
-        </View>
-      )}
-    </Pressable>
+      </GlassCard>
+    </Animated.View>
   );
 }
 
-function NewRunModal({
+function RunStatChip({
+  icon,
+  value,
+  label,
+  colors,
+}: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  value: number;
+  label: string;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View style={styles.runStatItem}>
+      <Feather name={icon} size={11} color={colors.foregroundSubtle} />
+      <Text style={[styles.runStatValue, { color: colors.foreground }]}>{value}</Text>
+      <Text style={[styles.runStatLabel, { color: colors.foregroundMuted }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ── Start Run Modal ────────────────────────────────────────────────────────
+
+function StartRunModal({
   visible,
   onClose,
-  onSuccess,
+  onStart,
+  loading,
 }: {
   visible: boolean;
   onClose: () => void;
-  onSuccess: (runId: string) => void;
+  onStart: (query: string) => void;
+  loading: boolean;
 }) {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
-  const [maxResults, setMaxResults] = useState("20");
-  const [language, setLanguage] = useState<"en" | "nl" | "ar">("en");
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      triggerAgentRun(query.trim(), {
-        maxResults: parseInt(maxResults, 10) || 20,
-        language,
-      }),
-    onSuccess: (data) => {
-      const runId = "runId" in data ? data.runId : data.id;
-      setQuery("");
-      onClose();
-      onSuccess(runId);
-    },
-    onError: (err) => {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed to start run");
-    },
-  });
-
-  const canSubmit = query.trim().length >= 3 && !mutation.isPending;
+  const bgColors = colors.isDark
+    ? (["#0D0C1E", "#12102A"] as const)
+    : (["#F0EFF8", "#E8E6F4"] as const);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        style={[styles.modalRoot, { backgroundColor: colors.background }]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View
-          style={[
-            styles.modalHeader,
-            { borderBottomColor: colors.border, paddingTop: Platform.OS === "ios" ? 20 : insets.top + 8 },
-          ]}
+    <Modal visible={visible} animationType="none" transparent presentationStyle="overFullScreen">
+      <Pressable style={styles.modalScrim} onPress={onClose}>
+        <Animated.View
+          entering={SlideInDown.springify().damping(18)}
+          exiting={SlideOutDown.duration(250)}
+          style={styles.modalSheet}
         >
-          <View>
-            <Text
-              style={[styles.modalTitle, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}
-            >
-              New Pipeline Run
-            </Text>
-            <Text
-              style={[styles.modalSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-            >
-              Search and discover new leads
-            </Text>
-          </View>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Feather name="x" size={22} color={colors.foreground} />
+          <Pressable>
+            <LinearGradient colors={bgColors} style={styles.modalContent}>
+              <View style={[styles.modalHandle, { backgroundColor: colors.divider }]} />
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Run</Text>
+              <Text style={[styles.modalSub, { color: colors.foregroundMuted }]}>
+                Describe the businesses you want to find
+              </Text>
+              <View
+                style={[
+                  styles.queryInput,
+                  { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder },
+                ]}
+              >
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="e.g. Restaurants in Amsterdam without a website"
+                  placeholderTextColor={colors.foregroundSubtle}
+                  style={[styles.queryText, { color: colors.foreground }]}
+                  multiline
+                  autoFocus
+                />
+              </View>
+              <Text style={[styles.quickTitle, { color: colors.foregroundMuted }]}>
+                Quick suggestions
+              </Text>
+              <View style={styles.quickList}>
+                {QUICK_QUERIES.map((q) => (
+                  <Pressable key={q} onPress={() => setQuery(q)}>
+                    <View
+                      style={[
+                        styles.quickChip,
+                        {
+                          backgroundColor: query === q ? `${colors.brand}18` : colors.glassBackground,
+                          borderColor: query === q ? colors.brand : colors.glassBorder,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.quickChipText,
+                          { color: query === q ? colors.brand : colors.foregroundMuted },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {q}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.modalActions}>
+                <Button label="Cancel" variant="ghost" onPress={onClose} style={{ flex: 1 }} />
+                <Button
+                  label={loading ? "Starting..." : "Start Run"}
+                  variant="primary"
+                  onPress={() => { if (query.trim()) onStart(query.trim()); }}
+                  loading={loading}
+                  disabled={!query.trim()}
+                  style={{ flex: 2 }}
+                />
+              </View>
+            </LinearGradient>
           </Pressable>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: insets.bottom + 20 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Search Query */}
-          <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-            >
-              Search Query *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  color: colors.foreground,
-                  fontFamily: "Inter_400Regular",
-                },
-              ]}
-              placeholder="e.g. Marketing agencies in Amsterdam"
-              placeholderTextColor={colors.subtle}
-              value={query}
-              onChangeText={setQuery}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              autoFocus
-              testID="new-run-query"
-            />
-          </View>
-
-          {/* Quick suggestions */}
-          <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-            >
-              Quick suggestions
-            </Text>
-            <View style={styles.chips}>
-              {QUICK_QUERIES.map((q) => (
-                <Pressable
-                  key={q}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: query === q ? colors.foreground : colors.card,
-                      borderColor: query === q ? colors.foreground : colors.border,
-                    },
-                  ]}
-                  onPress={() => setQuery(q)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      {
-                        color: query === q ? colors.card : colors.mutedForeground,
-                        fontFamily: "Inter_400Regular",
-                      },
-                    ]}
-                  >
-                    {q}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Max results */}
-          <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-            >
-              Max Results
-            </Text>
-            <View style={styles.row}>
-              {["10", "20", "50"].map((v) => (
-                <Pressable
-                  key={v}
-                  style={[
-                    styles.optionBtn,
-                    {
-                      backgroundColor: maxResults === v ? colors.foreground : colors.card,
-                      borderColor: maxResults === v ? colors.foreground : colors.border,
-                      flex: 1,
-                    },
-                  ]}
-                  onPress={() => setMaxResults(v)}
-                >
-                  <Text
-                    style={[
-                      styles.optionBtnText,
-                      {
-                        color: maxResults === v ? colors.card : colors.mutedForeground,
-                        fontFamily: maxResults === v ? "Inter_600SemiBold" : "Inter_400Regular",
-                      },
-                    ]}
-                  >
-                    {v}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Language */}
-          <View style={styles.inputGroup}>
-            <Text
-              style={[styles.inputLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-            >
-              Language
-            </Text>
-            <View style={styles.row}>
-              {([["en", "English"], ["nl", "Dutch"], ["ar", "Arabic"]] as const).map(([val, label]) => (
-                <Pressable
-                  key={val}
-                  style={[
-                    styles.optionBtn,
-                    {
-                      backgroundColor: language === val ? colors.foreground : colors.card,
-                      borderColor: language === val ? colors.foreground : colors.border,
-                      flex: 1,
-                    },
-                  ]}
-                  onPress={() => setLanguage(val)}
-                >
-                  <Text
-                    style={[
-                      styles.optionBtnText,
-                      {
-                        color: language === val ? colors.card : colors.mutedForeground,
-                        fontFamily: language === val ? "Inter_600SemiBold" : "Inter_400Regular",
-                      },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Submit */}
-          <Pressable
-            style={[styles.submitBtn, { opacity: canSubmit ? 1 : 0.45 }]}
-            onPress={() => mutation.mutate()}
-            disabled={!canSubmit}
-            testID="start-run-btn"
-          >
-            {mutation.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Feather name="zap" size={16} color="#fff" />
-                <Text style={[styles.submitBtnText, { fontFamily: "Inter_600SemiBold" }]}>
-                  Start Pipeline Run
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </Pressable>
     </Modal>
   );
 }
+
+// ── Runs Screen ────────────────────────────────────────────────────────────
 
 export default function RunsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const isWeb = Platform.OS === "web";
-  const [showNewRun, setShowNewRun] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["agent-runs"],
-    queryFn: getAgentRuns,
-    refetchInterval: 10000,
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
+    queryKey: ["runs-infinite"],
+    queryFn: ({ pageParam = 1 }) =>
+      getAgentRunsM({ page: pageParam as number, pageSize: 15 }),
+    getNextPageParam: (last) =>
+      last.page * last.pageSize < last.total ? last.page + 1 : undefined,
+    initialPageParam: 1,
+    staleTime: 15_000,
+    refetchInterval: 10_000,
+  });
+
+  const startMutation = useMutation({
+    mutationFn: startAgentRun,
+    onSuccess: (newRun) => {
+      queryClient.invalidateQueries({ queryKey: ["runs-infinite"] });
+      setShowModal(false);
+      if (newRun && "id" in newRun) {
+        router.push(`/run/${(newRun as AgentPipelineRun).id}`);
+      }
+    },
   });
 
   const cancelMutation = useMutation({
-    mutationFn: cancelAgentRun,
+    mutationFn: cancelRunM,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["agent-runs"] });
-    },
-    onError: (err) => {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed to cancel run");
+      queryClient.invalidateQueries({ queryKey: ["runs-infinite"] });
     },
   });
 
-  const runs = data?.runs ?? [];
-  const topPadding = isWeb ? 67 : insets.top;
-
-  const handleCancel = (runId: string) => {
-    Alert.alert("Cancel Run", "Are you sure you want to cancel this run?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Yes, Cancel",
-        style: "destructive",
-        onPress: () => cancelMutation.mutate(runId),
-      },
-    ]);
-  };
-
-  const handleRunSuccess = (runId: string) => {
-    queryClient.invalidateQueries({ queryKey: ["agent-runs"] });
-    router.push({ pathname: "/run/[id]", params: { id: runId } });
-  };
+  const allRuns = data?.pages.flatMap((p) => p.runs) ?? [];
+  const bgColors = colors.isDark
+    ? (["#080810", "#0D0C1E"] as const)
+    : (["#E8E6F4", "#F0EFF8"] as const);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topPadding + 16, backgroundColor: colors.background, borderBottomColor: colors.border },
-        ]}
-      >
-        <View style={styles.headerLeft}>
-          <Text
-            style={[styles.title, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}
-          >
-            Pipeline Runs
-          </Text>
-          <Text
-            style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          >
-            {runs.length} run{runs.length !== 1 ? "s" : ""}
-          </Text>
+    <LinearGradient colors={bgColors} style={styles.root}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={30}
+            tint={colors.isDark ? "dark" : "light"}
+            style={[StyleSheet.absoluteFill, { borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
+          />
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.glassBackground, borderBottomColor: colors.divider, borderBottomWidth: 1 },
+            ]}
+          />
+        )}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Runs</Text>
+            <Text style={[styles.headerSub, { color: colors.foregroundMuted }]}>
+              {data?.pages[0]?.total ?? 0} runs total
+            </Text>
+          </View>
+          <Pressable onPress={() => setShowModal(true)}>
+            <LinearGradient
+              colors={[colors.brandGradientStart, colors.brandGradientEnd]}
+              style={styles.startBtn}
+            >
+              <Feather name="play" size={16} color="#FFF" />
+              <Text style={styles.startBtnText}>New Run</Text>
+            </LinearGradient>
+          </Pressable>
         </View>
-        <Pressable
-          style={[styles.newRunBtn, { backgroundColor: colors.foreground }]}
-          onPress={() => setShowNewRun(true)}
-          testID="new-run-fab"
-        >
-          <Feather name="plus" size={16} color={colors.card} />
-          <Text
-            style={[styles.newRunBtnText, { color: colors.card, fontFamily: "Inter_600SemiBold" }]}
-          >
-            New Run
-          </Text>
-        </Pressable>
       </View>
 
+      {/* List */}
       <FlatList
-        data={runs}
+        data={allRuns}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 + 16,
-        }}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={runs.length > 0}
-        refreshControl={
-          <RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.foreground} />
-        }
         renderItem={({ item }) => (
           <RunCard
             run={item}
-            onPress={() => router.push({ pathname: "/run/[id]", params: { id: item.id } })}
+            onPress={() => router.push(`/run/${item.id}`)}
             onCancel={
               item.status === "running" || item.status === "queued"
-                ? () => handleCancel(item.id)
+                ? () => cancelMutation.mutate(item.id)
                 : undefined
             }
           />
         )}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
           isLoading ? (
-            <ActivityIndicator color={colors.foreground} style={styles.loader} />
+            <ActivityIndicator color={colors.brand} style={styles.centerLoader} />
           ) : (
             <View style={styles.emptyState}>
-              <Feather name={"activity" satisfies FeatherName} size={48} color={colors.subtle} />
-              <Text
-                style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+              <LinearGradient
+                colors={[colors.brandGradientStart, colors.brandGradientEnd]}
+                style={styles.emptyIcon}
               >
-                No pipeline runs yet
+                <Feather name="play" size={28} color="#FFF" />
+              </LinearGradient>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No runs yet</Text>
+              <Text style={[styles.emptySub, { color: colors.foregroundMuted }]}>
+                Start a run to discover and qualify leads
               </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-              >
-                Tap "New Run" to start discovering leads
-              </Text>
-              <Pressable
-                style={[styles.emptyBtn, { backgroundColor: colors.foreground }]}
-                onPress={() => setShowNewRun(true)}
-              >
-                <Feather name="zap" size={14} color={colors.card} />
-                <Text
-                  style={[styles.emptyBtnText, { color: colors.card, fontFamily: "Inter_600SemiBold" }]}
-                >
-                  Start First Run
-                </Text>
-              </Pressable>
+              <Button label="Start your first run" variant="primary" onPress={() => setShowModal(true)} style={{ marginTop: 8 }} />
             </View>
           )
         }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <ActivityIndicator color={colors.brand} style={styles.footerLoader} />
+          ) : null
+        }
+        onEndReached={() => hasNextPage && fetchNextPage()}
+        onEndReachedThreshold={0.3}
+        refreshing={isRefetching}
+        onRefresh={refetch}
+        showsVerticalScrollIndicator={false}
       />
 
-      <NewRunModal
-        visible={showNewRun}
-        onClose={() => setShowNewRun(false)}
-        onSuccess={handleRunSuccess}
+      <StartRunModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        onStart={(q) => startMutation.mutate(q)}
+        loading={startMutation.isPending}
       />
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
+  root: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, zIndex: 10 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.4, marginBottom: 2 },
+  headerSub: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  startBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
     paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  headerLeft: { gap: 2 },
-  title: { fontSize: 26 },
-  subtitle: { fontSize: 13 },
-  newRunBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 22,
-    marginBottom: 2,
-  },
-  newRunBtnText: { fontSize: 14 },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 10,
-    overflow: "hidden",
-  },
-  cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 16, paddingBottom: 14 },
-  cardLeft: { flex: 1 },
-  cardRight: { alignItems: "flex-end", gap: 8 },
-  query: { fontSize: 15, marginBottom: 4 },
-  dateText: { fontSize: 12 },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  statusText: { fontSize: 11, textTransform: "capitalize" },
-  cancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: "#FEF2F2",
-  },
-  cancelBtnText: { fontSize: 11 },
-  statsRow: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  statItem: { flex: 1, alignItems: "center", gap: 1 },
-  statNum: { fontSize: 20 },
-  statLabel: { fontSize: 11 },
-  statDivider: { width: 1, marginVertical: 2 },
-  errorRow: {
-    flexDirection: "row",
-    gap: 8,
-    margin: 12,
-    marginTop: 0,
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "flex-start",
-  },
-  errorText: { flex: 1, fontSize: 12 },
-  loader: { marginTop: 40 },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 16 },
-  emptySubtitle: { fontSize: 13, textAlign: "center", paddingHorizontal: 30 },
-  emptyBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 22,
-    marginTop: 4,
-  },
-  emptyBtnText: { fontSize: 14 },
-  // Modal
-  modalRoot: { flex: 1 },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  modalTitle: { fontSize: 22, marginBottom: 2 },
-  modalSubtitle: { fontSize: 13 },
-  inputGroup: { gap: 8 },
-  inputLabel: { fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-  },
-  textArea: { minHeight: 80, paddingTop: 12 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  chipText: { fontSize: 12 },
-  row: { flexDirection: "row", gap: 8 },
-  optionBtn: {
     paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
+    borderRadius: 12,
   },
-  optionBtnText: { fontSize: 13 },
-  submitBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#111",
-    paddingVertical: 15,
-    borderRadius: 14,
-    marginTop: 4,
-  },
-  submitBtnText: { fontSize: 15, color: "#fff" },
+  startBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFF" },
+  listContent: { paddingHorizontal: 16, paddingTop: 16 },
+  runCard: { borderRadius: 14, overflow: "hidden" },
+  runCardInner: { flexDirection: "row", alignItems: "flex-start", padding: 14, gap: 12 },
+  runIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 2 },
+  runInfo: { flex: 1 },
+  runQuery: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 20, marginBottom: 4 },
+  runDate: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 8 },
+  runStats: { flexDirection: "row", gap: 12 },
+  runStatItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  runStatValue: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  runStatLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  runActions: { alignItems: "flex-end", gap: 8, paddingTop: 2 },
+  cancelBtn: { padding: 6, borderRadius: 8 },
+  centerLoader: { marginTop: 60 },
+  footerLoader: { marginVertical: 20 },
+  emptyState: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
+  emptyIcon: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  emptyTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold" },
+  emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+  modalScrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  modalSheet: { maxHeight: "90%" },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 6 },
+  modalSub: { fontSize: 14, fontFamily: "Inter_400Regular", marginBottom: 16 },
+  queryInput: { borderRadius: 14, borderWidth: 1, padding: 14, minHeight: 80, marginBottom: 16 },
+  queryText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  quickTitle: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  quickList: { gap: 8, marginBottom: 24 },
+  quickChip: { borderRadius: 12, borderWidth: 1, padding: 10 },
+  quickChipText: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  modalActions: { flexDirection: "row", gap: 12 },
 });
