@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
-import { eq, desc, isNull } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -19,20 +19,20 @@ function isAdmin(email: string): boolean {
 }
 
 const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?: string }> = {
-  openai: { defaultModel: "gpt-4o", defaultBaseUrl: "https://api.openai.com/v1" },
-  anthropic: { defaultModel: "claude-sonnet-4-20250514", defaultBaseUrl: "https://api.anthropic.com" },
-  gemini: { defaultModel: "gemini-2.0-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
-  groq: { defaultModel: "llama-3.3-70b-versatile", defaultBaseUrl: "https://api.groq.com/openai/v1" },
-  deepseek: { defaultModel: "deepseek-chat", defaultBaseUrl: "https://api.deepseek.com/v1" },
-  glm: { defaultModel: "glm-4", defaultBaseUrl: process.env.GLM_BASE_URL || "https://open.bigmodel.cn/api/paas/v4" },
-  minimax: { defaultModel: "MiniMax-Text-01", defaultBaseUrl: "https://api.minimax.chat/v1" },
-  kimi: { defaultModel: "moonshot-v1-8k", defaultBaseUrl: "https://api.moonshot.cn/v1" },
-  ollama: { defaultModel: "llama3", defaultBaseUrl: "http://localhost:11434/v1" },
-  openrouter: { defaultModel: "google/gemini-2.0-flash", defaultBaseUrl: "https://openrouter.ai/api/v1" },
-  google: { defaultModel: "gemini-2.5-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
-  mistral: { defaultModel: "mistral-large-latest", defaultBaseUrl: "https://api.mistral.ai/v1" },
-  together: { defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo", defaultBaseUrl: "https://api.together.xyz/v1" },
-  custom: { defaultModel: "", defaultBaseUrl: "" },
+  openai:     { defaultModel: "gpt-4o",                          defaultBaseUrl: "https://api.openai.com/v1" },
+  anthropic:  { defaultModel: "claude-sonnet-4-20250514",        defaultBaseUrl: "https://api.anthropic.com" },
+  gemini:     { defaultModel: "gemini-2.0-flash",                defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
+  groq:       { defaultModel: "llama-3.3-70b-versatile",         defaultBaseUrl: "https://api.groq.com/openai/v1" },
+  deepseek:   { defaultModel: "deepseek-chat",                   defaultBaseUrl: "https://api.deepseek.com/v1" },
+  glm:        { defaultModel: "glm-4",                           defaultBaseUrl: process.env.GLM_BASE_URL || "https://open.bigmodel.cn/api/paas/v4" },
+  minimax:    { defaultModel: "MiniMax-Text-01",                  defaultBaseUrl: "https://api.minimax.chat/v1" },
+  kimi:       { defaultModel: "moonshot-v1-8k",                  defaultBaseUrl: "https://api.moonshot.cn/v1" },
+  ollama:     { defaultModel: "llama3",                          defaultBaseUrl: "http://localhost:11434/v1" },
+  openrouter: { defaultModel: "google/gemini-2.0-flash",         defaultBaseUrl: "https://openrouter.ai/api/v1" },
+  google:     { defaultModel: "gemini-2.5-flash",                defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
+  mistral:    { defaultModel: "mistral-large-latest",            defaultBaseUrl: "https://api.mistral.ai/v1" },
+  together:   { defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo", defaultBaseUrl: "https://api.together.xyz/v1" },
+  custom:     { defaultModel: "",                                defaultBaseUrl: "" },
 };
 
 function maskKey(key: string | null | undefined) {
@@ -40,23 +40,34 @@ function maskKey(key: string | null | undefined) {
   return `${key.slice(0, 8)}${"*".repeat(8)}`;
 }
 
-async function getActiveProvider() {
-  const [defaultProv] = await db.select().from(aiProviders).where(eq(aiProviders.isDefault, true)).limit(1);
+/**
+ * Returns the active provider for a specific workspace only.
+ * No cross-workspace fallback.
+ */
+async function getActiveProvider(workspaceId: string) {
+  const [defaultProv] = await db
+    .select()
+    .from(aiProviders)
+    .where(and(eq(aiProviders.workspaceId, workspaceId), eq(aiProviders.isDefault, true)))
+    .limit(1);
   if (defaultProv) {
     return { id: defaultProv.id, name: defaultProv.name, providerType: defaultProv.providerType, baseUrl: defaultProv.baseUrl, model: defaultProv.model };
   }
 
-  const [anyProv] = await db.select().from(aiProviders).where(eq(aiProviders.isActive, true)).limit(1);
+  const [anyProv] = await db
+    .select()
+    .from(aiProviders)
+    .where(and(eq(aiProviders.workspaceId, workspaceId), eq(aiProviders.isActive, true)))
+    .limit(1);
   if (anyProv) {
     return { id: anyProv.id, name: anyProv.name, providerType: anyProv.providerType, baseUrl: anyProv.baseUrl, model: anyProv.model };
   }
 
-  const envKey = process.env.GEMINI_API_KEY || process.env.GLM_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+  // Env fallback (not workspace-specific — used only when no DB provider configured yet)
   const provType = process.env.GEMINI_API_KEY ? "gemini"
     : process.env.GLM_API_KEY ? "glm"
     : process.env.OPENAI_API_KEY ? "openai"
     : "anthropic";
-  void envKey;
   return {
     id: null,
     name: `${provType} (env)`,
@@ -67,20 +78,25 @@ async function getActiveProvider() {
   };
 }
 
+// ── GET /ai/providers ──────────────────────────────────────────────────────
 router.get("/ai/providers", async (req, res) => {
   try {
     const wsId = req.user!.activeWorkspaceId;
-    const rows = await db.select().from(aiProviders).where(eq(aiProviders.workspaceId, wsId)).orderBy(desc(aiProviders.isDefault));
+    const rows = await db
+      .select()
+      .from(aiProviders)
+      .where(eq(aiProviders.workspaceId, wsId))
+      .orderBy(desc(aiProviders.isDefault));
     const masked = rows.map((p) => ({ ...p, apiKey: maskKey(p.apiKey) }));
-    const active = await getActiveProvider();
+    const active = await getActiveProvider(wsId);
     return res.json({
       providers: masked,
-      defaults: PROVIDER_DEFAULTS,
+      defaults:  PROVIDER_DEFAULTS,
       activeProvider: {
-        name: active.name,
-        providerType: active.providerType,
-        baseUrl: active.baseUrl,
-        model: active.model,
+        name:          active.name,
+        providerType:  active.providerType,
+        baseUrl:       active.baseUrl,
+        model:         active.model,
         isEnvFallback: !active.id,
       },
     });
@@ -90,70 +106,78 @@ router.get("/ai/providers", async (req, res) => {
 });
 
 const aiProviderSchema = z.object({
-  name: z.string().min(1).max(100),
+  name:         z.string().min(1).max(100),
   providerType: z.enum(["glm", "anthropic", "openai", "ollama", "minimax", "kimi", "deepseek", "groq", "gemini", "openrouter", "google", "mistral", "together", "custom"]),
-  apiKey: z.string().optional(),
-  baseUrl: z.string().optional(),
-  model: z.string().min(1),
-  // Accept string or number from frontend form inputs and coerce safely
-  temperature: z.preprocess(
+  apiKey:       z.string().optional(),
+  baseUrl:      z.string().optional(),
+  model:        z.string().min(1),
+  temperature:  z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
     z.number().min(0).max(2).optional()
   ).nullable().optional(),
-  maxTokens: z.preprocess(
+  maxTokens:    z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? 4096 : Number(v)),
     z.number().int().min(1).max(65536)
   ).default(4096),
-  isActive: z.boolean().default(true),
+  isActive:     z.boolean().default(true),
 });
 
+// ── POST /ai/providers ─────────────────────────────────────────────────────
 router.post("/ai/providers", async (req, res) => {
   const parsed = aiProviderSchema.safeParse(req.body);
-  if (!parsed.success) {
+  if (!parsed.success)
     return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
-  }
-  try {
-    const data = parsed.data;
-    const defaults = PROVIDER_DEFAULTS[data.providerType];
 
-    // workspaceId may be null if the workspace migration hasn't run yet —
-    // allow null so the insert still succeeds (workspace_id is nullable in schema)
+  try {
+    const data        = parsed.data;
+    const defaults    = PROVIDER_DEFAULTS[data.providerType];
     const workspaceId = req.user!.activeWorkspaceId ?? null;
 
     const [provider] = await db.insert(aiProviders).values({
       workspaceId,
-      name: data.name,
+      name:         data.name,
       providerType: data.providerType,
-      apiKey: data.apiKey ?? null,
-      baseUrl: data.baseUrl || defaults?.defaultBaseUrl || null,
-      model: data.model,
-      temperature: data.temperature !== undefined && data.temperature !== null ? String(data.temperature) : null,
-      maxTokens: data.maxTokens,
-      isActive: data.isActive,
-      isDefault: false,
+      apiKey:       data.apiKey ?? null,
+      baseUrl:      data.baseUrl || defaults?.defaultBaseUrl || null,
+      model:        data.model,
+      temperature:  data.temperature !== undefined && data.temperature !== null ? String(data.temperature) : null,
+      maxTokens:    data.maxTokens,
+      isActive:     data.isActive,
+      isDefault:    false,
     }).returning();
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err: any) {
-    // Unwrap Drizzle → Postgres cause chain to get the real error
     const message = extractErrorMessage(err);
     logger.error({ err }, "POST /ai/providers failed");
     return res.status(500).json({ error: message });
   }
 });
 
+// ── PATCH /ai/providers/:id ────────────────────────────────────────────────
 router.patch("/ai/providers/:id", async (req, res) => {
   const parsed = aiProviderSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
+  if (!parsed.success)
     return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
-  }
+
   try {
-    const data = parsed.data;
+    const wsId = req.user!.activeWorkspaceId;
+    // Verify ownership: provider must belong to this workspace
+    const [existing] = await db
+      .select({ id: aiProviders.id })
+      .from(aiProviders)
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)));
+    if (!existing) return res.status(404).json({ error: "Provider not found" });
+
+    const data   = parsed.data;
     const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
     if (data.temperature !== undefined) update.temperature = data.temperature === null ? null : String(data.temperature);
-    // Never overwrite stored apiKey with empty/undefined — omit the field entirely
     if (!data.apiKey) delete update.apiKey;
 
-    const [provider] = await db.update(aiProviders).set(update as Partial<typeof aiProviders.$inferInsert>).where(eq(aiProviders.id, String(req.params.id))).returning();
+    const [provider] = await db
+      .update(aiProviders)
+      .set(update as Partial<typeof aiProviders.$inferInsert>)
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)))
+      .returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err) {
@@ -161,9 +185,15 @@ router.patch("/ai/providers/:id", async (req, res) => {
   }
 });
 
+// ── DELETE /ai/providers/:id ───────────────────────────────────────────────
 router.delete("/ai/providers/:id", async (req, res) => {
   try {
-    const [provider] = await db.delete(aiProviders).where(eq(aiProviders.id, String(req.params.id))).returning();
+    const wsId = req.user!.activeWorkspaceId;
+    // Scoped delete: only delete if it belongs to this workspace
+    const [provider] = await db
+      .delete(aiProviders)
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)))
+      .returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     return res.json({ deleted: true, name: provider.name });
   } catch (err) {
@@ -171,15 +201,20 @@ router.delete("/ai/providers/:id", async (req, res) => {
   }
 });
 
+// ── POST /ai/providers/:id/test ────────────────────────────────────────────
 router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) => {
   try {
-    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, String(req.params.id)));
+    const wsId = req.user!.activeWorkspaceId;
+    // Only test providers that belong to this workspace
+    const [provider] = await db
+      .select()
+      .from(aiProviders)
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     if (!provider.apiKey && provider.providerType !== "ollama") {
       return res.json({ ok: false, error: "No API key configured for this provider" });
     }
 
-    // ── Real API call to verify the key actually works ────────────────────
     const PROVIDER_BASE_URLS: Record<string, string> = {
       openai:     "https://api.openai.com/v1",
       anthropic:  "https://api.anthropic.com/v1",
@@ -198,7 +233,6 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
 
     const baseURL = provider.baseUrl || PROVIDER_BASE_URLS[provider.providerType] || "https://api.openai.com/v1";
     const apiKey  = provider.apiKey || "ollama";
-
     const headers: Record<string, string> = {
       "Content-Type":  "application/json",
       "Authorization": `Bearer ${apiKey}`,
@@ -210,19 +244,13 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
 
     let ok = false;
     let errorMsg: string | undefined;
-
     try {
       const response = await fetch(`${baseURL}/chat/completions`, {
         method:  "POST",
         headers,
-        body:    JSON.stringify({
-          model:      provider.model,
-          messages:   [{ role: "user", content: "Hi" }],
-          max_tokens: 5,
-        }),
-        signal: AbortSignal.timeout(10_000),
+        body:    JSON.stringify({ model: provider.model, messages: [{ role: "user", content: "Hi" }], max_tokens: 5 }),
+        signal:  AbortSignal.timeout(10_000),
       });
-
       if (response.ok) {
         ok = true;
       } else {
@@ -232,21 +260,35 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
     } catch (fetchErr: any) {
       errorMsg = fetchErr?.message ?? "Connection failed";
     }
-
     return res.json({ ok, model: provider.model, ...(errorMsg ? { error: errorMsg } : {}) });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
 
+// ── POST /ai/providers/:id/default ────────────────────────────────────────
 router.post("/ai/providers/:id/default", async (req, res) => {
   try {
-    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, String(req.params.id)));
+    const wsId = req.user!.activeWorkspaceId;
+
+    // Verify the provider belongs to this workspace
+    const [provider] = await db
+      .select()
+      .from(aiProviders)
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
     if (!provider.isActive) return res.status(400).json({ error: "Cannot set inactive provider as default" });
 
-    await db.update(aiProviders).set({ isDefault: false, updatedAt: new Date() });
-    await db.update(aiProviders).set({ isDefault: true, updatedAt: new Date() }).where(eq(aiProviders.id, String(req.params.id)));
+    // Reset isDefault ONLY within this workspace
+    await db
+      .update(aiProviders)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(eq(aiProviders.workspaceId, wsId));
+
+    await db
+      .update(aiProviders)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)));
 
     return res.json({ success: true, providerId: req.params.id });
   } catch (err) {
@@ -254,36 +296,42 @@ router.post("/ai/providers/:id/default", async (req, res) => {
   }
 });
 
+// ── GET /ai/providers/defaults ─────────────────────────────────────────────
 router.get("/ai/providers/defaults", (_req, res) => {
   return res.json({ defaults: PROVIDER_DEFAULTS });
 });
 
+// ── POST /ai/providers/seed-from-env ──────────────────────────────────────
 router.post("/ai/providers/seed-from-env", async (req, res) => {
-  if (!isAdmin(req.user!.email)) {
+  if (!isAdmin(req.user!.email))
     return res.status(403).json({ error: "Forbidden — admin only" });
-  }
+
   try {
+    const wsId   = req.user!.activeWorkspaceId;
     const results: string[] = [];
 
     if (process.env.GEMINI_API_KEY) {
-      const [existing] = await db.select().from(aiProviders)
-        .where(eq(aiProviders.providerType, "gemini")).limit(1);
+      const [existing] = await db
+        .select()
+        .from(aiProviders)
+        .where(and(eq(aiProviders.workspaceId, wsId), eq(aiProviders.providerType, "gemini")))
+        .limit(1);
       if (!existing) {
         const defaults = PROVIDER_DEFAULTS["gemini"]!;
         await db.insert(aiProviders).values({
-          name: "Gemini (env)",
+          workspaceId:  wsId,
+          name:         "Gemini (env)",
           providerType: "gemini",
-          apiKey: process.env.GEMINI_API_KEY,
-          baseUrl: defaults.defaultBaseUrl ?? null,
-          model: defaults.defaultModel,
-          maxTokens: 4096,
-          isActive: true,
-          isDefault: true,
+          apiKey:       process.env.GEMINI_API_KEY,
+          baseUrl:      defaults.defaultBaseUrl ?? null,
+          model:        defaults.defaultModel,
+          maxTokens:    4096,
+          isActive:     true,
+          isDefault:    true,
         });
         results.push("gemini");
       }
     }
-
     return res.json({ seeded: results });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -291,4 +339,3 @@ router.post("/ai/providers/seed-from-env", async (req, res) => {
 });
 
 export default router;
-
