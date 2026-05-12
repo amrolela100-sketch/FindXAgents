@@ -33,8 +33,8 @@ export function LangProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = isRtl ? "rtl" : "ltr";
     // Update font for Arabic
     document.body.style.fontFamily = isRtl
-      ? '"Noto Sans Arabic", "Inter", sans-serif'
-      : '"Inter", sans-serif';
+      ? '"Noto Sans Arabic", "Outfit", sans-serif'
+      : '"Outfit", sans-serif';
   }, [lang, isRtl]);
 
   const setLang = (l: Lang) => setLangState(l);
