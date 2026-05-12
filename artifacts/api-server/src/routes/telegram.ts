@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { telegramSettings } from "@workspace/db";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
