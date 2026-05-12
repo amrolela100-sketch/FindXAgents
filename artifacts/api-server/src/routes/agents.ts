@@ -31,13 +31,14 @@ router.post("/agents/run", async (req, res) => {
 
   try {
     const [run] = await db.insert(agentPipelineRuns).values({
-      userId: req.user?.sub ?? null,
-      query: parsed.data.query,
-      status: "queued",
+      userId:      req.user?.sub ?? null,
+      workspaceId: req.user?.activeWorkspaceId ?? null,
+      query:       parsed.data.query,
+      status:      "queued",
     }).returning();
 
     // Fire and forget agent runner
-    const runner = new AgentRunner(run.id);
+    const runner = new AgentRunner(run.id, req.user?.activeWorkspaceId ?? null);
     runner.run(parsed.data.query, parsed.data.maxResults ?? 10, req.user?.sub ?? null, parsed.data.language as any).catch(console.error);
 
     return res.status(202).json({ runId: run.id, status: "queued", run });
