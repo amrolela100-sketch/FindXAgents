@@ -5,10 +5,12 @@ import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+
+// ── Native Tabs (iOS Liquid Glass / SF Symbols) ────────────────────────────
 
 function NativeTabLayout() {
   return (
@@ -37,115 +39,155 @@ function NativeTabLayout() {
   );
 }
 
+// ── Classic Tab Layout with Glass BlurView ─────────────────────────────────
+
+function TabIcon({
+  name,
+  color,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  color: string;
+  focused: boolean;
+}) {
+  return (
+    <View style={styles.iconWrapper}>
+      <Feather name={name} size={22} color={color} />
+      {focused && (
+        <View
+          style={[
+            styles.activeDot,
+            { backgroundColor: color },
+          ]}
+        />
+      )}
+    </View>
+  );
+}
+
 function ClassicTabLayout() {
   const colors = useColors();
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
-  const safeAreaInsets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+
+  const tabBarHeight = 56 + insets.bottom;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.foreground,
-        tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
-        tabBarLabelStyle: {
-          fontFamily: "Inter_500Medium",
-          fontSize: 11,
-        },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom,
+          backgroundColor: "transparent",
+          borderTopColor: "transparent",
           elevation: 0,
-          paddingBottom: isIOS ? safeAreaInsets.bottom : 0,
-          ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
-          isIOS ? (
+          Platform.OS === "ios" ? (
             <BlurView
-              intensity={60}
-              tint="light"
-              style={StyleSheet.absoluteFill}
+              tint={colors.isDark ? "dark" : "light"}
+              intensity={65}
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  borderTopWidth: 1,
+                  borderTopColor: colors.tabBarBorder,
+                },
+              ]}
             />
-          ) : isWeb ? (
+          ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
+                {
+                  backgroundColor: colors.tabBarBackground,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.tabBarBorder,
+                },
               ]}
             />
-          ) : null,
+          ),
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: "Inter_500Medium",
+          marginTop: -2,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="home" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="leads"
         options={{
           title: "Leads",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={24} />
-            ) : (
-              <Feather name="users" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="users" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="runs"
         options={{
           title: "Runs",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="play.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="play-circle" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="play-circle" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="agents"
         options={{
           title: "Agents",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="cpu" tintColor={color} size={24} />
-            ) : (
-              <Feather name="cpu" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="cpu" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="user" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name="user-circle" color={color} focused={focused} />
+          ),
         }}
       />
     </Tabs>
   );
 }
 
+// ── Root Export ────────────────────────────────────────────────────────────
+
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
+  if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
 }
+
+const styles = StyleSheet.create({
+  iconWrapper: {
+    alignItems: "center",
+    width: 28,
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    marginTop: 3,
+  },
+});
