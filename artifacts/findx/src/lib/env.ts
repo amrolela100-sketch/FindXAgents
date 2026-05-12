@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  VITE_API_URL: z.string().url("VITE_API_URL must be a valid URL").optional().default("http://localhost:5000/api"),
+  // Accept either a full URL (local dev) or a relative path "/api" (production proxy via Vercel)
+  VITE_API_URL: z.string().optional().default("/api"),
   VITE_ADMIN_EMAILS: z.string().optional(),
 });
 
@@ -16,5 +17,5 @@ if (!parsed.success) {
   console.warn("Invalid environment variables:", envErrors);
 }
 
-export const env = parsed.data || { VITE_API_URL: "http://localhost:5000/api", VITE_ADMIN_EMAILS: "" };
+export const env = parsed.data || { VITE_API_URL: "/api", VITE_ADMIN_EMAILS: "" };
 export { isEnvValid, envErrors };
