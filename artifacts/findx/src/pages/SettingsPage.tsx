@@ -328,6 +328,7 @@ export default function SettingsPage() {
   const [telegramSaving, setTelegramSaving] = useState(false);
   const [telegramTesting, setTelegramTesting] = useState(false);
   const [telegramTestResult, setTelegramTestResult] = useState<{ success: boolean; error?: string } | null>(null);
+  const [telegramSaveError, setTelegramSaveError] = useState<string | null>(null);
 
   // ── Data state ──
   const [confirming, setConfirming] = useState(false);
@@ -467,13 +468,17 @@ export default function SettingsPage() {
 
   // ── Telegram handlers ──
   async function handleSaveTelegram() {
-    setTelegramSaving(true);
-    try { await saveTelegramSettings(telegramForm); await loadTelegramSettings(); }
-    catch { } finally { setTelegramSaving(false); }
+    setTelegramSaving(true); setTelegramSaveError(null);
+    try {
+      await saveTelegramSettings(telegramForm);
+      await loadTelegramSettings();
+    } catch (err) {
+      setTelegramSaveError(err instanceof Error ? err.message : "Failed to save settings");
+    } finally { setTelegramSaving(false); }
   }
   async function handleTestTelegram() {
     setTelegramTesting(true); setTelegramTestResult(null);
-    try { setTelegramTestResult(await testTelegram()); }
+    try { setTelegramTestResult(await testTelegram(telegramForm)); }
     catch (err) { setTelegramTestResult({ success: false, error: err instanceof Error ? err.message : "Failed" }); }
     finally { setTelegramTesting(false); }
   }
@@ -1112,6 +1117,9 @@ export default function SettingsPage() {
                   <FieldLabel>Chat ID</FieldLabel>
                   <input type="text" value={telegramForm.chatId} onChange={(e) => setTelegramForm({ ...telegramForm, chatId: e.target.value })} placeholder="123456789" className="input text-[13px]" />
                 </div>
+                {telegramSaveError && (
+                  <Alert type="error" message={telegramSaveError} />
+                )}
                 {telegramTestResult && (
                   <Alert type={telegramTestResult.success ? "success" : "error"} message={telegramTestResult.success ? "Test message sent!" : telegramTestResult.error ?? "Test failed"} />
                 )}

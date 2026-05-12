@@ -372,8 +372,8 @@ export function saveTelegramSettings(data: { botToken: string; chatId: string; i
   return fetchApi("/telegram/settings", { method: "POST", body: JSON.stringify(data) });
 }
 
-export function testTelegram(): Promise<{ success: boolean; message?: string }> {
-  return fetchApi("/telegram/test", { method: "POST" });
+export function testTelegram(data: { botToken: string; chatId: string }): Promise<{ success: boolean; message?: string }> {
+  return fetchApi("/telegram/test", { method: "POST", body: JSON.stringify(data) });
 }
 
 export function triggerAnalysis(leadId: string, _force?: boolean): Promise<{ analysis: Analysis; score: number; summary: string }> {
