@@ -3,6 +3,7 @@ import { eq, sql, and, ilike } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
+import { notifyPipelineComplete, notifyPipelineFailed } from "./telegram.js";
 import pLimit from "p-limit";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
@@ -122,6 +123,7 @@ export class AgentRunner {
         : ["discover-web", "qualify-ai", "generate-outreach", "stage-pipeline"];
 
       let discoveredLeadIds: string[] = [];
+      const startTime = Date.now();
 
       for (const skill of pipelineSkills) {
         await logToDB(agent.id, this.runId, skill, "info", `Starting skill execution: ${skill}`);
@@ -145,11 +147,32 @@ export class AgentRunner {
         .set({ status: "completed", completedAt: new Date() })
         .where(eq(agentPipelineRuns.id, this.runId));
 
+      // ── Telegram notification on success ─────────────────────────────────
+      const [finalRun] = await db
+        .select({ leadsFound: agentPipelineRuns.leadsFound, leadsAnalyzed: agentPipelineRuns.leadsAnalyzed, emailsDrafted: agentPipelineRuns.emailsDrafted })
+        .from(agentPipelineRuns)
+        .where(eq(agentPipelineRuns.id, this.runId));
+
+      notifyPipelineComplete({
+        query,
+        leadsFound:    finalRun?.leadsFound    ?? discoveredLeadIds.length,
+        leadsAnalyzed: finalRun?.leadsAnalyzed ?? 0,
+        emailsDrafted: finalRun?.emailsDrafted ?? 0,
+        durationMs:    Date.now() - startTime,
+      }).catch(() => {}); // fire-and-forget
+
     } catch (err: any) {
       await db.update(agentPipelineRuns)
         .set({ status: "failed", error: err.message, completedAt: new Date() })
         .where(eq(agentPipelineRuns.id, this.runId));
       logger.error({ err, runId: this.runId }, "Pipeline run failed");
+
+      // ── Telegram notification on failure ─────────────────────────────────
+      notifyPipelineFailed({
+        query,
+        error:      err.message ?? "Unknown error",
+        durationMs: Date.now() - (Date.now()), // best effort
+      }).catch(() => {});
     }
   }
 
