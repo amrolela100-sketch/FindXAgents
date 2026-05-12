@@ -3,7 +3,7 @@ import { logger } from "./logger.js";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid PostgreSQL connection string"),
-  PORT: z.string().optional().default("5000"),
+  PORT: z.string().optional().default("3000"),
   SUPABASE_URL: z.string().url("SUPABASE_URL must be a valid URL"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
   OPENROUTER_API_KEY: z.string().optional(),
