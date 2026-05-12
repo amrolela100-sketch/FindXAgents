@@ -18,16 +18,12 @@ const telegramSchema = z.object({
   chatId:   z.string().min(1).max(50).regex(/^-?\d+$/, "Chat ID must be a numeric value"),
 });
 
-/** Resolve telegram settings for the current workspace, fallback to global */
+/** Resolve telegram settings for the current workspace only (no global fallback) */
 async function getSettings(workspaceId: string) {
   const [ws] = await db.select().from(telegramSettings)
     .where(and(eq(telegramSettings.workspaceId, workspaceId), eq(telegramSettings.isActive, true)))
     .limit(1);
-  if (ws) return ws;
-  const [global] = await db.select().from(telegramSettings)
-    .where(and(isNull(telegramSettings.workspaceId), eq(telegramSettings.isActive, true)))
-    .limit(1);
-  return global ?? null;
+  return ws ?? null;
 }
 
 router.get("/telegram/settings", async (req, res) => {
