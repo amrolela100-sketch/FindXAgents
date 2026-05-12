@@ -5,7 +5,7 @@ import { eq, desc, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
-import { safeError } from "../lib/safe-error.js";
+import { safeError, extractErrorMessage } from "../lib/safe-error.js";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
@@ -134,8 +134,8 @@ router.post("/ai/providers", async (req, res) => {
     }).returning();
     return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
   } catch (err: any) {
-    // Always expose the actual DB error message so issues are diagnosable
-    const message = err?.message ?? "Internal server error";
+    // Unwrap Drizzle → Postgres cause chain to get the real error
+    const message = extractErrorMessage(err);
     logger.error({ err }, "POST /ai/providers failed");
     return res.status(500).json({ error: message });
   }
