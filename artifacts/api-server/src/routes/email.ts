@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { emailProviderTokens, smtpConfigs, emailSettings, resendConfigs } from "@workspace/db";
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
 import { requireAuth } from "../middleware/auth.js";
