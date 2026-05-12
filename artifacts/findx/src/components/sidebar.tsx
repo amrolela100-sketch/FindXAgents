@@ -185,7 +185,7 @@ function SidebarContent({
       </nav>
 
       {/* Divider */}
-      <div className="mx-4 my-3" style={{ borderTop: "1px solid var(--border)" }} />
+      <div className="mx-4 my-3" style={{ borderTop: "1px solid var(--glass-border)" }} />
 
       {/* Footer */}
       <div className={`pb-4 space-y-0.5 ${collapsed ? "px-1" : "px-2"}`}>
