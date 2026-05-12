@@ -1,10 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifySupabaseToken } from "./supabase-admin.js";
 
 // ─── JWT types ────────────────────────────────────────────────────────────────
 
 export interface JwtPayload {
-  sub: string;       // user id
+  sub: string;
   /** Alias for `sub` — used across all route handlers */
   userId: string;
   email: string;
@@ -13,7 +12,7 @@ export interface JwtPayload {
   activeWorkspaceId: string;
 }
 
-// ─── Express middleware ───────────────────────────────────────────────────────
+// ─── Express type augmentation ────────────────────────────────────────────────
 
 declare global {
   namespace Express {
@@ -23,41 +22,9 @@ declare global {
   }
 }
 
-/**
- * Middleware to require a valid Supabase token.
- * Maps the Supabase user to req.user for backward compatibility.
- */
-export async function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or invalid Authorization header" });
-    return;
-  }
-
-  try {
-    const supabaseUser = await verifySupabaseToken(authHeader);
-    if (!supabaseUser) {
-      res.status(401).json({ error: "Invalid or expired session" });
-      return;
-    }
-
-    req.user = {
-      sub: supabaseUser.userId,
-      userId: supabaseUser.userId,
-      email: supabaseUser.email,
-      role: "user", // Default to user, admin status should be checked in DB if needed
-      activeWorkspaceId: "", // Will be populated by requireWorkspace or syncAndMapUser
-    };
-    next();
-  } catch (error: any) {
-    res.status(401).json({ error: "Authentication failed: " + error.message });
-  }
-}
+// ─── requireRole helper ───────────────────────────────────────────────────────
+// Use after requireAuth to gate a route to admins only.
+// Example:  router.get("/admin/x", requireAuth, requireRole("admin"), handler)
 
 export function requireRole(role: "admin" | "user") {
   return (req: Request, res: Response, next: NextFunction): void => {
