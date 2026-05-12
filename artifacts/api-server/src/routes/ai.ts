@@ -94,14 +94,25 @@ const aiProviderSchema = z.object({
   apiKey: z.string().optional(),
   baseUrl: z.string().optional(),
   model: z.string().min(1),
-  temperature: z.number().min(0).max(2).optional().nullable(),
-  maxTokens: z.number().int().min(1).max(65536).default(4096),
+  // Accept string or number from frontend form inputs and coerce safely
+  temperature: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    z.number().min(0).max(2).optional()
+  ).nullable().optional(),
+  maxTokens: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? 4096 : Number(v)),
+    z.number().int().min(1).max(65536)
+  ).default(4096),
   isActive: z.boolean().default(true),
 });
 
 router.post("/ai/providers", async (req, res) => {
+  const parsed = aiProviderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+  }
   try {
-    const data = aiProviderSchema.parse(req.body);
+    const data = parsed.data;
     const defaults = PROVIDER_DEFAULTS[data.providerType];
     const [provider] = await db.insert(aiProviders).values({
       workspaceId: req.user!.activeWorkspaceId,
@@ -122,8 +133,12 @@ router.post("/ai/providers", async (req, res) => {
 });
 
 router.patch("/ai/providers/:id", async (req, res) => {
+  const parsed = aiProviderSchema.partial().safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+  }
   try {
-    const data = aiProviderSchema.partial().parse(req.body);
+    const data = parsed.data;
     const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
     if (data.temperature !== undefined) update.temperature = data.temperature === null ? null : String(data.temperature);
 
