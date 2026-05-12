@@ -39,7 +39,7 @@ function AuthGuard() {
   if (loading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-[100dvh] flex items-center justify-center"
         
       >
         <div className="flex flex-col items-center gap-3">
@@ -65,7 +65,7 @@ function AuthGuard() {
     <WorkspaceProvider>
       {/* Layout */}
       <div
-        className="min-h-screen"
+        className="min-h-[100dvh]"
         
       >
         <Sidebar
@@ -95,7 +95,7 @@ function AuthGuard() {
               {isAdmin && <Route path="/admin" component={AdminPage} />}
               <Route>
                 <div
-                  className="min-h-screen flex flex-col items-center justify-center gap-2"
+                  className="min-h-[100dvh] flex flex-col items-center justify-center gap-2"
                   
                 >
                   <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>

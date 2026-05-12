@@ -96,12 +96,11 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2"
-      dir={isRtl ? "rtl" : "ltr"}
     >
 
       {/* ══ LEFT PANEL — Brand showcase ══ */}
       <div
-        className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden"
+        className="hidden md:flex flex-col justify-between p-8 lg:p-12 relative overflow-hidden"
         style={{
           background: "var(--bg-inset)",
           borderRight: isRtl ? "none" : "1px solid var(--glass-border)",
@@ -146,7 +145,7 @@ export default function LoginPage() {
         >
           <motion.div variants={itemVariants}>
             <h2
-              className="text-4xl font-bold tracking-tighter leading-tight mb-4 text-balance"
+              className="text-3xl lg:text-4xl font-bold tracking-tighter leading-tight mb-4 text-balance break-words"
               style={{ color: "var(--text)" }}
             >
               AI-powered B2B<br />
@@ -154,7 +153,7 @@ export default function LoginPage() {
               that actually works.
             </h2>
             <p
-              className="text-sm leading-relaxed max-w-[40ch]"
+              className="text-sm leading-relaxed max-w-full"
               style={{ color: "var(--text-muted)", lineHeight: 1.8 }}
             >
               Find real businesses, visit their websites, score their gaps,
@@ -203,10 +202,10 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold tracking-tight" style={{ color: "var(--text)" }}>
+                  <p className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--text)" }}>
                     {label}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>
                     {desc}
                   </p>
                 </div>
@@ -259,7 +258,7 @@ export default function LoginPage() {
 
         {/* Top bar */}
         <header
-          className="flex items-center justify-between px-6 py-4 topbar-glass md:bg-transparent md:backdrop-filter-none md:border-b-0"
+          className="flex items-center justify-between px-6 py-4 topbar-glass"
           style={{ borderBottom: "1px solid var(--glass-border)" }}
         >
           {/* Mobile logo */}
@@ -288,7 +287,7 @@ export default function LoginPage() {
         </header>
 
         {/* Form area */}
-        <main className="flex-1 flex items-center justify-center px-6 py-12">
+        <main className="flex-1 flex items-center justify-center px-6 py-10 overflow-y-auto">
           <motion.div
             className="w-full max-w-sm"
             initial="hidden"
@@ -308,7 +307,7 @@ export default function LoginPage() {
             {/* Heading */}
             <motion.div variants={itemVariants} className="mb-8">
               <h1
-                className="text-3xl font-bold tracking-tight mb-2"
+                className="text-2xl md:text-3xl font-bold tracking-tight mb-2"
                 style={{ color: "var(--text)" }}
               >
                 {t.auth.welcome}

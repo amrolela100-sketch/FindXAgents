@@ -62,7 +62,7 @@ function StatCounter({ value, label }: { value: string; label: string }) {
   return (
     <div ref={containerRef}>
       <div
-        className="text-4xl md:text-5xl font-bold tracking-tighter leading-none mb-2"
+        className="text-3xl md:text-4xl font-bold tracking-tighter leading-none mb-2"
         style={{ color: "var(--text)" }}
       >
         <span ref={ref}>0</span>
@@ -249,14 +249,14 @@ export default function LandingPage() {
       {/* ══ HERO — ASYMMETRIC SPLIT ══ */}
       <section
         ref={heroRef}
-        className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 items-center px-6 md:px-0 overflow-hidden"
+        className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 items-center px-6 md:px-0"
       >
         {/* LEFT: text */}
         <motion.div
           initial="hidden"
           animate={heroInView ? "visible" : "hidden"}
           variants={containerVariants}
-          className="md:pl-16 lg:pl-24 py-20 md:py-0 max-w-xl"
+          className="md:pl-16 lg:pl-24 py-20 md:py-0 w-full max-w-xl"
         >
           {/* Badge */}
           <motion.div variants={itemVariants}>
@@ -281,7 +281,7 @@ export default function LandingPage() {
           {/* H1 */}
           <motion.h1
             variants={itemVariants}
-            className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[1.02] mb-6 text-balance"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.05] mb-6 text-balance"
             style={{ color: "var(--text)" }}
           >
             {t.landing.heroTitle.split("\n").map((line, i) =>
@@ -321,7 +321,7 @@ export default function LandingPage() {
           {/* Trust row */}
           <motion.div
             variants={itemVariants}
-            className="flex items-center gap-4 mt-10"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-10"
             style={{ color: "var(--text-subtle)" }}
           >
             {["Real website scraping", "No hallucination", "Instant setup"].map((item) => (
@@ -338,7 +338,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, x: 40 }}
           animate={heroInView ? { opacity: 1, x: 0 } : {}}
           transition={{ ...SPRING, delay: 0.25 }}
-          className="hidden md:block relative h-full min-h-[100dvh] pl-10 pr-6 lg:pr-16 py-16 flex items-center"
+          className="hidden md:flex items-center relative pl-10 pr-6 lg:pr-16 py-16"
         >
           {/* Glow accent */}
           <div
@@ -463,7 +463,7 @@ export default function LandingPage() {
         style={{ borderTop: "1px solid var(--glass-border)", borderBottom: "1px solid var(--glass-border)" }}
       >
         <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-3 gap-8 md:gap-16 text-center md:text-left">
+          <div className="grid grid-cols-3 gap-4 md:gap-12 text-center md:text-left">
             {stats.map(({ value, key, icon: Icon }) => (
               <div key={key} className="flex flex-col md:flex-row md:items-start md:gap-4">
                 <div
@@ -491,7 +491,7 @@ export default function LandingPage() {
               {t.landing.howItWorks}
             </p>
             <h2
-              className="text-4xl md:text-5xl font-bold tracking-tighter text-balance"
+              className="text-3xl md:text-4xl font-bold tracking-tighter text-balance"
               style={{ color: "var(--text)" }}
             >
               {t.landing.agentsFull}
@@ -539,7 +539,7 @@ export default function LandingPage() {
             />
             <div className="relative">
               <h2
-                className="text-4xl md:text-5xl font-bold tracking-tighter mb-5 text-balance"
+                className="text-3xl md:text-4xl font-bold tracking-tighter mb-5 text-balance"
                 style={{ color: "var(--text)" }}
               >
                 {t.landing.ctaTitle}
