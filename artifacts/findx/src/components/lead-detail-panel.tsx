@@ -54,13 +54,18 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
 
   return (
     <div
-      className="fixed inset-y-0 right-0 w-[480px] z-50 flex flex-col"
+      className="fixed inset-y-0 w-[480px] z-50 flex flex-col"
       style={{
+        right: document.documentElement.dir === "rtl" ? "auto" : 0,
+        left:  document.documentElement.dir === "rtl" ? 0 : "auto",
         background: "rgba(255,255,255, 0.60)",
         backdropFilter: "blur(32px) saturate(200%)",
         WebkitBackdropFilter: "blur(32px) saturate(200%)",
-        borderLeft: "1px solid var(--glass-border-strong)",
-        boxShadow: "-8px 0 48px rgba(0,0,0,0.15), inset 1px 0 0 rgba(255,255,255,0.20)",
+        borderLeft:  document.documentElement.dir === "rtl" ? "none" : "1px solid var(--glass-border-strong)",
+        borderRight: document.documentElement.dir === "rtl" ? "1px solid var(--glass-border-strong)" : "none",
+        boxShadow: document.documentElement.dir === "rtl"
+          ? "8px 0 48px rgba(0,0,0,0.15), inset -1px 0 0 rgba(255,255,255,0.20)"
+          : "-8px 0 48px rgba(0,0,0,0.15), inset 1px 0 0 rgba(255,255,255,0.20)",
       }}
     >
       {/* Header */}
@@ -69,7 +74,7 @@ export function LeadDetailPanel({ leadId, onClose, onLeadUpdated }: LeadDetailPa
         style={{ borderBottom: "1px solid var(--glass-border)" }}
       >
         <div className="flex-1 min-w-0">
-          <h2 className="font-serif font-bold text-lg truncate" style={{ color: "var(--text)" }}>
+          <h2 className="font-bold text-lg truncate" style={{ color: "var(--text)" }}>
             {lead?.businessName ?? "Loading..."}
           </h2>
           {lead && <StatusBadge status={lead.status} />}
