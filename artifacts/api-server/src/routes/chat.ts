@@ -132,17 +132,19 @@ const chatSchema = z.object({
 
 // ─── POST /chat ───────────────────────────────────────────────────────────────
 
-router.post("/chat", requireAuth, async (req, res) => {
+router.post("/chat", requireAuth, async (req, res): Promise<void> => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+    res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+    return;
   }
 
   const ai = await resolveAIClient();
   if (!ai) {
-    return res.status(503).json({
+    res.status(503).json({
       error: "No AI provider configured. Please add an API key in Settings → AI Providers.",
     });
+    return;
   }
 
   const { messages, context } = parsed.data;

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, User, Loader2, Sparkles, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,7 +141,7 @@ export function ChatWidget() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const location = useLocation();
+  const [location] = useLocation();
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback((smooth = true) => {
@@ -186,7 +186,7 @@ export function ChatWidget() {
 
   // Page context for AI
   const buildContext = (): string => {
-    const path = location.pathname;
+    const path = location;
     const routeMap: Record<string, string> = {
       "/": "Dashboard — overview of stats and recent activity",
       "/leads": "Leads page — list of discovered businesses",
