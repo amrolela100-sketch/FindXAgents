@@ -115,8 +115,8 @@ findx/
 
 ### Prerequisites
 
-- Node.js `>= 20`
-- pnpm `>= 9` — `npm install -g pnpm`
+- Node.js `>= 22`
+- pnpm `>= 10` — `npm install -g pnpm`
 - A [Supabase](https://supabase.com) project
 - API keys: **Tavily**, **Resend**, **OpenRouter** or **Gemini**
 
