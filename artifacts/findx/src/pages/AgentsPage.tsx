@@ -436,7 +436,7 @@ export default function AgentsPage() {
               </p>
             </div>
           </div>
-          {agents.length > 0 && <PipelineFlow agents={agents} />}
+          <PipelineFlow agents={agents} />
         </div>
 
         <div className="p-5 flex flex-col gap-4">
@@ -526,7 +526,7 @@ export default function AgentsPage() {
       </motion.div>
 
       {/* ── Agent Cards ──────────────────────────────────────── */}
-      {agents.length > 0 && (
+      {
         <motion.div
           custom={2}
           variants={FADE_UP}
