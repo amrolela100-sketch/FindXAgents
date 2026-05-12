@@ -33,7 +33,7 @@ function DeleteConfirmDialog({
     >
       <div
         className="rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--glass-border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -215,7 +215,7 @@ export function LeadList({ onSelectLead }: LeadListProps) {
       {/* Table */}
       <div
         className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border)" }}
+        style={{ border: "1px solid var(--glass-border)" }}
       >
         <table className="w-full">
           <thead>
