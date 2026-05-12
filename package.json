@@ -7,9 +7,12 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "build": "pnpm run build:core",
+    "build:core": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/findx run build",
+    "build:marketing": "pnpm --filter @workspace/findx-pitch-deck run build && pnpm --filter @workspace/findx-promo run build",
+    "build:mobile": "pnpm --filter @workspace/findx-mobile run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
     "test": "vitest run"
   },
   "private": true,
