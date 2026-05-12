@@ -45,7 +45,7 @@ jobs:
 
   # ── Build Verification ────────────────────────────────────────────────────────
   build:
-    name: Build Verification
+    name: Build Verification (core)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: test
@@ -64,13 +64,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build API Server (Render)
-        run: pnpm --filter @workspace/api-server run build
-
-      - name: Build Frontend (Vercel)
+      - name: Build core (API Server + Web Frontend)
         env:
           VITE_API_URL: "/api"
           VITE_SUPABASE_URL: "https://placeholder.supabase.co"
           VITE_SUPABASE_ANON_KEY: "placeholder-anon-key"
           VITE_ADMIN_EMAILS: "ci@example.com"
-        run: pnpm --filter @workspace/findx run build
+        run: pnpm run build:core
