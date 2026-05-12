@@ -526,41 +526,39 @@ export default function AgentsPage() {
       </motion.div>
 
       {/* ── Agent Cards ──────────────────────────────────────── */}
-      {
-        <motion.div
-          custom={2}
-          variants={FADE_UP}
-          initial="hidden"
-          animate="visible"
-          className="mb-7"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
-              style={{ color: "var(--text-subtle)" }}
-            >
-              <Layers className="w-3.5 h-3.5" strokeWidth={2} />
-              {t.agents.activeAgents}
-            </h2>
-            <span
-              className="text-[11px] px-2.5 py-0.5 rounded-full font-medium"
-              style={{
-                background: "var(--glass-raised)",
-                color: "var(--text-subtle)",
-                border: "1px solid var(--glass-border)",
-              }}
-            >
-              {agents.length} agents
-            </span>
-          </div>
+      <motion.div
+        custom={2}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="visible"
+        className="mb-7"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
+            style={{ color: "var(--text-subtle)" }}
+          >
+            <Layers className="w-3.5 h-3.5" strokeWidth={2} />
+            {t.agents.activeAgents}
+          </h2>
+          <span
+            className="text-[11px] px-2.5 py-0.5 rounded-full font-medium"
+            style={{
+              background: "var(--glass-raised)",
+              color: "var(--text-subtle)",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            {agents.length} agents
+          </span>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {agents.map((agent, i) => (
-              <AgentCard key={agent.id} agent={agent} index={i} />
-            ))}
-          </div>
-        </motion.div>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {agents.map((agent, i) => (
+            <AgentCard key={agent.id} agent={agent} index={i} />
+          ))}
+        </div>
+      </motion.div>
 
       {/* ── Pipeline Run History ─────────────────────────────── */}
       <motion.div
