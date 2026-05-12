@@ -41,7 +41,7 @@ You likely have this already. If not:
 | **Region** | Frankfurt (EU) |
 | **Branch** | `main` |
 | **Root Directory** | *(leave empty)* |
-| **Build Command** | `npm install -g pnpm && pnpm install && pnpm --filter @workspace/api-server run build` |
+| **Build Command** | `npm install -g pnpm@10 && pnpm install && pnpm --filter @workspace/api-server run build` |
 | **Start Command** | `node --enable-source-maps ./artifacts/api-server/dist/index.mjs` |
 | **Plan** | Free |
 
