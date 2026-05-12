@@ -62,7 +62,8 @@ router.post("/leads", async (req, res) => {
   
   try {
     const [lead] = await db.insert(leads).values({
-      userId: req.user?.sub ?? null,
+      userId:      req.user?.sub ?? null,
+      workspaceId: req.user?.activeWorkspaceId ?? null,
       businessName,
       city,
       address,
