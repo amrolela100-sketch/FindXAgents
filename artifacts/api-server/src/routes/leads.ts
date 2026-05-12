@@ -4,7 +4,7 @@ import { leads, analyses, outreaches, aiProviders } from "@workspace/db";
 import { eq, and, ilike, sql, desc, count, isNotNull, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-engine";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 import { safeError } from "../lib/safe-error.js";
@@ -23,7 +23,7 @@ async function hasOpenRouterKey(): Promise<boolean> {
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireWorkspace);
 
 // ─── Lead CRUD ────────────────────────────────────────────────────────────────
 
@@ -89,9 +89,8 @@ router.get("/leads", async (req, res) => {
 
     const conditions: ReturnType<typeof ilike>[] = [];
 
-    if (req.user?.userId) {
-      conditions.push(sql`${leads.userId} = ${req.user.userId}` as ReturnType<typeof ilike>);
-    }
+    // Scope by workspace — all data is workspace-isolated
+    conditions.push(sql`${leads.workspaceId} = ${req.user!.activeWorkspaceId}` as ReturnType<typeof ilike>);
 
     if (city) conditions.push(ilike(leads.city, `%${city}%`));
     if (industry) conditions.push(ilike(leads.industry, `%${industry}%`));
@@ -436,10 +435,10 @@ router.patch("/leads/bulk/status", async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
 
   const { leadIds, status } = parsed.data;
-  // Security: scope update to the authenticated user's leads only (prevents IDOR)
+  // Security: scope update to the authenticated workspace only (prevents IDOR)
   await db.update(leads)
     .set({ status, updatedAt: new Date() })
-    .where(and(inArray(leads.id, leadIds), eq(leads.userId, req.user!.userId)));
+    .where(and(inArray(leads.id, leadIds), eq(leads.workspaceId, req.user!.activeWorkspaceId)));
   return res.json({ updated: leadIds.length, status });
 });
 
@@ -498,8 +497,8 @@ router.post("/leads/import", async (req, res) => {
 
       try {
         if (skipDuplicates) {
-          const userConditions = [ilike(leads.businessName, businessName), ilike(leads.city, city)];
-          if (req.user?.userId) userConditions.push(sql`${leads.userId} = ${req.user.userId}` as ReturnType<typeof ilike>);
+          const userConditions = [ilike(leads.businessName, businessName), ilike(leads.city, city),
+            sql`${leads.workspaceId} = ${req.user!.activeWorkspaceId}` as ReturnType<typeof ilike>];
           const existing = await db.select({ id: leads.id }).from(leads)
             .where(and(...(userConditions as [ReturnType<typeof ilike>, ...ReturnType<typeof ilike>[]])))
             .limit(1);
@@ -509,7 +508,8 @@ router.post("/leads/import", async (req, res) => {
         const website = (row.website && validateWebsiteUrl(row.website)) ? row.website : undefined;
         const email = (row.email && validateEmail(row.email)) ? row.email : undefined;
         await db.insert(leads).values({
-          userId: req.user?.userId ?? null,
+          userId:      req.user?.sub ?? null,
+          workspaceId: req.user!.activeWorkspaceId,
           businessName,
           city,
           address: sanitizeString(row.address),
@@ -538,9 +538,8 @@ router.get("/leads/export", async (req, res) => {
     const { city, industry, status, hasWebsite, search } = req.query as Record<string, string>;
     const conditions: ReturnType<typeof ilike>[] = [];
 
-    if (req.user?.userId) {
-      conditions.push(sql`${leads.userId} = ${req.user.userId}` as ReturnType<typeof ilike>);
-    }
+    // Scope by workspace — all data is workspace-isolated
+    conditions.push(sql`${leads.workspaceId} = ${req.user!.activeWorkspaceId}` as ReturnType<typeof ilike>);
 
     if (city) conditions.push(ilike(leads.city, `%${city}%`));
     if (industry) conditions.push(ilike(leads.industry, `%${industry}%`));
@@ -584,22 +583,14 @@ router.get("/leads/export", async (req, res) => {
  * Legacy leads (userId = null) are accessible to anyone.
  * Returns false and writes a 404 response when access is denied.
  */
-function checkLeadOwnership(lead: { userId: string | null }, req: Request, res: Response): boolean {
-  // Security: a lead must belong to the requesting user.
-  // Legacy leads with userId = null are NOT accessible to regular authenticated users;
-  // they can only be accessed by admins (role === "admin").
-  const requestingUserId = req.user?.userId ?? null;
+function checkLeadOwnership(lead: { workspaceId: string | null; userId: string | null }, req: Request, res: Response): boolean {
+  const reqWorkspaceId = req.user?.activeWorkspaceId ?? null;
   const isAdmin = req.user?.role === "admin";
 
-  if (lead.userId === null) {
-    if (!isAdmin) {
-      res.status(404).json({ error: "Lead not found" });
-      return false;
-    }
-    return true; // Admins may still access legacy records
-  }
+  // Admins bypass workspace isolation (e.g. support / debugging)
+  if (isAdmin) return true;
 
-  if (lead.userId !== requestingUserId) {
+  if (!reqWorkspaceId || lead.workspaceId !== reqWorkspaceId) {
     res.status(404).json({ error: "Lead not found" });
     return false;
   }
@@ -610,7 +601,7 @@ router.get("/leads/:id", async (req, res) => {
   try {
     const [lead] = await db.select().from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.json({ lead: null });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
 
     const [leadAnalyses, leadOutreaches] = await Promise.all([
       db.select().from(analyses).where(eq(analyses.leadId, lead.id)).orderBy(desc(analyses.analyzedAt)),
@@ -647,7 +638,7 @@ router.patch("/leads/:id", async (req, res) => {
   updateData.updatedAt = new Date();
 
   try {
-    const [existing] = await db.select({ id: leads.id, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
+    const [existing] = await db.select({ id: leads.id, workspaceId: leads.workspaceId, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
     if (!existing) return res.status(404).json({ error: "Lead not found" });
     if (!checkLeadOwnership(existing, req, res)) return;
 
@@ -667,7 +658,7 @@ router.get("/leads/:id/enrich", async (req, res) => {
   try {
     const [lead] = await db.select().from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
 
     runTavilyEnrichment(lead.id, lead.businessName, lead.city).catch((err) => logger.error({ err }, "Tavily enrichment failed"));
     
@@ -681,7 +672,7 @@ router.post("/leads/:id/analyze", async (req, res) => {
   try {
     const [lead] = await db.select().from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
 
     await db.update(leads).set({ status: "analyzing", updatedAt: new Date() }).where(eq(leads.id, lead.id));
 
@@ -731,9 +722,9 @@ router.post("/leads/:id/analyze", async (req, res) => {
 
 router.get("/leads/:id/analyses", async (req, res) => {
   try {
-    const [lead] = await db.select({ id: leads.id, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
+    const [lead] = await db.select({ id: leads.id, workspaceId: leads.workspaceId, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
     const rows = await db.select().from(analyses).where(eq(analyses.leadId, req.params.id)).orderBy(desc(analyses.analyzedAt));
     return res.json({ analyses: rows });
   } catch (err) {
@@ -746,7 +737,7 @@ router.post("/leads/:id/outreach/generate", async (req, res) => {
   try {
     const [lead] = await db.select().from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
 
     if (!await hasOpenRouterKey()) {
       return res.status(503).json({ error: "OPENROUTER_API_KEY not set. Cannot generate outreach." });
@@ -811,9 +802,9 @@ router.post("/leads/:id/outreach/generate", async (req, res) => {
 
 router.get("/leads/:id/outreaches", async (req, res) => {
   try {
-    const [lead] = await db.select({ id: leads.id, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
+    const [lead] = await db.select({ id: leads.id, workspaceId: leads.workspaceId, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
     const rows = await db.select().from(outreaches).where(eq(outreaches.leadId, req.params.id)).orderBy(desc(outreaches.createdAt));
     return res.json({ outreaches: rows });
   } catch (err) {
@@ -825,9 +816,9 @@ router.post("/leads/:id/outreach/send", async (req, res) => {
   const { outreachId } = req.body as { outreachId?: string };
   if (!outreachId) return res.status(400).json({ error: "outreachId is required" });
   try {
-    const [lead] = await db.select({ id: leads.id, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
+    const [lead] = await db.select({ id: leads.id, workspaceId: leads.workspaceId, userId: leads.userId }).from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });
-    if (!checkLeadOwnership(lead, req, res)) return;
+    if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
     const [outreach] = await db.select().from(outreaches).where(and(eq(outreaches.id, outreachId), eq(outreaches.leadId, req.params.id)));
     if (!outreach) return res.status(404).json({ error: "Outreach not found for this lead" });
     return res.status(202).json({ message: "Send queued. Configure email provider to send outreach.", outreachId });
@@ -871,7 +862,7 @@ router.post("/leads/bulk/delete", async (req, res) => {
       allowedIds = rows.map((r) => r.id);
     } else {
       const rows = await db.select({ id: leads.id }).from(leads).where(
-        and(inArray(leads.id, leadIds), eq(leads.userId, req.user!.userId))
+        and(inArray(leads.id, leadIds), eq(leads.workspaceId, req.user!.activeWorkspaceId))
       );
       allowedIds = rows.map((r) => r.id);
     }
@@ -899,13 +890,13 @@ router.post("/leads/bulk/delete", async (req, res) => {
 router.delete("/leads/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const [lead] = await db.select({ id: leads.id, userId: leads.userId })
+    const [lead] = await db.select({ id: leads.id, workspaceId: leads.workspaceId, userId: leads.userId })
       .from(leads).where(eq(leads.id, id)).limit(1);
 
     if (!lead) return res.status(404).json({ error: "Lead not found" });
 
     const admin = isAdminUser(req.user!.email);
-    if (!admin && lead.userId !== req.user!.userId) {
+    if (!admin && lead.workspaceId !== req.user!.activeWorkspaceId) {
       return res.status(403).json({ error: "Forbidden — not your lead" });
     }
 
