@@ -16,7 +16,7 @@ import { logger } from "./logger.js";
  * Recursively unwrap err.cause to find the deepest real error message.
  * Drizzle wraps Postgres errors: DrizzleError { message: "Failed query...", cause: PgError { message: "column does not exist" } }
  */
-function extractErrorMessage(err: unknown): string {
+export function extractErrorMessage(err: unknown): string {
   if (!err) return "Unknown error";
 
   if (err instanceof Error) {
