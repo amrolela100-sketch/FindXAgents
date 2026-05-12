@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { useColors } from "@/hooks/useColors";
-import { markOnboardingComplete } from "@/lib/api";
+import { completeOnboarding } from "@/lib/api";
 
 const { width: W } = Dimensions.get("window");
 
@@ -154,7 +154,7 @@ export default function OnboardingScreen() {
     if (isLast) {
       setLoading(true);
       try {
-        await markOnboardingComplete();
+        await completeOnboarding({});
       } catch (_) {}
       router.replace("/(tabs)");
       return;
@@ -167,7 +167,7 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     setLoading(true);
     try {
-      await markOnboardingComplete();
+      await completeOnboarding({});
     } catch (_) {}
     router.replace("/(tabs)");
   };
