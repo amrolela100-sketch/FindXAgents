@@ -71,10 +71,34 @@ vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({
 }));
 
 // ── Mock auth middleware to bypass requireAuth ────────────────────────────────
+const TEST_WORKSPACE_ID = "test-workspace-id";
+const TEST_USER_ID = "test-user-id";
+
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
-  requireAuth: vi.fn((_req: any, _res: any, next: any) => next()),
-  optionalAuth: vi.fn((_req: any, _res: any, next: any) => next()),
-  requireWorkspace: vi.fn((_req: any, _res: any, next: any) => next()),
+  requireAuth: vi.fn((req: any, _res: any, next: any) => {
+    req.user = {
+      sub: TEST_USER_ID,
+      userId: TEST_USER_ID,
+      email: "test@example.com",
+      role: "user",
+      activeWorkspaceId: TEST_WORKSPACE_ID,
+    };
+    next();
+  }),
+  optionalAuth: vi.fn((req: any, _res: any, next: any) => {
+    req.user = {
+      sub: TEST_USER_ID,
+      userId: TEST_USER_ID,
+      email: "test@example.com",
+      role: "user",
+      activeWorkspaceId: TEST_WORKSPACE_ID,
+    };
+    next();
+  }),
+  requireWorkspace: vi.fn((req: any, _res: any, next: any) => {
+    // Workspace already set by requireAuth mock — just pass through
+    next();
+  }),
 }));
 
 // ── Mock AI Engine ────────────────────────────────────────────────────────────
