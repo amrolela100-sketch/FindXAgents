@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import OpenAI from "openai";
 
 const router = Router();
@@ -16,8 +16,8 @@ const SYSTEM_PROMPT = `You are FindX Assistant — a smart, friendly AI built in
 Your job is to help users get the most out of FindX. You know everything about:
 
 ## FindX AI Pipeline (3 stages)
-1. **DISCOVER**: Searches the web via Tavily API to find real business websites. Filters out directories (Clutch, Yelp, etc.) and article/blog URLs. Each result must be a real company's homepage.
-2. **ANALYZE**: Visits each company's website, scrapes real data (SSL, load speed, emails, phones, social links), then scores it 0–100. Lower score = more digital gaps = better prospect.
+1. **DISCOVER**: Searches the web via Tavily API to find real business websites. Filters out directories (Clutch, Yelp, etc.) and article/blog URLs. Each result must be a real company\'s homepage.
+2. **ANALYZE**: Visits each company\'s website, scrapes real data (SSL, load speed, emails, phones, social links), then scores it 0–100. Lower score = more digital gaps = better prospect.
 3. **OUTREACH**: Generates hyper-personalized cold emails using verified facts from the scraped website. No hallucination — every claim is grounded.
 
 ## Key Concepts
@@ -41,74 +41,105 @@ Be concise, warm, and helpful. Never be robotic. Speak naturally.
 
 **Language rule**: If the user writes in Arabic → respond in Arabic. If English → respond in English. Match their language always.
 
-If you don't know something specific about the user's data, ask them to share more context.`;
+If you don\'t know something specific about the user\'s data, ask them to share more context.`;
 
-// ─── AI Client Resolution ─────────────────────────────────────────────────────
+// ─── Provider Base URLs ───────────────────────────────────────────────────────
 
-async function resolveAIClient(): Promise<{ client: OpenAI; model: string } | null> {
-  // 1. Try OpenRouter from DB
+const PROVIDER_BASE_URLS: Record<string, string> = {
+  openai:      "https://api.openai.com/v1",
+  anthropic:   "https://api.anthropic.com/v1",
+  gemini:      "https://generativelanguage.googleapis.com/v1beta/openai",
+  google:      "https://generativelanguage.googleapis.com/v1beta/openai",
+  groq:        "https://api.groq.com/openai/v1",
+  deepseek:    "https://api.deepseek.com/v1",
+  glm:         "https://open.bigmodel.cn/api/paas/v4",
+  minimax:     "https://api.minimax.chat/v1",
+  kimi:        "https://api.moonshot.cn/v1",
+  ollama:      "http://localhost:11434/v1",
+  openrouter:  "https://openrouter.ai/api/v1",
+  mistral:     "https://api.mistral.ai/v1",
+  together:    "https://api.together.xyz/v1",
+};
+
+// ─── Resolve AI Client from DB (any active provider) ─────────────────────────
+
+async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; model: string; providerType: string } | null> {
   try {
-    const [cfg] = await db
-      .select({ apiKey: aiProviders.apiKey, model: aiProviders.model })
+    // 1. Try the default provider first
+    const [defaultProv] = await db
+      .select()
       .from(aiProviders)
-      .where(eq(aiProviders.providerType, "openrouter"))
+      .where(eq(aiProviders.isDefault, true))
       .limit(1);
-    if (cfg?.apiKey?.startsWith("sk-or-")) {
+
+    if (defaultProv?.apiKey || defaultProv?.providerType === "ollama") {
+      const baseURL = defaultProv.baseUrl || PROVIDER_BASE_URLS[defaultProv.providerType] || "";
       return {
         client: new OpenAI({
-          apiKey: cfg.apiKey,
-          baseURL: "https://openrouter.ai/api/v1",
-          defaultHeaders: {
+          apiKey: defaultProv.apiKey || "ollama",
+          baseURL,
+          defaultHeaders: defaultProv.providerType === "openrouter" ? {
             "HTTP-Referer": "https://find-x-agents-findx.vercel.app",
             "X-Title": "FindX Assistant",
-          },
+          } : undefined,
         }),
-        model: cfg.model || "google/gemini-2.5-flash",
+        model: defaultProv.model,
+        providerType: defaultProv.providerType,
       };
     }
-  } catch { /* fall through */ }
 
-  // 2. Try Gemini from DB
-  try {
-    const [cfg] = await db
-      .select({ apiKey: aiProviders.apiKey, model: aiProviders.model })
+    // 2. Try any active provider
+    const [anyProv] = await db
+      .select()
       .from(aiProviders)
-      .where(eq(aiProviders.providerType, "gemini"))
+      .where(eq(aiProviders.isActive, true))
+      .orderBy(desc(aiProviders.createdAt))
       .limit(1);
-    if (cfg?.apiKey) {
+
+    if (anyProv?.apiKey || anyProv?.providerType === "ollama") {
+      const baseURL = anyProv.baseUrl || PROVIDER_BASE_URLS[anyProv.providerType] || "";
       return {
         client: new OpenAI({
-          apiKey: cfg.apiKey,
-          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+          apiKey: anyProv.apiKey || "ollama",
+          baseURL,
+          defaultHeaders: anyProv.providerType === "openrouter" ? {
+            "HTTP-Referer": "https://find-x-agents-findx.vercel.app",
+            "X-Title": "FindX Assistant",
+          } : undefined,
         }),
-        model: cfg.model || "gemini-2.0-flash",
+        model: anyProv.model,
+        providerType: anyProv.providerType,
       };
     }
-  } catch { /* fall through */ }
+  } catch { /* fall through to env fallback */ }
 
-  // 3. Fallback to env vars
-  if (process.env.GEMINI_API_KEY) {
-    return {
-      client: new OpenAI({
-        apiKey: process.env.GEMINI_API_KEY,
-        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
-      }),
-      model: "gemini-2.0-flash",
-    };
-  }
+  // 3. Fallback: env vars — support all common providers
+  const envProviders = [
+    { key: process.env.GEMINI_API_KEY,      type: "gemini",     model: "gemini-2.0-flash",              baseURL: PROVIDER_BASE_URLS.gemini },
+    { key: process.env.OPENROUTER_API_KEY,  type: "openrouter", model: "google/gemini-2.5-flash",       baseURL: PROVIDER_BASE_URLS.openrouter },
+    { key: process.env.OPENAI_API_KEY,      type: "openai",     model: "gpt-4o-mini",                   baseURL: PROVIDER_BASE_URLS.openai },
+    { key: process.env.ANTHROPIC_API_KEY,   type: "anthropic",  model: "claude-haiku-4-20250514",       baseURL: PROVIDER_BASE_URLS.anthropic },
+    { key: process.env.GROQ_API_KEY,        type: "groq",       model: "llama-3.3-70b-versatile",       baseURL: PROVIDER_BASE_URLS.groq },
+    { key: process.env.DEEPSEEK_API_KEY,    type: "deepseek",   model: "deepseek-chat",                 baseURL: PROVIDER_BASE_URLS.deepseek },
+    { key: process.env.MISTRAL_API_KEY,     type: "mistral",    model: "mistral-large-latest",          baseURL: PROVIDER_BASE_URLS.mistral },
+    { key: process.env.TOGETHER_API_KEY,    type: "together",   model: "meta-llama/Llama-3.3-70B-Instruct-Turbo", baseURL: PROVIDER_BASE_URLS.together },
+  ];
 
-  if (process.env.OPENROUTER_API_KEY) {
-    return {
-      client: new OpenAI({
-        apiKey: process.env.OPENROUTER_API_KEY,
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: {
-          "HTTP-Referer": "https://find-x-agents-findx.vercel.app",
-          "X-Title": "FindX Assistant",
-        },
-      }),
-      model: "google/gemini-2.5-flash",
-    };
+  for (const p of envProviders) {
+    if (p.key) {
+      return {
+        client: new OpenAI({
+          apiKey: p.key,
+          baseURL: p.baseURL,
+          defaultHeaders: p.type === "openrouter" ? {
+            "HTTP-Referer": "https://find-x-agents-findx.vercel.app",
+            "X-Title": "FindX Assistant",
+          } : undefined,
+        }),
+        model: p.model,
+        providerType: p.type,
+      };
+    }
   }
 
   return null;
@@ -126,7 +157,6 @@ const chatSchema = z.object({
     )
     .min(1)
     .max(50),
-  /** Optional page/lead context to help the AI answer better */
   context: z.string().max(1000).optional(),
 });
 
@@ -139,7 +169,7 @@ router.post("/chat", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const ai = await resolveAIClient();
+  const ai = await resolveAIClient(req.user!.activeWorkspaceId);
   if (!ai) {
     res.status(503).json({
       error: "No AI provider configured. Please add an API key in Settings → AI Providers.",
@@ -149,23 +179,20 @@ router.post("/chat", requireAuth, async (req, res): Promise<void> => {
 
   const { messages, context } = parsed.data;
 
-  // Inject page context into system prompt if provided
+  // Inject page context
   let systemContent = SYSTEM_PROMPT;
   if (context?.trim()) {
-    systemContent += `\n\n---\n**Current context provided by the user's app:**\n${context.trim()}`;
+    systemContent += `\n\n---\n**Current context provided by the user\'s app:**\n${context.trim()}`;
   }
 
   // ── SSE Setup ───────────────────────────────────────────────────────────────
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no"); // disable nginx buffering
+  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
-  // Heartbeat to keep connection alive through proxies
-  const heartbeat = setInterval(() => {
-    res.write(": heartbeat\n\n");
-  }, 20_000);
+  const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20_000);
 
   try {
     const stream = await ai.client.chat.completions.create({
