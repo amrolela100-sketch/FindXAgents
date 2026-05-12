@@ -78,13 +78,13 @@ export function KanbanBoard({
   return (
     <div className="space-y-3">
       {liveActivity && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 rounded-xl border border-blue-200">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)" }}>
           <div className="relative">
             <Activity className="w-4 h-4 text-blue-500" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
           </div>
-          <span className="text-xs font-medium text-blue-700">Pipeline is running</span>
-          <span className="text-xs text-blue-500 truncate max-w-xs">&ldquo;{liveActivity.query}&rdquo;</span>
+          <span className="text-xs font-medium" style={{ color: "#60A5FA" }}>Pipeline is running</span>
+          <span className="text-xs truncate max-w-xs" style={{ color: "#93C5FD" }}>&ldquo;{liveActivity.query}&rdquo;</span>
           <div className="ml-auto flex items-center gap-2">
             <Zap className="w-3 h-3 text-amber-500 animate-pulse" />
             <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Live</span>
