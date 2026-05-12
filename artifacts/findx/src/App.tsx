@@ -41,7 +41,6 @@ function AuthGuard() {
     return (
       <div
         className="min-h-[100dvh] flex items-center justify-center"
-        
       >
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center">
@@ -67,7 +66,6 @@ function AuthGuard() {
       {/* Layout */}
       <div
         className="min-h-[100dvh]"
-        
       >
         <Sidebar
           isAdmin={isAdmin}
@@ -97,7 +95,6 @@ function AuthGuard() {
               <Route>
                 <div
                   className="min-h-[100dvh] flex flex-col items-center justify-center gap-2"
-                  
                 >
                   <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>
                   <p style={{ color: "var(--text-muted)" }}>Page not found</p>
