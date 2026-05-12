@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import OpenAI from "openai";
 
 const router = Router();
@@ -65,11 +65,11 @@ const PROVIDER_BASE_URLS: Record<string, string> = {
 
 async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; model: string; providerType: string } | null> {
   try {
-    // 1. Try the default provider first
+    // 1. Try the default provider for this workspace first
     const [defaultProv] = await db
       .select()
       .from(aiProviders)
-      .where(eq(aiProviders.isDefault, true))
+      .where(and(eq(aiProviders.workspaceId, workspaceId), eq(aiProviders.isDefault, true)))
       .limit(1);
 
     if (defaultProv?.apiKey || defaultProv?.providerType === "ollama") {
@@ -88,11 +88,11 @@ async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; m
       };
     }
 
-    // 2. Try any active provider
+    // 2. Try any active provider in this workspace
     const [anyProv] = await db
       .select()
       .from(aiProviders)
-      .where(eq(aiProviders.isActive, true))
+      .where(and(eq(aiProviders.workspaceId, workspaceId), eq(aiProviders.isActive, true)))
       .orderBy(desc(aiProviders.createdAt))
       .limit(1);
 
@@ -116,7 +116,7 @@ async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; m
   // 3. Fallback: env vars — support all common providers
   const envProviders = [
     { key: process.env.GEMINI_API_KEY,      type: "gemini",     model: "gemini-2.0-flash",              baseURL: PROVIDER_BASE_URLS.gemini },
-    { key: process.env.OPENROUTER_API_KEY,  type: "openrouter", model: "google/gemini-2.5-flash",       baseURL: PROVIDER_BASE_URLS.openrouter },
+    { key: process.env.OPENROUTER_API_KEY,  type: "openrouter", model: "google/gemini-2.0-flash-001",   baseURL: PROVIDER_BASE_URLS.openrouter },
     { key: process.env.OPENAI_API_KEY,      type: "openai",     model: "gpt-4o-mini",                   baseURL: PROVIDER_BASE_URLS.openai },
     { key: process.env.ANTHROPIC_API_KEY,   type: "anthropic",  model: "claude-haiku-4-20250514",       baseURL: PROVIDER_BASE_URLS.anthropic },
     { key: process.env.GROQ_API_KEY,        type: "groq",       model: "llama-3.3-70b-versatile",       baseURL: PROVIDER_BASE_URLS.groq },
