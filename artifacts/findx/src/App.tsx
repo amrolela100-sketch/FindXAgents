@@ -20,6 +20,7 @@ import { WorkspaceProvider } from "./lib/workspace-context";
 import { LangProvider, useLang } from "./lib/lang-context";
 import { ThemeProvider } from "./lib/theme-context";
 import { CommandPalette } from "./components/command-palette";
+import { ChatWidget } from "./components/chat-widget";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -109,6 +110,9 @@ function AuthGuard() {
 
       {/* Global Command Palette */}
       <CommandPalette />
+
+      {/* AI Customer Support Chat Widget */}
+      <ChatWidget />
     </WorkspaceProvider>
   );
 }

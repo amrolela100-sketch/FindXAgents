@@ -17,6 +17,7 @@ import adminRouter from "./admin.js";
 import workspacesRouter from "./workspaces.js";
 import onboardingRouter from "./onboarding.js";
 import ownerRouter from "./owner.js";
+import chatRouter from "./chat.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router: IRouter = Router();
@@ -44,5 +45,6 @@ router.use(adminRouter);
 router.use(workspacesRouter);
 router.use(onboardingRouter);
 router.use(ownerRouter);
+router.use(chatRouter);
 
 export default router;
