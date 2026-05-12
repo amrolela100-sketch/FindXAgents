@@ -364,9 +364,9 @@ export default function OwnerDashboardPage() {
               <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 space-y-3">
                 <p className="font-semibold text-[var(--text)]">Platform Health</p>
                 {(["api", "auth", "database", "agents"] as const).map((key) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: "var(--glass-border)" }}">
+                  <div key={key} className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: "var(--glass-border)" }}>
                     <span className="text-sm" style={{ color: "var(--text-muted)" }}>{key}</span>
-                    <span className={`text-xs font-medium flex items-center gap-1.5 ${stats.health[key] ? "text-emerald-600" : "text-amber-600"}`}>
+                    <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: stats.health[key] ? "#34D399" : "#FBBF24" }}>
                       {stats.health[key]
                         ? <><CheckCircle className="w-4 h-4" /> Operational</>
                         : <><Clock3 className="w-4 h-4" /> Needs attention</>}
@@ -402,7 +402,7 @@ export default function OwnerDashboardPage() {
 
             {/* Recent runs */}
             <motion.div variants={fadeUp} className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }}">
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--glass-border)" }}>
                 <p className="font-semibold text-[var(--text)]">Latest Pipeline Runs</p>
               </div>
               <div className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
@@ -448,14 +448,14 @@ export default function OwnerDashboardPage() {
             </div>
 
             <motion.div variants={fadeUp} className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }} flex items-center justify-between">
+              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--glass-border)" }}>
                 <p className="font-semibold text-[var(--text)]">{filteredUsers.length} users</p>
                 <span className="text-xs text-[var(--text-muted)]">sorted by registration date</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b" style={{ borderColor: "var(--glass-border)" }} bg-[#FAFAF7]">
+                    <tr className="border-b" style={{ background: "var(--glass-raised)", borderColor: "var(--glass-border)" }}>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">User</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Role</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Leads</th>
@@ -526,14 +526,14 @@ export default function OwnerDashboardPage() {
         {tab === "runs" && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp}
             className="glass-card rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }} flex items-center justify-between">
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--glass-border)" }}>
               <p className="font-semibold text-[var(--text)]">{runs.length} pipeline runs</p>
               <span className="text-xs text-[var(--text-muted)]">All users · latest 50</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b" style={{ borderColor: "var(--glass-border)" }} bg-[#FAFAF7]">
+                  <tr className="border-b" style={{ background: "var(--glass-raised)", borderColor: "var(--glass-border)" }}>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Query</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Leads</th>
