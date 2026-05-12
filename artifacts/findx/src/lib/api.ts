@@ -21,7 +21,9 @@ import type {
 } from "./types";
 import { toast } from "../hooks/use-toast";
 
-const BASE = "/api";
+// Strategy: always proxy-based — VITE_API_URL is "/api" in production (Vercel proxy)
+// and "http://localhost:3000/api" in local dev. Never hardcode "/api".
+const BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
 
 async function getAuthToken(): Promise<string | null> {
   try {
