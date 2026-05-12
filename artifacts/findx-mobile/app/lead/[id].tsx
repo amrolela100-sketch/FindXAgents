@@ -1,11 +1,12 @@
+import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import type { ComponentProps } from "react";
 import {
   ActivityIndicator,
-  Linking,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -13,245 +14,245 @@ import {
   Text,
   View,
 } from "react-native";
-
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { StatusBadge } from "@/components/ui/Badge";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { Button } from "@/components/ui/Button";
 import { useColors } from "@/hooks/useColors";
-import { getLead, getAnalyses, getOutreaches, updateOutreach } from "@/lib/api";
-import { STATUS_COLORS, STATUS_BG, STATUS_LABELS } from "@/lib/types";
-import type { Analysis, Outreach } from "@/lib/types";
+import { getLeadM, approveDraftEmail, sendEmail } from "@/lib/api-helpers";
+import type { Lead, Analysis, Outreach } from "@/lib/types";
 
-type FeatherName = ComponentProps<typeof Feather>["name"];
-type Tab = "overview" | "analysis" | "email";
+const TABS = ["Overview", "Analysis", "Outreach"] as const;
+type Tab = (typeof TABS)[number];
 
-function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   const colors = useColors();
   return (
-    <Pressable
-      style={[
-        styles.tabBtn,
-        active && { borderBottomColor: colors.foreground, borderBottomWidth: 2 },
-      ]}
-      onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.tabBtnText,
-          {
-            color: active ? colors.foreground : colors.mutedForeground,
-            fontFamily: active ? "Inter_600SemiBold" : "Inter_400Regular",
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+    <View style={[styles.tabBar, { borderBottomColor: colors.divider }]}>
+      {TABS.map((tab) => {
+        const isActive = active === tab;
+        return (
+          <Pressable key={tab} onPress={() => onChange(tab)} style={styles.tabItem}>
+            <Text
+              style={[
+                styles.tabText,
+                {
+                  color: isActive ? colors.brand : colors.foregroundMuted,
+                  fontFamily: isActive ? "Inter_600SemiBold" : "Inter_400Regular",
+                },
+              ]}
+            >
+              {tab}
+            </Text>
+            {isActive && <View style={[styles.tabIndicator, { backgroundColor: colors.brand }]} />}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
-interface InfoRowProps {
-  icon: FeatherName;
+function InfoRow({
+  icon,
+  label,
+  value,
+  last,
+}: {
+  icon: React.ComponentProps<typeof Feather>["name"];
   label: string;
-  value: string;
-  onPress?: () => void;
-}
-
-function InfoRow({ icon, label, value, onPress }: InfoRowProps) {
+  value: string | null | undefined;
+  last?: boolean;
+}) {
   const colors = useColors();
+  if (!value) return null;
   return (
-    <Pressable
-      style={[styles.infoRow, { borderBottomColor: colors.border }]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={[styles.infoIcon, { backgroundColor: colors.secondary }]}>
-        <Feather name={icon} size={13} color={colors.mutedForeground} />
+    <View style={[styles.infoRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+      <View style={[styles.infoIconWrap, { backgroundColor: `${colors.brand}18` }]}>
+        <Feather name={icon} size={13} color={colors.brand} />
       </View>
       <View style={styles.infoContent}>
-        <Text style={[styles.infoLabel, { color: colors.subtle, fontFamily: "Inter_400Regular" }]}>{label}</Text>
-        <Text style={[styles.infoValue, { color: onPress ? "#1D4ED8" : colors.foreground, fontFamily: "Inter_500Medium" }]} numberOfLines={2}>
-          {value}
+        <Text style={[styles.infoLabel, { color: colors.foregroundMuted }]}>{label}</Text>
+        <Text style={[styles.infoValue, { color: colors.foreground }]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function OverviewTab({ lead }: { lead: Lead }) {
+  const colors = useColors();
+  return (
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+      <GlassCard noPadding style={styles.infoCard}>
+        <InfoRow icon="map-pin" label="Location" value={lead.city} />
+        <InfoRow icon="tag" label="Industry" value={lead.industry} />
+        <InfoRow icon="globe" label="Website" value={lead.website} />
+        <InfoRow icon="phone" label="Phone" value={lead.phone} />
+        <InfoRow icon="mail" label="Email" value={lead.email} />
+        <InfoRow icon="hash" label="KVK Number" value={lead.kvkNumber} />
+        <InfoRow icon="map" label="Address" value={lead.address} />
+        <InfoRow icon="database" label="Source" value={lead.source} last />
+      </GlassCard>
+      <View style={styles.tagRow}>
+        {lead.hasWebsite && (
+          <View style={[styles.tag, { backgroundColor: colors.statusContactingBg }]}>
+            <Feather name="globe" size={11} color={colors.statusContactingText} />
+            <Text style={[styles.tagText, { color: colors.statusContactingText }]}>Has Website</Text>
+          </View>
+        )}
+        {lead.email && (
+          <View style={[styles.tag, { backgroundColor: colors.statusWonBg }]}>
+            <Feather name="mail" size={11} color={colors.statusWonText} />
+            <Text style={[styles.tagText, { color: colors.statusWonText }]}>Email Available</Text>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
+function AnalysisTab({ analyses }: { analyses: Analysis[] | undefined }) {
+  const colors = useColors();
+  if (!analyses || analyses.length === 0) {
+    return (
+      <View style={styles.emptyTab}>
+        <Feather name="bar-chart-2" size={36} color={colors.foregroundSubtle} />
+        <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No analysis yet</Text>
+        <Text style={[styles.emptySub, { color: colors.foregroundMuted }]}>
+          Analysis will appear here after the AI agent processes this lead.
         </Text>
       </View>
-      {onPress && <Feather name={"external-link" satisfies FeatherName} size={13} color={colors.subtle} />}
-    </Pressable>
-  );
-}
-
-function ScoreDisplay({ score }: { score: number }) {
-  const color = score >= 80 ? "#047857" : score >= 50 ? "#B45309" : "#DC2626";
-  const bg = score >= 80 ? "#ECFDF5" : score >= 50 ? "#FFFBEB" : "#FEF2F2";
-  const label = score >= 80 ? "Hot" : score >= 50 ? "Warm" : "Cold";
+    );
+  }
   return (
-    <View style={[styles.scoreDisplay, { backgroundColor: bg, borderColor: color + "44" }]}>
-      <Text style={[styles.scoreNum, { color, fontFamily: "PlayfairDisplay_700Bold" }]}>{score}</Text>
-      <Text style={[styles.scoreLabel, { color, fontFamily: "Inter_600SemiBold" }]}>{label}</Text>
-    </View>
-  );
-}
-
-function AnalysisCard({ analysis }: { analysis: Analysis }) {
-  const colors = useColors();
-  const [expanded, setExpanded] = useState(false);
-  const findings = analysis.findings as Record<string, unknown>;
-  const keys = Object.keys(findings).filter(k => {
-    const v = findings[k];
-    return v !== null && v !== undefined && typeof v !== "object";
-  });
-
-  return (
-    <View style={[styles.analysisCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.analysisHeader}>
-        <View>
-          <Text style={[styles.analysisType, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {analysis.type}
-          </Text>
-          <Text style={[styles.analysisDate, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {new Date(analysis.analyzedAt).toLocaleDateString()}
-          </Text>
-        </View>
-        {analysis.score !== null && <ScoreDisplay score={analysis.score} />}
-      </View>
-
-      {keys.slice(0, expanded ? keys.length : 4).map(key => (
-        <View key={key} style={[styles.findingRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.findingKey, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {key.replace(/_/g, " ")}
-          </Text>
-          <Text style={[styles.findingVal, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
-            {String(findings[key])}
-          </Text>
-        </View>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+      {analyses.map((analysis) => (
+        <GlassCard key={analysis.id} noPadding style={styles.analysisCard}>
+          <View style={styles.analysisHeader}>
+            <View>
+              <Text style={[styles.analysisType, { color: colors.foreground }]}>
+                {analysis.type.charAt(0).toUpperCase() + analysis.type.slice(1)}
+              </Text>
+              <Text style={[styles.analysisDate, { color: colors.foregroundMuted }]}>
+                {new Date(analysis.analyzedAt).toLocaleDateString()}
+              </Text>
+            </View>
+            {analysis.score !== null && <ScoreRing score={analysis.score} size={56} strokeWidth={4} />}
+          </View>
+          {analysis.findings && Object.keys(analysis.findings).length > 0 && (
+            <View style={styles.findings}>
+              <Text style={[styles.findingsTitle, { color: colors.foregroundMuted }]}>Findings</Text>
+              {Object.entries(analysis.findings).slice(0, 6).map(([key, val]) => (
+                <View key={key} style={styles.findingRow}>
+                  <View style={[styles.findingDot, { backgroundColor: colors.brand }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.findingKey, { color: colors.foreground }]}>
+                      {key.replace(/_/g, " ")}
+                    </Text>
+                    {val !== null && val !== undefined && (
+                      <Text style={[styles.findingVal, { color: colors.foregroundMuted }]} numberOfLines={3}>
+                        {typeof val === "object" ? JSON.stringify(val) : String(val)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </GlassCard>
       ))}
-
-      {keys.length > 4 && (
-        <Pressable onPress={() => setExpanded(e => !e)} style={styles.expandBtn}>
-          <Text style={[styles.expandText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {expanded ? "Show less" : `Show ${keys.length - 4} more`}
-          </Text>
-          <Feather name={expanded ? ("chevron-up" satisfies FeatherName) : ("chevron-down" satisfies FeatherName)} size={13} color={colors.mutedForeground} />
-        </Pressable>
-      )}
-    </View>
+    </Animated.View>
   );
 }
 
-const OUTREACH_STATUS_DATA: Record<string, { color: string; bg: string }> = {
-  draft: { color: "#7A756D", bg: "#F0EDE6" },
-  sent: { color: "#1D4ED8", bg: "#EFF6FF" },
-  opened: { color: "#047857", bg: "#ECFDF5" },
-  replied: { color: "#7E22CE", bg: "#FAF5FF" },
-  bounced: { color: "#DC2626", bg: "#FEF2F2" },
-  failed: { color: "#DC2626", bg: "#FEF2F2" },
-  approved: { color: "#B45309", bg: "#FFFBEB" },
-  pending_approval: { color: "#B45309", bg: "#FFFBEB" },
-  saved: { color: "#7A756D", bg: "#F0EDE6" },
-};
-
-const ACTIONABLE_STATUSES = ["draft", "pending_approval"];
-
-function OutreachCard({ outreach, leadId }: { outreach: Outreach; leadId: string }) {
+function OutreachTab({ outreaches, leadId }: { outreaches: Outreach[] | undefined; leadId: string }) {
   const colors = useColors();
   const queryClient = useQueryClient();
-  const [expanded, setExpanded] = useState(false);
 
-  const { color: statusColor, bg: statusBg } = OUTREACH_STATUS_DATA[outreach.status] ?? {
-    color: colors.mutedForeground,
-    bg: colors.secondary,
-  };
-
-  const mutation = useMutation({
-    mutationFn: (status: string) => updateOutreach(outreach.id, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["outreaches", leadId] });
-      queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
-    },
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => approveDraftEmail(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lead", leadId] }),
   });
 
-  const isActionable = ACTIONABLE_STATUSES.includes(outreach.status);
+  const sendMutation = useMutation({
+    mutationFn: (id: string) => sendEmail(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lead", leadId] }),
+  });
+
+  if (!outreaches || outreaches.length === 0) {
+    return (
+      <View style={styles.emptyTab}>
+        <Feather name="mail" size={36} color={colors.foregroundSubtle} />
+        <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No outreach yet</Text>
+        <Text style={[styles.emptySub, { color: colors.foregroundMuted }]}>
+          The Outreach Agent will draft a personalised email when this lead is ready.
+        </Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.outreachCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.outreachHeader}>
-        <Text style={[styles.outreachSubject, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={2}>
-          {outreach.subject}
-        </Text>
-        <View style={[styles.badge, { backgroundColor: statusBg }]}>
-          <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-            {outreach.status.replace(/_/g, " ")}
-          </Text>
-        </View>
-      </View>
-
-      <Pressable onPress={() => setExpanded(e => !e)}>
-        <Text
-          style={[styles.outreachBody, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-          numberOfLines={expanded ? undefined : 3}
-        >
-          {outreach.body}
-        </Text>
-        <Text style={[styles.expandText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-          {expanded ? "Collapse" : "Read more"}
-        </Text>
-      </Pressable>
-
-      {(outreach.sentAt || outreach.openedAt || outreach.repliedAt) && (
-        <View style={[styles.outreachMeta, { borderTopColor: colors.border }]}>
-          {outreach.sentAt && (
-            <Text style={[styles.outreachMetaText, { color: colors.subtle, fontFamily: "Inter_400Regular" }]}>
-              Sent {new Date(outreach.sentAt).toLocaleDateString()}
-            </Text>
-          )}
-          {outreach.openedAt && (
-            <Text style={[styles.outreachMetaText, { color: colors.subtle, fontFamily: "Inter_400Regular" }]}>· Opened</Text>
-          )}
-          {outreach.repliedAt && (
-            <Text style={[styles.outreachMetaText, { color: "#047857", fontFamily: "Inter_500Medium" }]}>· Replied</Text>
-          )}
-        </View>
-      )}
-
-      {isActionable && (
-        <View style={[styles.outreachActions, { borderTopColor: colors.border }]}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.approveBtn,
-              pressed && { opacity: 0.75 },
-              mutation.isPending && { opacity: 0.5 },
-            ]}
-            onPress={() => mutation.mutate("approved")}
-            disabled={mutation.isPending}
-            testID="approve-btn"
-          >
-            {mutation.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Feather name={"check" satisfies FeatherName} size={13} color="#fff" />
-                <Text style={[styles.actionBtnText, { fontFamily: "Inter_600SemiBold" }]}>Approve</Text>
-              </>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+      {outreaches.map((outreach) => {
+        const isPending = outreach.status === "draft" || outreach.status === "pending_approval";
+        const isApproved = outreach.status === "approved";
+        const isSent = outreach.status === "sent" || outreach.status === "opened";
+        return (
+          <GlassCard key={outreach.id} noPadding style={styles.outreachCard}>
+            <View style={styles.outreachHeader}>
+              <Text style={[styles.outreachSubject, { color: colors.foreground }]}>{outreach.subject}</Text>
+              <View style={[styles.outreachStatus, {
+                backgroundColor: isSent ? colors.statusWonBg : isApproved ? colors.statusQualifiedBg : isPending ? colors.statusAnalyzingBg : colors.statusDiscoveredBg,
+              }]}>
+                <Text style={[styles.outreachStatusText, {
+                  color: isSent ? colors.statusWonText : isApproved ? colors.statusQualifiedText : isPending ? colors.statusAnalyzingText : colors.foregroundMuted,
+                }]}>{outreach.status.replace(/_/g, " ")}</Text>
+              </View>
+            </View>
+            <Text style={[styles.outreachBody, { color: colors.foregroundMuted }]}>{outreach.body}</Text>
+            {outreach.sentAt && (
+              <Text style={[styles.outreachMeta, { color: colors.foregroundSubtle }]}>
+                Sent: {new Date(outreach.sentAt).toLocaleString()}
+              </Text>
             )}
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.skipBtn,
-              { borderColor: colors.border },
-              pressed && { opacity: 0.75 },
-              mutation.isPending && { opacity: 0.5 },
-            ]}
-            onPress={() => mutation.mutate("saved")}
-            disabled={mutation.isPending}
-            testID="skip-btn"
-          >
-            <Feather name={"x" satisfies FeatherName} size={13} color={colors.mutedForeground} />
-            <Text style={[styles.actionBtnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Skip</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
+            {outreach.openedAt && (
+              <Text style={[styles.outreachMeta, { color: colors.success }]}>
+                Opened: {new Date(outreach.openedAt).toLocaleString()}
+              </Text>
+            )}
+            {outreach.repliedAt && (
+              <Text style={[styles.outreachMeta, { color: colors.statusContactingText }]}>
+                Replied: {new Date(outreach.repliedAt).toLocaleString()}
+              </Text>
+            )}
+            {isPending && (
+              <View style={styles.outreachActions}>
+                <Button label="Approve" variant="secondary" size="sm" onPress={() => approveMutation.mutate(outreach.id)} loading={approveMutation.isPending} />
+              </View>
+            )}
+            {isApproved && (
+              <View style={styles.outreachActions}>
+                <Button
+                  label="Send Email"
+                  variant="primary"
+                  size="sm"
+                  icon={<Feather name="send" size={14} color="#FFF" />}
+                  onPress={() => {
+                    Alert.alert("Send Email", "Send this email to the lead?", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Send", onPress: () => sendMutation.mutate(outreach.id) },
+                    ]);
+                  }}
+                  loading={sendMutation.isPending}
+                />
+              </View>
+            )}
+          </GlassCard>
+        );
+      })}
+    </Animated.View>
   );
 }
 
@@ -260,337 +261,119 @@ export default function LeadDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isWeb = Platform.OS === "web";
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
-  const { data: leadData, isLoading: leadLoading } = useQuery({
+  const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
-    queryFn: () => getLead(id!),
+    queryFn: () => getLeadM(id!),
     enabled: !!id,
   });
 
-  const { data: analysesData, isLoading: analysesLoading } = useQuery({
-    queryKey: ["analyses", id],
-    queryFn: () => getAnalyses(id!),
-    enabled: !!id && activeTab === "analysis",
-  });
-
-  const { data: outreachesData, isLoading: outreachesLoading } = useQuery({
-    queryKey: ["outreaches", id],
-    queryFn: () => getOutreaches(id!),
-    enabled: !!id && activeTab === "email",
-  });
-
-  const lead = leadData?.lead;
-  const analyses = analysesData?.analyses ?? [];
-  const outreaches = outreachesData?.outreaches ?? [];
-  const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom;
-
-  if (leadLoading) {
-    return (
-      <View style={[styles.loadingScreen, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.foreground} size="large" />
-      </View>
-    );
-  }
-
-  if (!lead) {
-    return (
-      <View style={[styles.loadingScreen, { backgroundColor: colors.background }]}>
-        <Feather name={"alert-circle" satisfies FeatherName} size={36} color={colors.subtle} />
-        <Text style={[styles.notFound, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Lead not found
-        </Text>
-      </View>
-    );
-  }
-
-  const statusColor = STATUS_COLORS[lead.status];
-  const statusBg = STATUS_BG[lead.status];
+  const bgColors = colors.isDark
+    ? (["#080810", "#0D0C1E"] as const)
+    : (["#E8E6F4", "#F0EFF8"] as const);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.topBar, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} testID="back-btn">
-          <Feather name={"arrow-left" satisfies FeatherName} size={20} color={colors.foreground} />
+    <LinearGradient colors={bgColors} style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={30}
+            tint={colors.isDark ? "dark" : "light"}
+            style={[StyleSheet.absoluteFill, { borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
+          />
+        ) : (
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.glassBackground, borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
+          />
+        )}
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={colors.foreground} />
         </Pressable>
-        <View style={styles.topBarTitle}>
-          <Text style={[styles.leadName, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]} numberOfLines={1}>
-            {lead.businessName}
-          </Text>
-          <View style={styles.topBarRow}>
-            <View style={[styles.badge, { backgroundColor: statusBg }]}>
-              <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-                {STATUS_LABELS[lead.status]}
-              </Text>
+        {lead && (
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.headerContent}>
+            <View style={styles.headerTop}>
+              <View style={styles.headerName}>
+                <Text style={[styles.leadName, { color: colors.foreground }]} numberOfLines={1}>{lead.businessName}</Text>
+                <Text style={[styles.leadCity, { color: colors.foregroundMuted }]} numberOfLines={1}>
+                  {lead.city}{lead.industry ? ` · ${lead.industry}` : ""}
+                </Text>
+              </View>
+              <View style={styles.headerBadges}>
+                <StatusBadge status={lead.status} />
+                {lead.leadScore !== null && <ScoreRing score={lead.leadScore} size={44} strokeWidth={3.5} />}
+              </View>
             </View>
-            {lead.city ? (
-              <Text style={[styles.leadCity, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {lead.city}
-              </Text>
-            ) : null}
-          </View>
+          </Animated.View>
+        )}
+        <TabBar active={activeTab} onChange={setActiveTab} />
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator color={colors.brand} style={styles.loader} />
+      ) : lead ? (
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {activeTab === "Overview" && <OverviewTab lead={lead} />}
+          {activeTab === "Analysis" && <AnalysisTab analyses={lead.analyses} />}
+          {activeTab === "Outreach" && <OutreachTab outreaches={lead.outreaches} leadId={lead.id} />}
+        </ScrollView>
+      ) : (
+        <View style={styles.emptyTab}>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Lead not found</Text>
         </View>
-        {lead.leadScore !== null && <ScoreDisplay score={lead.leadScore} />}
-      </View>
-
-      <View style={[styles.tabBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-        <TabButton label="Overview" active={activeTab === "overview"} onPress={() => setActiveTab("overview")} />
-        <TabButton label="Analysis" active={activeTab === "analysis"} onPress={() => setActiveTab("analysis")} />
-        <TabButton label="Emails" active={activeTab === "email"} onPress={() => setActiveTab("email")} />
-      </View>
-
-      <ScrollView
-        style={[styles.body, { backgroundColor: colors.background }]}
-        contentContainerStyle={{ padding: 16, paddingBottom: bottomPad + 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {activeTab === "overview" && (
-          <View style={styles.section}>
-            <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {lead.city ? <InfoRow icon={"map-pin" satisfies FeatherName} label="City" value={lead.city} /> : null}
-              {lead.industry ? <InfoRow icon={"briefcase" satisfies FeatherName} label="Industry" value={lead.industry} /> : null}
-              {lead.address ? <InfoRow icon={"home" satisfies FeatherName} label="Address" value={lead.address} /> : null}
-              {lead.website ? (
-                <InfoRow
-                  icon={"globe" satisfies FeatherName}
-                  label="Website"
-                  value={lead.website}
-                  onPress={() => Linking.openURL(lead.website!.startsWith("http") ? lead.website! : `https://${lead.website}`)}
-                />
-              ) : null}
-              {lead.email ? (
-                <InfoRow
-                  icon={"mail" satisfies FeatherName}
-                  label="Email"
-                  value={lead.email}
-                  onPress={() => Linking.openURL(`mailto:${lead.email}`)}
-                />
-              ) : null}
-              {lead.phone ? (
-                <InfoRow
-                  icon={"phone" satisfies FeatherName}
-                  label="Phone"
-                  value={lead.phone}
-                  onPress={() => Linking.openURL(`tel:${lead.phone}`)}
-                />
-              ) : null}
-              {lead.kvkNumber ? <InfoRow icon={"hash" satisfies FeatherName} label="KvK Number" value={lead.kvkNumber} /> : null}
-              <InfoRow icon={"database" satisfies FeatherName} label="Source" value={lead.source} />
-              <InfoRow icon={"calendar" satisfies FeatherName} label="Discovered" value={new Date(lead.discoveredAt).toLocaleDateString()} />
-            </View>
-
-            <View style={styles.countsRow}>
-              <View style={[styles.countCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.countValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>
-                  {lead._count?.analyses ?? 0}
-                </Text>
-                <Text style={[styles.countLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Analyses</Text>
-              </View>
-              <View style={[styles.countCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.countValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>
-                  {lead._count?.outreaches ?? 0}
-                </Text>
-                <Text style={[styles.countLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Emails</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {activeTab === "analysis" && (
-          <View style={styles.section}>
-            {analysesLoading ? (
-              <ActivityIndicator color={colors.foreground} style={styles.loader} />
-            ) : analyses.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Feather name={"bar-chart-2" satisfies FeatherName} size={36} color={colors.subtle} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>No analyses yet</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Trigger an analysis from the web app</Text>
-              </View>
-            ) : (
-              analyses.map(a => <AnalysisCard key={a.id} analysis={a} />)
-            )}
-          </View>
-        )}
-
-        {activeTab === "email" && (
-          <View style={styles.section}>
-            {outreachesLoading ? (
-              <ActivityIndicator color={colors.foreground} style={styles.loader} />
-            ) : outreaches.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Feather name={"mail" satisfies FeatherName} size={36} color={colors.subtle} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>No emails yet</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Generate outreach emails from the web app</Text>
-              </View>
-            ) : (
-              outreaches.map(o => <OutreachCard key={o.id} outreach={o} leadId={id!} />)
-            )}
-          </View>
-        )}
-      </ScrollView>
-    </View>
+      )}
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  notFound: { fontSize: 15 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  backBtn: { padding: 4 },
-  topBarTitle: { flex: 1, gap: 5 },
-  leadName: { fontSize: 19 },
-  topBarRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  leadCity: { fontSize: 12 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  badgeText: { fontSize: 10 },
-  scoreDisplay: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    gap: 1,
-  },
-  scoreNum: { fontSize: 20 },
-  scoreLabel: { fontSize: 10 },
-  tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-  },
-  tabBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: -1,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  tabBtnText: { fontSize: 13 },
-  body: { flex: 1 },
-  section: { gap: 10 },
-  infoCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 13,
-    gap: 10,
-    borderBottomWidth: 1,
-  },
-  infoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  root: { flex: 1 },
+  header: { paddingBottom: 0, zIndex: 10 },
+  backBtn: { padding: 16, paddingBottom: 8 },
+  headerContent: { paddingHorizontal: 20, paddingBottom: 14 },
+  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  headerName: { flex: 1, paddingRight: 12 },
+  headerBadges: { alignItems: "flex-end", gap: 8 },
+  leadName: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3, marginBottom: 4 },
+  leadCity: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  tabBar: { flexDirection: "row", borderBottomWidth: 1, paddingHorizontal: 20 },
+  tabItem: { flex: 1, alignItems: "center", paddingVertical: 12, position: "relative" },
+  tabText: { fontSize: 14 },
+  tabIndicator: { position: "absolute", bottom: -1, left: "10%", right: "10%", height: 2, borderRadius: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
+  loader: { marginTop: 60 },
+  tabContent: { gap: 16 },
+  infoCard: { borderRadius: 16, overflow: "hidden" },
+  infoRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  infoIconWrap: { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   infoContent: { flex: 1 },
-  infoLabel: { fontSize: 10, marginBottom: 1 },
-  infoValue: { fontSize: 13 },
-  countsRow: { flexDirection: "row", gap: 10 },
-  countCard: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    alignItems: "center",
-    gap: 3,
-  },
-  countValue: { fontSize: 32 },
-  countLabel: { fontSize: 12 },
-  analysisCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 4,
-    gap: 8,
-  },
-  analysisHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  analysisType: { fontSize: 14, textTransform: "capitalize" },
-  analysisDate: { fontSize: 11, marginTop: 2 },
-  findingRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-  },
-  findingKey: { fontSize: 11, width: 100, textTransform: "capitalize" },
-  findingVal: { flex: 1, fontSize: 12 },
-  expandBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingTop: 4,
-  },
-  expandText: { fontSize: 12 },
-  outreachCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 4,
-    gap: 10,
-  },
-  outreachHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  outreachSubject: { flex: 1, fontSize: 14 },
-  outreachBody: { fontSize: 13, lineHeight: 20 },
-  outreachMeta: {
-    flexDirection: "row",
-    gap: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    marginTop: 4,
-  },
-  outreachMetaText: { fontSize: 11 },
-  outreachActions: {
-    flexDirection: "row",
-    gap: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    marginTop: 4,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  approveBtn: {
-    backgroundColor: "#047857",
-  },
-  skipBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    color: "#fff",
-  },
-  loader: { marginTop: 40 },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyTitle: { fontSize: 16 },
-  emptySubtitle: { fontSize: 13, textAlign: "center" },
+  infoLabel: { fontSize: 11, fontFamily: "Inter_500Medium", marginBottom: 2 },
+  infoValue: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  tag: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  tagText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  analysisCard: { borderRadius: 16, overflow: "hidden" },
+  analysisHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: 16, paddingBottom: 12 },
+  analysisType: { fontSize: 16, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
+  analysisDate: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  findings: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
+  findingsTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  findingRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
+  findingDot: { width: 5, height: 5, borderRadius: 999, marginTop: 6 },
+  findingKey: { fontSize: 13, fontFamily: "Inter_600SemiBold", textTransform: "capitalize", marginBottom: 2 },
+  findingVal: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  outreachCard: { borderRadius: 16, overflow: "hidden", padding: 16 },
+  outreachHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  outreachSubject: { fontSize: 15, fontFamily: "Inter_600SemiBold", flex: 1, paddingRight: 8 },
+  outreachStatus: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  outreachStatusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  outreachBody: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20, marginBottom: 12 },
+  outreachMeta: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 4 },
+  outreachActions: { flexDirection: "row", gap: 10, marginTop: 12 },
+  emptyTab: { alignItems: "center", paddingTop: 60, gap: 12, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold" },
+  emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
 });
