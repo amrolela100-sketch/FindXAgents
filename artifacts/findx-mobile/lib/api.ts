@@ -213,6 +213,9 @@ export function completeOnboarding(data: Record<string, unknown>): Promise<{ com
   return fetchApi("/onboarding/complete", { method: "POST", body: JSON.stringify(data) });
 }
 
+/** @deprecated Use completeOnboarding() instead */
+export const markOnboardingComplete = completeOnboarding;
+
 // ─── Workspaces ────────────────────────────────────────────────
 
 export interface Workspace {
