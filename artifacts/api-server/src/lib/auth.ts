@@ -9,6 +9,8 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: "admin" | "user";
+  /** Active workspace ID — set by requireAuth via DB sync */
+  activeWorkspaceId: string;
 }
 
 // ─── Express middleware ───────────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export async function authMiddleware(
       userId: supabaseUser.userId,
       email: supabaseUser.email,
       role: "user", // Default to user, admin status should be checked in DB if needed
+      activeWorkspaceId: "", // Will be populated by requireWorkspace or syncAndMapUser
     };
     next();
   } catch (error: any) {
@@ -69,4 +72,3 @@ export function requireRole(role: "admin" | "user") {
     next();
   };
 }
-
