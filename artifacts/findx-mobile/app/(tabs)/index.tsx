@@ -1,8 +1,9 @@
+import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React from "react";
-import type { ComponentProps } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -13,360 +14,307 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassCard } from "@/components/ui/GlassCard";
+import { StatusBadge, RunStatusBadge } from "@/components/ui/Badge";
+import { ScoreRing } from "@/components/ui/ScoreRing";
 import { useColors } from "@/hooks/useColors";
-import { getDashboardStats, getAgentRuns, getLeads } from "@/lib/api";
-import { STATUS_COLORS, STATUS_BG, STATUS_LABELS, RUN_STATUS_COLORS, RUN_STATUS_BG } from "@/lib/types";
+import {
+  getDashboardStatsM,
+  getAgentRunsM,
+  getLeadsM,
+} from "@/lib/api-helpers";
 import type { AgentPipelineRun, Lead } from "@/lib/types";
 
-type FeatherName = ComponentProps<typeof Feather>["name"];
+// ── Stat Card ──────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon: FeatherName;
+  icon: React.ComponentProps<typeof Feather>["name"];
   sub?: string;
   subColor?: string;
+  delay?: number;
 }
 
-function StatCard({ label, value, icon, sub, subColor }: StatCardProps) {
+function StatCard({ label, value, icon, sub, subColor, delay = 0 }: StatCardProps) {
   const colors = useColors();
   return (
-    <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.statIconWrap, { backgroundColor: colors.secondary }]}>
-        <Feather name={icon} size={16} color={colors.mutedForeground} />
+    <Animated.View entering={FadeInDown.delay(delay).duration(500)} style={styles.statCardWrap}>
+      <GlassCard style={styles.statCard} noPadding>
+        <View style={styles.statCardInner}>
+          <View style={[styles.statIconWrap, { backgroundColor: `${colors.brand}18` }]}>
+            <Feather name={icon} size={16} color={colors.brand} />
+          </View>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>{value}</Text>
+          <Text style={[styles.statLabel, { color: colors.foregroundMuted }]}>{label}</Text>
+          {sub && (
+            <Text style={[styles.statSub, { color: subColor ?? colors.success }]}>{sub}</Text>
+          )}
+        </View>
+      </GlassCard>
+    </Animated.View>
+  );
+}
+
+// ── Lead Row ───────────────────────────────────────────────────────────────
+
+function LeadRow({ lead, onPress }: { lead: Lead; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <GlassCard
+      style={[styles.leadCard, { borderLeftColor: getStatusBorderColor(lead.status, colors), borderLeftWidth: 3 }]}
+      onPress={onPress}
+      noPadding
+    >
+      <View style={styles.leadCardInner}>
+        <View style={styles.leadInfo}>
+          <Text style={[styles.leadName, { color: colors.foreground }]} numberOfLines={1}>
+            {lead.businessName}
+          </Text>
+          <Text style={[styles.leadSub, { color: colors.foregroundMuted }]} numberOfLines={1}>
+            {lead.city}{lead.industry ? ` · ${lead.industry}` : ""}
+          </Text>
+        </View>
+        <View style={styles.leadRight}>
+          {lead.leadScore !== null && <ScoreRing score={lead.leadScore} size={40} strokeWidth={3} />}
+          <StatusBadge status={lead.status} />
+        </View>
       </View>
-      <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>
-        {value}
-      </Text>
-      <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-        {label}
-      </Text>
-      {sub ? (
-        <Text style={[styles.statSub, { color: subColor ?? colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          {sub}
-        </Text>
-      ) : null}
+    </GlassCard>
+  );
+}
+
+function getStatusBorderColor(status: Lead["status"], colors: ReturnType<typeof useColors>): string {
+  switch (status) {
+    case "won": return colors.statusWonText;
+    case "qualified": return colors.statusQualifiedText;
+    case "contacting": return colors.statusContactingText;
+    case "responded": return colors.statusRespondedText;
+    case "analyzed": return colors.statusAnalyzedText;
+    case "analyzing": return colors.statusAnalyzingText;
+    case "lost": return colors.statusLostText;
+    default: return colors.divider;
+  }
+}
+
+// ── Run Row ────────────────────────────────────────────────────────────────
+
+function RunRow({ run, onPress }: { run: AgentPipelineRun; onPress: () => void }) {
+  const colors = useColors();
+  const ts = new Date(run.createdAt).toLocaleDateString();
+  return (
+    <GlassCard style={styles.runCard} onPress={onPress} noPadding>
+      <View style={styles.runCardInner}>
+        <View style={styles.runInfo}>
+          <Text style={[styles.runQuery, { color: colors.foreground }]} numberOfLines={1}>
+            {run.query}
+          </Text>
+          <Text style={[styles.runDate, { color: colors.foregroundMuted }]}>{ts}</Text>
+        </View>
+        <View style={styles.runRight}>
+          <RunStatusBadge status={run.status} />
+          <View style={styles.runStats}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Feather name="users" size={10} color={colors.foregroundSubtle} />
+              <Text style={[styles.runStat, { color: colors.foregroundSubtle }]}>{run.leadsFound}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </GlassCard>
+  );
+}
+
+// ── Section Header ─────────────────────────────────────────────────────────
+
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
+  const colors = useColors();
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
+      {onSeeAll && (
+        <Pressable onPress={onSeeAll}>
+          <Text style={[styles.seeAll, { color: colors.brand }]}>See all</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
-function RunItem({ run, onPress }: { run: AgentPipelineRun; onPress: () => void }) {
-  const colors = useColors();
-  const statusColor = RUN_STATUS_COLORS[run.status];
-  const statusBg = RUN_STATUS_BG[run.status];
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.listItem,
-        { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-      ]}
-      onPress={onPress}
-      testID={`run-item-${run.id}`}
-    >
-      <View style={styles.listItemLeft}>
-        <Text style={[styles.listItemTitle, { color: colors.foreground, fontFamily: "Inter_500Medium" }]} numberOfLines={1}>
-          {run.query}
-        </Text>
-        <Text style={[styles.listItemMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          {run.leadsFound} leads · {run.leadsAnalyzed} analyzed · {new Date(run.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
-      <View style={[styles.badge, { backgroundColor: statusBg }]}>
-        <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-          {run.status}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-function LeadItem({ lead, onPress }: { lead: Lead; onPress: () => void }) {
-  const colors = useColors();
-  const statusColor = STATUS_COLORS[lead.status];
-  const statusBg = STATUS_BG[lead.status];
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.listItem,
-        { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: statusColor, opacity: pressed ? 0.7 : 1 },
-      ]}
-      onPress={onPress}
-      testID={`lead-item-${lead.id}`}
-    >
-      <View style={styles.listItemLeft}>
-        <Text style={[styles.listItemTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
-          {lead.businessName}
-        </Text>
-        <Text style={[styles.listItemMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          {lead.city}{lead.industry ? ` · ${lead.industry}` : ""}
-        </Text>
-      </View>
-      <View style={styles.listItemRight}>
-        {lead.leadScore !== null && (
-          <Text style={[styles.scoreText, { color: lead.leadScore >= 80 ? "#047857" : lead.leadScore >= 50 ? "#B45309" : "#DC2626", fontFamily: "PlayfairDisplay_700Bold" }]}>
-            {lead.leadScore}
-          </Text>
-        )}
-        <View style={[styles.badge, { backgroundColor: statusBg }]}>
-          <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-            {STATUS_LABELS[lead.status]}
-          </Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
+// ── Dashboard Screen ───────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isWeb = Platform.OS === "web";
 
   const {
-    data: statsData,
+    data: stats,
     isLoading: statsLoading,
-    isFetching: statsFetching,
     refetch: refetchStats,
   } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: getDashboardStats,
+    queryKey: ["dashboardStats"],
+    queryFn: getDashboardStatsM,
+    staleTime: 60_000,
   });
 
   const {
     data: runsData,
     isLoading: runsLoading,
-    isFetching: runsFetching,
     refetch: refetchRuns,
   } = useQuery({
-    queryKey: ["agent-runs"],
-    queryFn: getAgentRuns,
+    queryKey: ["runs", { page: 1, pageSize: 3 }],
+    queryFn: () => getAgentRunsM({ page: 1, pageSize: 3 }),
+    staleTime: 30_000,
   });
 
   const {
     data: leadsData,
     isLoading: leadsLoading,
-    isFetching: leadsFetching,
     refetch: refetchLeads,
   } = useQuery({
-    queryKey: ["leads", { pageSize: 5 }],
-    queryFn: () => getLeads({ pageSize: 5 }),
+    queryKey: ["leads", { page: 1, pageSize: 4 }],
+    queryFn: () => getLeadsM({ page: 1, pageSize: 4 }),
+    staleTime: 30_000,
   });
 
-  const isRefreshing = statsFetching || runsFetching || leadsFetching;
-  const onRefresh = () => { refetchStats(); refetchRuns(); refetchLeads(); };
+  const refreshing = statsLoading || runsLoading || leadsLoading;
 
-  const stats = statsData?.stats;
-  const recentRuns = runsData?.runs?.slice(0, 3) ?? [];
-  const recentLeads = leadsData?.leads?.slice(0, 5) ?? [];
-  const topPad = isWeb ? 67 : insets.top;
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const onRefresh = () => {
+    refetchStats();
+    refetchRuns();
+    refetchLeads();
+  };
+
+  const bgColors = colors.isDark
+    ? (["#080810", "#0D0C1E"] as const)
+    : (["#E8E6F4", "#F0EFF8"] as const);
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: isWeb ? 34 + 84 : insets.bottom + 84 + 16 }}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.foreground} />}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.greeting, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>
-            {greeting}
-          </Text>
-          <Text style={[styles.dateText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {dateStr} · Pipeline overview
-          </Text>
+    <LinearGradient colors={bgColors} style={styles.root}>
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(500)}
+        style={[styles.header, { paddingTop: insets.top + 12 }]}
+      >
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={30}
+            tint={colors.isDark ? "dark" : "light"}
+            style={[StyleSheet.absoluteFill, { borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
+          />
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.glassBackground, borderBottomColor: colors.divider, borderBottomWidth: 1 },
+            ]}
+          />
+        )}
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={[styles.greeting, { color: colors.foregroundMuted }]}>Good morning 👋</Text>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Dashboard</Text>
+          </View>
+          <View style={styles.logoRow}>
+            <LinearGradient
+              colors={[colors.brandGradientStart, colors.brandGradientEnd]}
+              style={styles.logoMark}
+            >
+              <Feather name="search" size={16} color="#FFF" />
+            </LinearGradient>
+            <Text style={[styles.logoText, { color: colors.foreground }]}>FindX</Text>
+          </View>
         </View>
-        <View style={[styles.logo, { backgroundColor: colors.foreground }]}>
-          <Feather name={"zap" satisfies FeatherName} size={18} color={colors.card} />
-        </View>
-      </View>
+      </Animated.View>
 
-      {statsLoading ? (
-        <ActivityIndicator color={colors.foreground} style={styles.loader} />
-      ) : stats ? (
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />
+        }
+      >
+        {/* Stats grid */}
         <View style={styles.statsGrid}>
+          <StatCard label="Total Leads" value={stats?.totalLeads ?? "—"} icon="users" delay={100} />
+          <StatCard label="Analyzed" value={stats?.leadsAnalyzed ?? "—"} icon="bar-chart-2" delay={150} />
+          <StatCard label="Contacted" value={stats?.leadsContacted ?? "—"} icon="mail" delay={200} />
           <StatCard
-            label="Total Leads"
-            value={stats.totalLeads}
-            icon={"database" satisfies FeatherName}
-            sub={stats.leadsThisWeek > 0 ? `+${stats.leadsThisWeek} this week` : "No new leads this week"}
-            subColor={stats.leadsThisWeek > 0 ? "#047857" : "#DC2626"}
-          />
-          <StatCard
-            label="Analyzed"
-            value={stats.leadsAnalyzed}
-            icon={"bar-chart-2" satisfies FeatherName}
-            sub={stats.totalLeads > 0 ? `${Math.round((stats.leadsAnalyzed / stats.totalLeads) * 100)}% of total` : "0% of total"}
-            subColor={stats.leadsAnalyzed > 0 ? "#DC2626" : "#DC2626"}
-          />
-          <StatCard
-            label="Contacted"
-            value={stats.leadsContacted}
-            icon={"mail" satisfies FeatherName}
-            sub={stats.leadsResponded > 0 ? `${stats.leadsResponded} responded` : "0 responded"}
-            subColor={stats.leadsResponded > 0 ? "#047857" : "#047857"}
-          />
-          <StatCard
-            label="Conversion Rate"
-            value={`${stats.conversionRate}%`}
-            icon={"trending-up" satisfies FeatherName}
-            sub={stats.leadsWon > 0 ? `${stats.leadsWon} won deals` : "0 won deals"}
-            subColor="#047857"
+            label="Conversion"
+            value={stats?.conversionRate ? `${stats.conversionRate}%` : "—"}
+            icon="trending-up"
+            sub={stats?.leadsWon ? `${stats.leadsWon} won` : undefined}
+            subColor={colors.success}
+            delay={250}
           />
         </View>
-      ) : null}
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            Recent Leads
-          </Text>
-          <Pressable onPress={() => router.push("/(tabs)/leads")} testID="view-all-leads">
-            <Text style={[styles.viewAll, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>View all →</Text>
-          </Pressable>
-        </View>
-        <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {leadsLoading ? (
-            <ActivityIndicator color={colors.foreground} style={styles.loader} />
-          ) : recentLeads.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No leads yet
-              </Text>
-            </View>
-          ) : (
-            recentLeads.map((lead, i) => (
-              <React.Fragment key={lead.id}>
-                <LeadItem
-                  lead={lead}
-                  onPress={() => router.push({ pathname: "/lead/[id]", params: { id: lead.id } })}
-                />
-                {i < recentLeads.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-              </React.Fragment>
-            ))
-          )}
-        </View>
-      </View>
+        {/* Recent Leads */}
+        <Animated.View entering={FadeInDown.delay(350).duration(500)}>
+          <SectionHeader title="Recent Leads" onSeeAll={() => router.push("/(tabs)/leads")} />
+          <View style={styles.list}>
+            {leadsLoading ? (
+              <ActivityIndicator color={colors.brand} style={{ marginTop: 20 }} />
+            ) : (leadsData?.leads ?? []).slice(0, 4).map((lead) => (
+              <LeadRow key={lead.id} lead={lead} onPress={() => router.push(`/lead/${lead.id}`)} />
+            ))}
+          </View>
+        </Animated.View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            Recent Pipeline Runs
-          </Text>
-          <Pressable onPress={() => router.push("/(tabs)/runs")} testID="view-all-runs">
-            <Text style={[styles.viewAll, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>View all →</Text>
-          </Pressable>
-        </View>
-        <View style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {runsLoading ? (
-            <ActivityIndicator color={colors.foreground} style={styles.loader} />
-          ) : recentRuns.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No runs yet
-              </Text>
-            </View>
-          ) : (
-            recentRuns.map((run, i) => (
-              <React.Fragment key={run.id}>
-                <RunItem
-                  run={run}
-                  onPress={() => router.push({ pathname: "/run/[id]", params: { id: run.id } })}
-                />
-                {i < recentRuns.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-              </React.Fragment>
-            ))
-          )}
-        </View>
-      </View>
-    </ScrollView>
+        {/* Recent Runs */}
+        <Animated.View entering={FadeInDown.delay(450).duration(500)}>
+          <SectionHeader title="Recent Runs" onSeeAll={() => router.push("/(tabs)/runs")} />
+          <View style={styles.list}>
+            {runsLoading ? (
+              <ActivityIndicator color={colors.brand} style={{ marginTop: 20 }} />
+            ) : (runsData?.runs ?? []).slice(0, 3).map((run) => (
+              <RunRow key={run.id} run={run} onPress={() => router.push(`/run/${run.id}`)} />
+            ))}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  headerLeft: { flex: 1 },
-  greeting: { fontSize: 26, marginBottom: 2 },
-  dateText: { fontSize: 13 },
-  logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 12,
-    gap: 10,
-    marginBottom: 28,
-  },
-  statCard: {
-    width: "46%",
-    flex: 1,
-    minWidth: 140,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    gap: 4,
-  },
-  statIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 6,
-  },
-  statValue: { fontSize: 28 },
-  statLabel: { fontSize: 12 },
-  statSub: { fontSize: 11 },
-  section: { marginBottom: 24, paddingHorizontal: 16 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 15 },
-  viewAll: { fontSize: 13 },
-  listCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  listItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: "transparent",
-    gap: 10,
-  },
-  listItemLeft: { flex: 1 },
-  listItemTitle: { fontSize: 14, marginBottom: 3 },
-  listItemMeta: { fontSize: 12 },
-  listItemRight: { alignItems: "flex-end", gap: 4 },
-  scoreText: { fontSize: 18 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  badgeText: { fontSize: 10 },
-  divider: { height: 1, marginHorizontal: 14 },
-  loader: { marginVertical: 20 },
-  emptyRow: { padding: 20, alignItems: "center" },
-  emptyText: { fontSize: 14 },
+  root: { flex: 1 },
+  header: { paddingBottom: 12, paddingHorizontal: 20, zIndex: 10 },
+  headerContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  greeting: { fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  headerTitle: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.4 },
+  logoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoMark: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  logoText: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 28 },
+  statCardWrap: { width: "46%", flex: 1, minWidth: 140 },
+  statCard: { flex: 1 },
+  statCardInner: { padding: 16, alignItems: "flex-start", gap: 6 },
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  statValue: { fontSize: 26, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
+  statLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  statSub: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold" },
+  seeAll: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  list: { gap: 10, marginBottom: 28 },
+  leadCard: { borderRadius: 14, overflow: "hidden" },
+  leadCardInner: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  leadInfo: { flex: 1 },
+  leadName: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 3 },
+  leadSub: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  leadRight: { alignItems: "flex-end", gap: 6 },
+  runCard: { borderRadius: 14, overflow: "hidden" },
+  runCardInner: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  runInfo: { flex: 1 },
+  runQuery: { fontSize: 14, fontFamily: "Inter_500Medium", marginBottom: 3 },
+  runDate: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  runRight: { alignItems: "flex-end", gap: 6 },
+  runStats: { flexDirection: "row", gap: 8 },
+  runStat: { fontSize: 11, fontFamily: "Inter_400Regular" },
 });
