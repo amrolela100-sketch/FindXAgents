@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Bot, GitBranch, Users, Building2,
   Layers, Settings, ShieldCheck, LogOut, HelpCircle,
-  Menu, X, ChevronRight, Zap, PanelLeftClose, PanelLeftOpen
+  Menu, X, ChevronRight, ChevronLeft, Zap, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 
 interface SidebarProps {
@@ -48,7 +48,7 @@ function NavLink({
       <a onClick={onClick} className={`nav-link ${active ? "active" : ""}`}>
         <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
         <span className="flex-1">{label}</span>
-        {active && <ChevronRight className="w-3 h-3 opacity-40" />}
+        {active && <ChevronRight className="w-3 h-3 opacity-40 rtl:rotate-180" />}
       </a>
     </Link>
   );
@@ -284,7 +284,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         {/* Collapse toggle button */}
         <button
           onClick={onToggleCollapse}
-          className="absolute -right-3 top-6 w-6 h-6 rounded-full flex items-center justify-center z-30"
+          className={`absolute top-6 w-6 h-6 rounded-full flex items-center justify-center z-30 ${isRtl ? "-left-3" : "-right-3"}`}
           style={{
             background: "var(--glass-raised)",
             backdropFilter: "blur(12px)",
@@ -295,9 +295,13 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
           }}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed
-            ? <PanelLeftOpen className="w-3 h-3" />
-            : <PanelLeftClose className="w-3 h-3" />
+          {isRtl
+            ? collapsed
+              ? <PanelLeftClose className="w-3 h-3" />
+              : <PanelLeftOpen className="w-3 h-3" />
+            : collapsed
+              ? <PanelLeftOpen className="w-3 h-3" />
+              : <PanelLeftClose className="w-3 h-3" />
           }
         </button>
       </aside>
@@ -345,7 +349,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       >
         <button
           onClick={() => setMobileOpen(false)}
-          className="absolute top-4 right-4 btn btn-ghost p-1.5 z-10"
+          className={`absolute top-4 btn btn-ghost p-1.5 z-10 ${isRtl ? "left-4" : "right-4"}`}
           aria-label="Close menu"
         >
           <X className="w-4 h-4" />
