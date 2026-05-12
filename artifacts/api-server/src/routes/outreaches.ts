@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { db } from "@workspace/db";
 import { outreaches, leads } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -7,6 +8,8 @@ import { sanitizeString } from "../lib/sanitize.js";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
+
+router.use(requireAuth, requireWorkspace);
 
 /**
  * Ownership check for outreaches.
@@ -20,7 +23,7 @@ async function checkOutreachOwnership(
   res: Response,
 ): Promise<{ outreach: typeof outreaches.$inferSelect } | null> {
   const [row] = await db
-    .select({ outreach: outreaches, leadUserId: leads.userId })
+    .select({ outreach: outreaches, leadWorkspaceId: leads.workspaceId })
     .from(outreaches)
     .leftJoin(leads, eq(outreaches.leadId, leads.id))
     .where(eq(outreaches.id, outreachId))
@@ -31,10 +34,8 @@ async function checkOutreachOwnership(
     return null;
   }
 
-  const ownerId = row.leadUserId ?? null;
-  const requesterId = req.user?.userId ?? null;
-
-  if (ownerId !== null && ownerId !== requesterId) {
+  const isAdmin = req.user?.role === "admin";
+  if (!isAdmin && row.leadWorkspaceId !== req.user?.activeWorkspaceId) {
     res.status(404).json({ error: "Outreach not found" });
     return null;
   }
@@ -54,7 +55,11 @@ router.get("/outreaches", async (req, res) => {
 
     const where = conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>, ...ReturnType<typeof eq>[]])) : undefined;
 
-    const rows = await db.select().from(outreaches).where(where).orderBy(desc(outreaches.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
+    // Scope to workspace: join leads to check workspace ownership
+    const wsId = req.user!.activeWorkspaceId;
+    const wsCondition = sql`EXISTS (SELECT 1 FROM leads l WHERE l.id = ${outreaches.leadId} AND l.workspace_id = ${wsId})`;
+    const finalWhere = where ? and(where, wsCondition as unknown as ReturnType<typeof eq>) : (wsCondition as unknown as ReturnType<typeof eq>);
+    const rows = await db.select().from(outreaches).where(finalWhere).orderBy(desc(outreaches.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
 
     return res.json({ outreaches: rows, page, pageSize });
   } catch (err) {
