@@ -1,129 +1,146 @@
+// artifacts/api-server/src/routes/workspaces.ts
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
-import { db, users } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
+import { db, users, workspaces, workspaceMembers } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
-
-export interface Workspace {
-  id: string;
-  name: string;
-  description: string;
-  icp: string;
-  targetIndustry: string;
-  targetCity: string;
-  createdAt: string;
-}
+import { z } from "zod";
 
 const router = Router();
-
 router.use(requireAuth);
 
-async function getUserMeta(userId: string): Promise<Record<string, unknown>> {
-  const [user] = await db
-    .select({ metadata: users.metadata })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  return (user?.metadata ?? {}) as Record<string, unknown>;
-}
-
-async function setUserMeta(userId: string, meta: Record<string, unknown>): Promise<void> {
-  await db
-    .update(users)
-    .set({ metadata: meta, updatedAt: new Date() })
-    .where(eq(users.id, userId));
-}
+// ─── List workspaces for current user ────────────────────────────────────────
 
 router.get("/workspaces", async (req, res) => {
   try {
-    const meta = await getUserMeta(req.user!.userId);
-    const workspaces = (meta.workspaces as Workspace[] | undefined) ?? [];
-    const activeId = (meta.activeWorkspaceId as string | undefined) ?? null;
-    return res.json({ workspaces, activeId });
+    const rows = await db
+      .select({ workspace: workspaces, role: workspaceMembers.role })
+      .from(workspaceMembers)
+      .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
+      .where(eq(workspaceMembers.userId, req.user!.userId));
+
+    return res.json({
+      workspaces: rows.map(r => ({ ...r.workspace, role: r.role })),
+      activeId: req.user!.activeWorkspaceId ?? null,
+    });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
+});
+
+// ─── Create workspace ─────────────────────────────────────────────────────────
+
+const createSchema = z.object({
+  name:           z.string().min(1).max(100),
+  description:    z.string().max(500).default(""),
+  icp:            z.string().max(500).default(""),
+  targetIndustry: z.string().max(200).default(""),
+  targetCity:     z.string().max(200).default(""),
 });
 
 router.post("/workspaces", async (req, res) => {
+  const parsed = createSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+
   try {
-    const { name, description = "", icp = "", targetIndustry = "", targetCity = "" } = req.body as {
-      name?: string; description?: string; icp?: string; targetIndustry?: string; targetCity?: string;
-    };
-    if (!name?.trim()) return res.status(400).json({ error: "name is required" });
+    const [ws] = await db.insert(workspaces).values({
+      ownerId:        req.user!.userId,
+      name:           parsed.data.name,
+      description:    parsed.data.description,
+      icp:            parsed.data.icp,
+      targetIndustry: parsed.data.targetIndustry,
+      targetCity:     parsed.data.targetCity,
+    }).returning();
 
-    const meta = await getUserMeta(req.user!.userId);
-    const workspaces = (meta.workspaces as Workspace[] | undefined) ?? [];
+    // Add creator as owner member
+    await db.insert(workspaceMembers).values({
+      workspaceId: ws.id,
+      userId:      req.user!.userId,
+      role:        "owner",
+    });
 
-    const newWs: Workspace = {
-      id: randomUUID(),
-      name: name.trim(),
-      description,
-      icp,
-      targetIndustry,
-      targetCity,
-      createdAt: new Date().toISOString(),
-    };
-    workspaces.push(newWs);
-
-    const activeId = workspaces.length === 1 ? newWs.id : (meta.activeWorkspaceId as string | undefined) ?? newWs.id;
-    await setUserMeta(req.user!.userId, { ...meta, workspaces, activeWorkspaceId: activeId });
-
-    return res.status(201).json({ workspace: newWs, activeId });
+    return res.status(201).json({ workspace: ws, activeId: ws.id });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
 
-router.put("/workspaces/:id", async (req, res) => {
+// ─── Update workspace ─────────────────────────────────────────────────────────
+
+router.put("/workspaces/:id", requireWorkspace, async (req, res) => {
+  const ws = req.workspace!;
+  if (ws.role !== "owner" && ws.role !== "admin") {
+    return res.status(403).json({ error: "Only workspace owner/admin can update workspace" });
+  }
+
+  const updateSchema = createSchema.partial();
+  const parsed = updateSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+
   try {
-    const meta = await getUserMeta(req.user!.userId);
-    const workspaces = (meta.workspaces as Workspace[] | undefined) ?? [];
-    const idx = workspaces.findIndex((w) => w.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: "Workspace not found" });
-
-    const { name, description, icp, targetIndustry, targetCity } = req.body as Partial<Workspace>;
-    if (name !== undefined) workspaces[idx].name = name;
-    if (description !== undefined) workspaces[idx].description = description;
-    if (icp !== undefined) workspaces[idx].icp = icp;
-    if (targetIndustry !== undefined) workspaces[idx].targetIndustry = targetIndustry;
-    if (targetCity !== undefined) workspaces[idx].targetCity = targetCity;
-
-    await setUserMeta(req.user!.userId, { ...meta, workspaces });
-    return res.json({ workspace: workspaces[idx] });
+    const [updated] = await db.update(workspaces)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(workspaces.id, ws.id))
+      .returning();
+    return res.json({ workspace: updated });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
+
+// ─── Switch active workspace ──────────────────────────────────────────────────
 
 router.post("/workspaces/:id/switch", async (req, res) => {
   try {
-    const meta = await getUserMeta(req.user!.userId);
-    const workspaces = (meta.workspaces as Workspace[] | undefined) ?? [];
-    const ws = workspaces.find((w) => w.id === req.params.id);
-    if (!ws) return res.status(404).json({ error: "Workspace not found" });
+    // Verify user is a member of that workspace
+    const [membership] = await db
+      .select({ workspaceId: workspaceMembers.workspaceId })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, req.params.id),
+          eq(workspaceMembers.userId, req.user!.userId),
+        ),
+      )
+      .limit(1);
 
-    await setUserMeta(req.user!.userId, { ...meta, activeWorkspaceId: ws.id });
-    return res.json({ activeId: ws.id, workspace: ws });
+    if (!membership) return res.status(403).json({ error: "Workspace not found or access denied" });
+
+    await db.update(users)
+      .set({ activeWorkspaceId: req.params.id, updatedAt: new Date() })
+      .where(eq(users.id, req.user!.userId));
+
+    return res.json({ activeId: req.params.id });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
 
-router.delete("/workspaces/:id", async (req, res) => {
+// ─── Delete workspace ─────────────────────────────────────────────────────────
+
+router.delete("/workspaces/:id", requireWorkspace, async (req, res) => {
+  const ws = req.workspace!;
+  if (ws.role !== "owner") {
+    return res.status(403).json({ error: "Only workspace owner can delete workspace" });
+  }
+
   try {
-    const meta = await getUserMeta(req.user!.userId);
-    let workspaces = (meta.workspaces as Workspace[] | undefined) ?? [];
-    const before = workspaces.length;
-    workspaces = workspaces.filter((w) => w.id !== req.params.id);
-    if (workspaces.length === before) return res.status(404).json({ error: "Workspace not found" });
+    await db.delete(workspaces).where(eq(workspaces.id, ws.id));
 
-    let activeId = meta.activeWorkspaceId as string | undefined;
-    if (activeId === req.params.id) activeId = workspaces[0]?.id ?? undefined;
+    // If this was the active workspace, clear it
+    if (req.user!.activeWorkspaceId === ws.id) {
+      const [fallback] = await db
+        .select({ workspaceId: workspaceMembers.workspaceId })
+        .from(workspaceMembers)
+        .where(eq(workspaceMembers.userId, req.user!.userId))
+        .limit(1);
 
-    await setUserMeta(req.user!.userId, { ...meta, workspaces, activeWorkspaceId: activeId });
-    return res.json({ deleted: true, activeId: activeId ?? null });
+      await db.update(users)
+        .set({ activeWorkspaceId: fallback?.workspaceId ?? null, updatedAt: new Date() })
+        .where(eq(users.id, req.user!.userId));
+    }
+
+    return res.json({ deleted: true });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
