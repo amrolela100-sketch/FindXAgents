@@ -95,9 +95,8 @@ router.get("/agents/runs/:id/logs/stream", async (req, res) => {
 
 router.get("/agents/runs", async (req, res) => {
   try {
-    const whereClause = req.user?.userId
-      ? sql`${agentPipelineRuns.userId} = ${req.user.userId}`
-      : undefined;
+    // Scope runs to the active workspace
+    const whereClause = eq(agentPipelineRuns.workspaceId, req.user!.activeWorkspaceId);
     const runs = await db.select().from(agentPipelineRuns)
       .where(whereClause)
       .orderBy(desc(agentPipelineRuns.createdAt))
@@ -109,12 +108,14 @@ router.get("/agents/runs", async (req, res) => {
 });
 
 /**
- * Ownership check for pipeline runs.
- * Runs with userId = null (legacy) are accessible to anyone.
+ * Workspace ownership check for pipeline runs.
  * Returns false and writes a 404 response when access is denied.
  */
-function checkRunOwnership(run: { userId: string | null }, req: Request, res: Response): boolean {
-  if (run.userId !== null && run.userId !== (req.user?.userId ?? null)) {
+function checkRunOwnership(run: { workspaceId: string | null; userId: string | null }, req: Request, res: Response): boolean {
+  const reqWs = req.user?.activeWorkspaceId ?? null;
+  const isAdmin = req.user?.role === "admin";
+  if (isAdmin) return true;
+  if (!reqWs || run.workspaceId !== reqWs) {
     res.status(404).json({ error: "Pipeline run not found" });
     return false;
   }
@@ -125,7 +126,7 @@ router.get("/agents/runs/:id", async (req, res) => {
   try {
     const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
     if (!run) return res.json({ run: null });
-    if (!checkRunOwnership(run, req, res)) return;
+    if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     return res.json({ run });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -134,8 +135,8 @@ router.get("/agents/runs/:id", async (req, res) => {
 
 router.get("/agents/runs/:id/emails", async (req, res) => {
   try {
-    const [run] = await db.select({ id: agentPipelineRuns.id, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
-    if (!run || !checkRunOwnership(run, req, res)) return;
+    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    if (!run || !checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     return res.json({ emails: [] });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -144,9 +145,9 @@ router.get("/agents/runs/:id/emails", async (req, res) => {
 
 router.get("/agents/runs/:id/logs", async (req, res) => {
   try {
-    const [run] = await db.select({ id: agentPipelineRuns.id, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
-    if (!checkRunOwnership(run, req, res)) return;
+    if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
 
     const rows = await db.select({
       id: agentLogs.id,
@@ -176,7 +177,7 @@ router.post("/agents/runs/:id/cancel", async (req, res) => {
   try {
     const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
-    if (!checkRunOwnership(run, req, res)) return;
+    if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     if (run.status !== "running" && run.status !== "queued") {
       return res.status(400).json({ error: `Cannot cancel run with status "${run.status}"` });
     }
@@ -204,7 +205,20 @@ router.get("/agents/logs", async (req, res) => {
     const safePhase = phase && ALLOWED_PHASES.has(phase) ? phase : undefined;
     const safeLevel = level && ALLOWED_LEVELS.has(level) ? level : undefined;
 
+    // Scope logs to runs belonging to the active workspace
+    const wsRunIds = await db
+      .select({ id: agentPipelineRuns.id })
+      .from(agentPipelineRuns)
+      .where(eq(agentPipelineRuns.workspaceId, req.user!.activeWorkspaceId))
+      .then((rows) => rows.map((r) => r.id));
+
     const conditions: ReturnType<typeof eq>[] = [];
+    if (wsRunIds.length > 0) {
+      conditions.push(inArray(agentLogs.pipelineRunId, wsRunIds) as unknown as ReturnType<typeof eq>);
+    } else {
+      // No runs in this workspace — return empty immediately
+      return res.json({ logs: [], total: 0, page: 1, pageSize });
+    }
     if (agentId) conditions.push(eq(agentLogs.agentId, agentId));
     if (pipelineRunId) conditions.push(eq(agentLogs.pipelineRunId, pipelineRunId));
     if (safePhase) conditions.push(eq(agentLogs.phase, safePhase));
@@ -244,6 +258,7 @@ router.get("/agents/logs", async (req, res) => {
 
 router.get("/agents/logs/:logId", async (req, res) => {
   try {
+    // Scope log access: verify the run belongs to the active workspace
     const [row] = await db.select({
       id: agentLogs.id,
       agentId: agentLogs.agentId,
@@ -257,10 +272,19 @@ router.get("/agents/logs/:logId", async (req, res) => {
       duration: agentLogs.duration,
       tokens: agentLogs.tokens,
       createdAt: agentLogs.createdAt,
+      runWorkspaceId: agentPipelineRuns.workspaceId,
       agent: { id: agents.id, name: agents.name, displayName: agents.displayName },
-    }).from(agentLogs).leftJoin(agents, eq(agentLogs.agentId, agents.id)).where(eq(agentLogs.id, req.params.logId));
+    }).from(agentLogs)
+      .leftJoin(agents, eq(agentLogs.agentId, agents.id))
+      .leftJoin(agentPipelineRuns, eq(agentLogs.pipelineRunId, agentPipelineRuns.id))
+      .where(eq(agentLogs.id, req.params.logId));
     if (!row) return res.status(404).json({ error: "Log not found" });
-    return res.json({ log: row });
+    // Enforce workspace isolation
+    if (req.user?.role !== "admin" && row.runWorkspaceId !== req.user!.activeWorkspaceId) {
+      return res.status(404).json({ error: "Log not found" });
+    }
+    const { runWorkspaceId: _ws, ...logData } = row;
+    return res.json({ log: logData });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
