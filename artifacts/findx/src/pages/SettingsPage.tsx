@@ -678,25 +678,65 @@ export default function SettingsPage() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {/* Test */}
                           <button
                             onClick={() => handleTestProvider(provider.id)}
                             disabled={isTest}
-                            className="btn btn-ghost w-7 h-7 p-0 rounded-lg"
                             title="Test connection"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                            style={{
+                              background: "rgba(96,165,250,0.10)",
+                              border: "1px solid rgba(96,165,250,0.20)",
+                              color: "#60A5FA",
+                            }}
                           >
-                            {isTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" strokeWidth={1.8} />}
+                            {isTest ? <Loader2 className="w-3 h-3 animate-spin" /> : <TestTube className="w-3 h-3" strokeWidth={2} />}
+                            <span>Test</span>
                           </button>
+                          {/* Set Default */}
                           {!provider.isDefault && (
-                            <button onClick={() => handleSetDefault(provider.id)} className="btn btn-ghost w-7 h-7 p-0 rounded-lg" title="Set as default">
-                              <Star className="w-3.5 h-3.5" strokeWidth={1.8} />
+                            <button
+                              onClick={() => handleSetDefault(provider.id)}
+                              title="Set as default"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                              style={{
+                                background: "rgba(245,158,11,0.10)",
+                                border: "1px solid rgba(245,158,11,0.20)",
+                                color: "#F59E0B",
+                              }}
+                            >
+                              <Star className="w-3 h-3" strokeWidth={2} />
+                              <span>Default</span>
                             </button>
                           )}
-                          <button onClick={() => openEditForm(provider)} className="btn btn-ghost w-7 h-7 p-0 rounded-lg" title="Edit">
-                            <Settings2 className="w-3.5 h-3.5" strokeWidth={1.8} />
+                          {/* Edit */}
+                          <button
+                            onClick={() => openEditForm(provider)}
+                            title="Edit"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                            style={{
+                              background: "var(--glass-raised)",
+                              border: "1px solid var(--glass-border)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            <Settings2 className="w-3 h-3" strokeWidth={2} />
+                            <span>Edit</span>
                           </button>
-                          <button onClick={() => handleDeleteProvider(provider.id)} className="btn btn-ghost w-7 h-7 p-0 rounded-lg" title="Delete" style={{ color: "#F87171" }}>
-                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleDeleteProvider(provider.id)}
+                            title="Delete"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                            style={{
+                              background: "rgba(248,113,113,0.08)",
+                              border: "1px solid rgba(248,113,113,0.18)",
+                              color: "#F87171",
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" strokeWidth={2} />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
