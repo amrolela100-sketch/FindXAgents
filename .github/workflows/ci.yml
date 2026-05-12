@@ -6,28 +6,36 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Cancel in-progress runs on the same branch when a new push arrives
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PNPM_VERSION: "10"
+  NODE_VERSION: "22"
 
 jobs:
-  # ── Typecheck & Tests ────────────────────────────────────────────────────────
+  # ── Typecheck & Tests ─────────────────────────────────────────────────────────
   test:
     name: Typecheck & Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run Typecheck
         run: pnpm run typecheck
@@ -35,27 +43,34 @@ jobs:
       - name: Run Tests
         run: pnpm test
 
-  # ── Build Verification ───────────────────────────────────────────────────────
+  # ── Build Verification ────────────────────────────────────────────────────────
   build:
     name: Build Verification
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: test
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: ${{ env.PNPM_VERSION }}
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build API Server (Render)
         run: pnpm --filter @workspace/api-server run build
 
       - name: Build Frontend (Vercel)
+        env:
+          VITE_API_URL: "/api"
+          VITE_SUPABASE_URL: "https://placeholder.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "placeholder-anon-key"
+          VITE_ADMIN_EMAILS: "ci@example.com"
         run: pnpm --filter @workspace/findx run build
