@@ -1,25 +1,26 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { leads, analyses, agentPipelineRuns } from "@workspace/db";
-import { sql, count, and, gte, isNull, isNotNull } from "drizzle-orm";
-import { requireAuth } from "../middleware/auth";
+import { sql, count, and, gte, isNull, isNotNull, eq } from "drizzle-orm";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireWorkspace);
 
 router.get("/dashboard/stats", async (req, res) => {
   try {
     const now = new Date();
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const userFilter = req.user?.userId
-      ? sql`${leads.userId} = ${req.user.userId}`
-      : undefined;
+    const wsId = req.user!.activeWorkspaceId;
 
-    const withUser = (extra?: ReturnType<typeof sql>) =>
-      userFilter && extra ? and(userFilter, extra) : userFilter ?? extra;
+    // All stats scoped to the active workspace
+    const wsFilter = eq(leads.workspaceId, wsId);
+
+    const withWs = (extra?: ReturnType<typeof sql>) =>
+      extra ? and(wsFilter, extra) : wsFilter;
 
     const [
       totalLeadsResult,
@@ -29,21 +30,21 @@ router.get("/dashboard/stats", async (req, res) => {
       leadsWonResult,
       leadsThisWeekResult,
     ] = await Promise.all([
-      db.select({ count: count() }).from(leads).where(withUser()),
+      db.select({ count: count() }).from(leads).where(withWs()),
       db.select({ count: count() }).from(leads).where(
-        withUser(sql`${leads.status} IN ('analyzed', 'contacting', 'responded', 'won', 'lost')`)
+        withWs(sql`${leads.status} IN ('analyzed', 'contacting', 'responded', 'won', 'lost')`)
       ),
       db.select({ count: count() }).from(leads).where(
-        withUser(sql`${leads.status} IN ('contacting', 'responded', 'won')`)
+        withWs(sql`${leads.status} IN ('contacting', 'responded', 'won')`)
       ),
       db.select({ count: count() }).from(leads).where(
-        withUser(sql`${leads.status} = 'responded'`)
+        withWs(sql`${leads.status} = 'responded'`)
       ),
       db.select({ count: count() }).from(leads).where(
-        withUser(sql`${leads.status} = 'won'`)
+        withWs(sql`${leads.status} = 'won'`)
       ),
       db.select({ count: count() }).from(leads).where(
-        withUser(gte(leads.discoveredAt, lastWeek) as unknown as ReturnType<typeof sql>)
+        withWs(gte(leads.discoveredAt, lastWeek) as unknown as ReturnType<typeof sql>)
       ),
     ]);
 
@@ -75,12 +76,11 @@ router.get("/dashboard/stats", async (req, res) => {
 
 router.get("/leads/score-distribution", async (req, res) => {
   try {
-    const userFilter = req.user?.userId
-      ? sql`${leads.userId} = ${req.user.userId}`
-      : undefined;
+    const wsId = req.user!.activeWorkspaceId;
+    const wsFilter = eq(leads.workspaceId, wsId);
 
-    const withUser = (extra?: ReturnType<typeof sql>) =>
-      userFilter && extra ? and(userFilter, extra) : userFilter ?? extra;
+    const withWs = (extra?: ReturnType<typeof sql>) =>
+      extra ? and(wsFilter, extra) : wsFilter;
 
     const [aggResult, unscoredResult] = await Promise.all([
       db.select({
@@ -89,9 +89,9 @@ router.get("/leads/score-distribution", async (req, res) => {
         cold: sql<number>`COUNT(CASE WHEN ${leads.leadScore} < 40 THEN 1 END)::int`,
         totalScored: count(leads.leadScore),
         avgScore: sql<number>`COALESCE(AVG(${leads.leadScore}), 0)::int`,
-      }).from(leads).where(withUser(isNotNull(leads.leadScore) as unknown as ReturnType<typeof sql>)),
+      }).from(leads).where(withWs(isNotNull(leads.leadScore) as unknown as ReturnType<typeof sql>)),
       db.select({ count: count() }).from(leads)
-        .where(withUser(isNull(leads.leadScore) as unknown as ReturnType<typeof sql>)),
+        .where(withWs(isNull(leads.leadScore) as unknown as ReturnType<typeof sql>)),
     ]);
 
     const agg = aggResult[0];
