@@ -1,4 +1,4 @@
-import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders } from "@workspace/db";
+import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders, notifications } from "@workspace/db";
 import { eq, sql, and, ilike, isNull } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
@@ -161,6 +161,20 @@ export class AgentRunner {
         durationMs:    Date.now() - startTime,
       }).catch(() => {}); // fire-and-forget
 
+      // ── In-app notification on success ───────────────────────────────────
+      if (userId) {
+        const found    = finalRun?.leadsFound    ?? discoveredLeadIds.length;
+        const analyzed = finalRun?.leadsAnalyzed ?? 0;
+        const emailed  = finalRun?.emailsDrafted ?? 0;
+        await db.insert(notifications).values({
+          userId,
+          type:  "pipeline_complete",
+          title: "✅ Agent run completed",
+          body:  `"${query}" — ${found} leads found, ${analyzed} analyzed, ${emailed} emails drafted`,
+          meta:  { runId: this.runId, query, leadsFound: found, leadsAnalyzed: analyzed, emailsDrafted: emailed },
+        }).catch(() => {});
+      }
+
     } catch (err: any) {
       await db.update(agentPipelineRuns)
         .set({ status: "failed", error: err.message, completedAt: new Date() })
@@ -173,6 +187,17 @@ export class AgentRunner {
         error:      err.message ?? "Unknown error",
         durationMs: Date.now() - (Date.now()), // best effort
       }).catch(() => {});
+
+      // ── In-app notification on failure ───────────────────────────────────
+      if (userId) {
+        await db.insert(notifications).values({
+          userId,
+          type:  "pipeline_failed",
+          title: "❌ Agent run failed",
+          body:  `"${query}" — ${err.message ?? "Unknown error"}`,
+          meta:  { runId: this.runId, query, error: err.message },
+        }).catch(() => {});
+      }
     }
   }
 
