@@ -4,73 +4,62 @@
  * Regression tests for Phase 2 workspace isolation.
  *
  * Verifies:
- * 1. Same user, workspace A vs workspace B — data is isolated
- * 2. Two different users — cannot access each other's data
- * 3. Switching workspace changes dashboard/leads/pipeline results
+ * 1. Same user, workspace A vs workspace B — different context is passed to routes
+ * 2. Two different users — routes receive correct workspace context
+ * 3. Switching workspace changes the workspaceId used in queries
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-// ── Shared test data ──────────────────────────────────────────────────────────
+// ── vi.hoisted: mutable context shared between vi.mock factory and tests ───────
+const { currentCtx } = vi.hoisted(() => ({
+  currentCtx: {
+    workspaceId: "workspace-aaa",
+    userId: "user-111",
+    role: "user" as "user" | "admin",
+  },
+}));
 
-const WORKSPACE_A = "workspace-aaa";
-const WORKSPACE_B = "workspace-bbb";
-const USER_1      = "user-111";
-const USER_2      = "user-222";
-
-// Simulated DB: leads belong to specific workspaces
-const MOCK_DB_LEADS = [
-  { id: "lead-ws-a-1", businessName: "Company Alpha", city: "Amsterdam",  workspaceId: WORKSPACE_A, userId: USER_1, status: "discovered", hasWebsite: false, leadScore: null },
-  { id: "lead-ws-a-2", businessName: "Company Beta",  city: "Rotterdam",  workspaceId: WORKSPACE_A, userId: USER_1, status: "analyzed",   hasWebsite: true,  leadScore: 75 },
-  { id: "lead-ws-b-1", businessName: "Company Gamma", city: "Utrecht",    workspaceId: WORKSPACE_B, userId: USER_1, status: "discovered", hasWebsite: false, leadScore: null },
-  { id: "lead-u2-1",   businessName: "Company Delta", city: "Eindhoven",  workspaceId: "workspace-user2", userId: USER_2, status: "won", hasWebsite: true,  leadScore: 90 },
-];
-
-// ── DB Mock that filters by workspaceId ───────────────────────────────────────
+// ── Mock DB ───────────────────────────────────────────────────────────────────
 vi.mock("@workspace/db", () => {
-  function makeSelectChain(filterFn?: (rows: any[]) => any[]) {
-    let table = "leads";
-    let whereFilter: ((row: any) => boolean) | null = null;
-    const chain: any = {
-      from(t: any) { return chain; },
-      where(condition: any) {
-        // We pass the condition object through; actual filtering uses workspaceId via mock
-        return chain;
-      },
-      orderBy() { return chain; },
-      limit()   { return chain; },
-      offset()  { return chain; },
-      groupBy() { return chain; },
-    };
-    // Make it thenable — resolves with the filtered MOCK_DB_LEADS
-    chain.then = (res: any, rej: any) =>
-      Promise.resolve(filterFn ? filterFn(MOCK_DB_LEADS) : MOCK_DB_LEADS).then(res, rej);
-    chain.catch = (rej: any) => Promise.resolve([]).catch(rej);
-    chain.finally = (fn: any) => Promise.resolve([]).finally(fn);
-    return chain;
+  function makeChain() {
+    const c: any = {};
+    ["from","where","orderBy","limit","groupBy","offset","leftJoin","innerJoin"].forEach((m) => {
+      c[m] = vi.fn().mockReturnValue(c);
+    });
+    c[Symbol.toStringTag] = "Promise";
+    c.then    = (res: any, rej: any) => Promise.resolve([]).then(res, rej);
+    c.catch   = (rej: any)           => Promise.resolve([]).catch(rej);
+    c.finally = (fn: any)            => Promise.resolve([]).finally(fn);
+    return c;
   }
-
   const returning = vi.fn().mockResolvedValue([{
-    id: "new-lead-id", businessName: "New Lead", city: "Test", workspaceId: WORKSPACE_A,
-    userId: USER_1, status: "discovered", hasWebsite: false, leadScore: null,
+    id: "new-lead-id", businessName: "New Lead", city: "Test",
+    workspaceId: "workspace-aaa", userId: "user-111",
+    status: "discovered", hasWebsite: false, leadScore: null,
     createdAt: new Date(), updatedAt: new Date(),
   }]);
-
   return {
     db: {
       insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning }) }),
-      select: vi.fn(() => makeSelectChain()),
+      select: vi.fn(() => makeChain()),
       update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
       delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
       execute: vi.fn().mockResolvedValue([]),
     },
-    leads: { workspaceId: "workspaceId", userId: "userId", id: "id", status: "status", businessName: "businessName", city: "city", industry: "industry", source: "source", hasWebsite: "hasWebsite", discoveredAt: "discoveredAt", leadScore: "leadScore", pipelineStageId: "pipelineStageId" },
-    analyses: {}, outreaches: {}, users: {}, agents: {},
-    agentSkills: {}, agentLogs: {}, agentPipelineRuns: { workspaceId: "workspaceId", userId: "userId", id: "id", status: "status" },
-    pipelineStages: {}, searchConfigs: {}, resendConfigs: {}, smtpConfigs: {},
-    emailSettings: {}, telegramSettings: {}, pushTokens: {}, aiProviders: {},
-    emailProviderTokens: {}, workspaces: {}, workspaceMembers: {}, notifications: {},
+    leads:             { workspaceId: "workspaceId", userId: "userId", id: "id", status: "status", businessName: "businessName", city: "city", industry: "industry", source: "source", hasWebsite: "hasWebsite", discoveredAt: "discoveredAt", leadScore: "leadScore", pipelineStageId: "pipelineStageId" },
+    analyses:          {},
+    outreaches:        {},
+    users:             {},
+    agents:            { id: "id", name: "name", isActive: "isActive", role: "role" },
+    agentSkills:       {},
+    agentLogs:         { id: "id", agentId: "agentId", pipelineRunId: "pipelineRunId", phase: "phase", level: "level", message: "message", toolName: "toolName", toolInput: "toolInput", toolOutput: "toolOutput", duration: "duration", tokens: "tokens", createdAt: "createdAt" },
+    agentPipelineRuns: { workspaceId: "workspaceId", userId: "userId", id: "id", status: "status", query: "query" },
+    pipelineStages:    { id: "id", name: "name", order: "order" },
+    searchConfigs:     {}, resendConfigs: {}, smtpConfigs: {}, emailSettings: {},
+    telegramSettings:  {}, pushTokens: {}, aiProviders: {}, emailProviderTokens: {},
+    workspaces:        {}, workspaceMembers: {}, notifications: {},
   };
 });
 
@@ -78,131 +67,120 @@ vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({
   verifySupabaseToken: vi.fn().mockResolvedValue(null),
 }));
 
-// ── Auth mock factory — creates different workspace/user contexts ──────────────
-function makeAuthMock(workspaceId: string, userId: string, role: "user" | "admin" = "user") {
-  return vi.fn((req: any, _res: any, next: any) => {
-    req.user = { sub: userId, userId, email: `${userId}@test.com`, role, activeWorkspaceId: workspaceId };
-    next();
-  });
-}
-
-function mockWithWorkspace(workspaceId: string, userId: string) {
-  vi.doMock("../artifacts/api-server/src/middleware/auth", () => ({
-    requireAuth: makeAuthMock(workspaceId, userId),
-    optionalAuth: makeAuthMock(workspaceId, userId),
-    requireWorkspace: vi.fn((_req: any, _res: any, next: any) => next()),
-  }));
-}
-
-vi.mock("../artifacts/api-server/src/lib/ai-engine", () => ({
-  analyzeLeadWithGemini: vi.fn().mockResolvedValue({
-    score: 80, summary: "mock", opportunities: [], weaknesses: [], recommendations: [],
-    emailSubject: "test", digitalMaturity: "low", estimatedRevenueImpact: "low",
-  }),
-  generateOutreachWithGemini: vi.fn().mockResolvedValue({ subject: "s", body: "b", language: "en" }),
-}));
-
-// We use a static mock that sets workspace from a module-level variable
-let CURRENT_WORKSPACE = WORKSPACE_A;
-let CURRENT_USER = USER_1;
-
+// ── Auth mock — reads from currentCtx (set per test via beforeEach) ───────────
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
   requireAuth: vi.fn((req: any, _res: any, next: any) => {
     req.user = {
-      sub: CURRENT_USER,
-      userId: CURRENT_USER,
-      email: `${CURRENT_USER}@test.com`,
-      role: "user" as const,
-      activeWorkspaceId: CURRENT_WORKSPACE,
+      sub:               currentCtx.userId,
+      userId:            currentCtx.userId,
+      email:             currentCtx.userId + "@test.com",
+      role:              currentCtx.role,
+      activeWorkspaceId: currentCtx.workspaceId,
     };
     next();
   }),
   optionalAuth: vi.fn((req: any, _res: any, next: any) => {
     req.user = {
-      sub: CURRENT_USER,
-      userId: CURRENT_USER,
-      email: `${CURRENT_USER}@test.com`,
-      role: "user" as const,
-      activeWorkspaceId: CURRENT_WORKSPACE,
+      sub:               currentCtx.userId,
+      userId:            currentCtx.userId,
+      email:             currentCtx.userId + "@test.com",
+      role:              currentCtx.role,
+      activeWorkspaceId: currentCtx.workspaceId,
     };
     next();
   }),
   requireWorkspace: vi.fn((_req: any, _res: any, next: any) => next()),
 }));
 
+vi.mock("../artifacts/api-server/src/lib/ai-engine", () => ({
+  analyzeLeadWithGemini:    vi.fn().mockResolvedValue({ score: 80, summary: "mock", opportunities: [], weaknesses: [], recommendations: [], emailSubject: "test", digitalMaturity: "low", estimatedRevenueImpact: "low" }),
+  generateOutreachWithGemini: vi.fn().mockResolvedValue({ subject: "s", body: "b", language: "en" }),
+}));
+
 import app from "../artifacts/api-server/src/app";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function asWorkspace(workspaceId: string, userId = "user-111") {
+  currentCtx.workspaceId = workspaceId;
+  currentCtx.userId      = userId;
+  currentCtx.role        = "user";
+}
+
+// =============================================================================
 describe("Workspace Isolation", () => {
   beforeEach(() => {
-    CURRENT_WORKSPACE = WORKSPACE_A;
-    CURRENT_USER = USER_1;
+    asWorkspace("workspace-aaa", "user-111");
   });
 
+  // ── Leads ───────────────────────────────────────────────────────────────────
   describe("GET /api/leads — workspace scoping", () => {
-    it("returns 200 for workspace A", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_A;
+    it("returns 200 and leads array for workspace A", async () => {
+      asWorkspace("workspace-aaa");
       const res = await request(app).get("/api/leads");
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("leads");
     });
 
-    it("returns 200 for workspace B (same user)", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_B;
+    it("returns 200 and leads array for workspace B (same user)", async () => {
+      asWorkspace("workspace-bbb");
       const res = await request(app).get("/api/leads");
       expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("leads");
     });
 
-    it("returns 200 for a different user in their own workspace", async () => {
-      CURRENT_WORKSPACE = "workspace-user2";
-      CURRENT_USER = USER_2;
+    it("different user with own workspace gets 200", async () => {
+      asWorkspace("workspace-user2", "user-222");
       const res = await request(app).get("/api/leads");
       expect(res.status).toBe(200);
     });
   });
 
+  // ── Dashboard ───────────────────────────────────────────────────────────────
   describe("GET /api/dashboard/stats — workspace scoping", () => {
-    it("stats endpoint uses active workspaceId (not userId only)", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_A;
+    it("returns stats for workspace A", async () => {
+      asWorkspace("workspace-aaa");
       const res = await request(app).get("/api/dashboard/stats");
       expect(res.status).toBeLessThan(500);
       expect(res.body).toHaveProperty("stats");
     });
 
-    it("switching to workspace B returns separate stats", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_B;
+    it("returns stats for workspace B without crashing", async () => {
+      asWorkspace("workspace-bbb");
       const res = await request(app).get("/api/dashboard/stats");
       expect(res.status).toBeLessThan(500);
-      // Stats should not fail just because a different workspace is active
       expect(res.body).toHaveProperty("stats");
     });
   });
 
+  // ── Pipeline ────────────────────────────────────────────────────────────────
   describe("GET /api/pipeline — workspace scoping", () => {
-    it("pipeline endpoint returns stages for the active workspace", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_A;
+    it("pipeline returns stages for active workspace", async () => {
+      asWorkspace("workspace-aaa");
       const res = await request(app).get("/api/pipeline");
       expect(res.status).toBeLessThan(500);
     });
   });
 
+  // ── Agent Runs ──────────────────────────────────────────────────────────────
   describe("GET /api/agents/runs — workspace scoping", () => {
-    it("runs are scoped to active workspace", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_A;
+    it("runs scoped to workspace A return 200", async () => {
+      asWorkspace("workspace-aaa");
       const res = await request(app).get("/api/agents/runs");
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("runs");
     });
 
-    it("different workspace still returns 200 with its own runs", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_B;
+    it("switching to workspace B still returns 200", async () => {
+      asWorkspace("workspace-bbb");
       const res = await request(app).get("/api/agents/runs");
       expect(res.status).toBe(200);
     });
   });
 
+  // ── Lead creation ────────────────────────────────────────────────────────────
   describe("POST /api/leads — workspace assignment", () => {
-    it("creates lead and assigns activeWorkspaceId", async () => {
-      CURRENT_WORKSPACE = WORKSPACE_A;
+    it("creates lead and returns 201", async () => {
+      asWorkspace("workspace-aaa");
       const res = await request(app)
         .post("/api/leads")
         .send({ businessName: "Test Co", city: "Amsterdam" });
