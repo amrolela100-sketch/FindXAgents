@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { PageShell } from "../components/page-shell";
 import { LeadList } from "../components/lead-list";
 import { LeadDetailPanel } from "../components/lead-detail-panel";
@@ -10,15 +11,21 @@ import { getLeads, discoverLeads, importLeads, exportLeads } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { LayoutList, LayoutGrid, Zap, Upload, Download, RefreshCw } from "lucide-react";
 
+const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
+
 type View = "list" | "kanban";
 
 export default function LeadsPage() {
   const { t } = useLang();
-  const [view, setView] = useState<View>("list");
+  const [view, setView]             = useState<View>("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [discovering, setDiscovering] = useState(false);
 
-  const { data, refresh } = useRealtimeData(() => getLeads({ pageSize: 200 }), ["leads"], 30_000);
+  const { data, refresh } = useRealtimeData(
+    () => getLeads({ pageSize: 200 }),
+    ["leads"],
+    30_000,
+  );
   const leads = data?.leads ?? [];
   const total = data?.total ?? 0;
 
@@ -30,9 +37,11 @@ export default function LeadsPage() {
   async function handleExport() {
     try {
       const blob = await exportLeads();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
       URL.revokeObjectURL(url);
     } catch {}
   }
@@ -49,18 +58,28 @@ export default function LeadsPage() {
     <div className="flex items-center gap-2">
       {/* View toggle */}
       <div
-        className="flex items-center rounded-lg p-0.5"
-        style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+        className="flex items-center rounded-xl p-0.5"
+        style={{
+          background: "var(--glass-raised)",
+          border: "1px solid var(--glass-border)",
+          backdropFilter: "blur(12px)",
+        }}
       >
-        {([["list", LayoutList, t.leads.list], ["kanban", LayoutGrid, t.leads.kanban]] as const).map(([v, Icon, label]) => (
+        {([
+          ["list",   LayoutList, t.leads.list],
+          ["kanban", LayoutGrid, t.leads.kanban],
+        ] as const).map(([v, Icon, label]) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
             style={{
-              background: view === v ? "var(--surface)" : "transparent",
-              color: view === v ? "var(--text)" : "var(--text-muted)",
-              boxShadow: view === v ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              background: view === v
+                ? "var(--glass)"
+                : "transparent",
+              color:      view === v ? "var(--text)" : "var(--text-muted)",
+              boxShadow:  view === v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+              border:     view === v ? "1px solid var(--glass-border)" : "1px solid transparent",
             }}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -72,19 +91,26 @@ export default function LeadsPage() {
       <button
         onClick={handleDiscover}
         disabled={discovering}
-        className="btn btn-primary text-xs px-3 py-1.5 gap-1.5"
+        className="btn btn-primary text-[12px] px-3 py-1.5 gap-1.5 font-semibold"
       >
-        {discovering ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+        {discovering
+          ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          : <Zap className="w-3.5 h-3.5" strokeWidth={2} />}
         {discovering ? t.leads.discovering : t.leads.discover}
       </button>
 
-      <label className="btn btn-secondary text-xs px-3 py-1.5 gap-1.5 cursor-pointer">
+      <label className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5 cursor-pointer"
+        style={{ border: "1px solid var(--glass-border)" }}>
         <Upload className="w-3.5 h-3.5" />
         {t.leads.importCsv}
         <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
       </label>
 
-      <button onClick={handleExport} className="btn btn-secondary text-xs px-3 py-1.5 gap-1.5">
+      <button
+        onClick={handleExport}
+        className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5"
+        style={{ border: "1px solid var(--glass-border)" }}
+      >
         <Download className="w-3.5 h-3.5" />
         {t.leads.export}
       </button>
@@ -93,19 +119,40 @@ export default function LeadsPage() {
 
   return (
     <PageShell title={t.leads.title} subtitle={`${total} total`} actions={toolbar}>
-      {/* Stats */}
-      <div className="mb-6">
+
+      {/* ── KPI cards ─────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SPRING}
+        className="mb-6"
+      >
         <DashboardCards />
-      </div>
+      </motion.div>
 
-      {/* Content */}
-      {view === "list" ? (
-        <LeadList onSelectLead={(lead) => setSelectedId(lead.id)} />
-      ) : (
-        <KanbanBoard leads={leads} onSelectLead={(l: Lead) => setSelectedId(l.id)} onLeadMoved={refresh} />
-      )}
+      {/* ── Content ───────────────────────────────────────────── */}
+      <motion.div
+        key={view}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
+      >
+        {view === "list" ? (
+          <LeadList onSelectLead={(lead) => setSelectedId(lead.id)} />
+        ) : (
+          <KanbanBoard
+            leads={leads}
+            onSelectLead={(l: Lead) => setSelectedId(l.id)}
+            onLeadMoved={refresh}
+          />
+        )}
+      </motion.div>
 
-      <LeadDetailPanel leadId={selectedId} onClose={() => setSelectedId(null)} onLeadUpdated={refresh} />
+      <LeadDetailPanel
+        leadId={selectedId}
+        onClose={() => setSelectedId(null)}
+        onLeadUpdated={refresh}
+      />
     </PageShell>
   );
 }
