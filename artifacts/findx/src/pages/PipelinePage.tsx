@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "../components/page-shell";
 import { KanbanBoard } from "../components/kanban-board";
 import { LeadDetailPanel } from "../components/lead-detail-panel";
@@ -9,31 +9,122 @@ import { getLeads, runAgentPipeline, getAgentRun } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { useCompletionSound } from "../lib/hooks/use-completion-sound";
 import { dispatchNotification } from "../lib/hooks/use-notifications";
-import { Zap, Activity, RefreshCw } from "lucide-react";
+import {
+  Zap, Activity, RefreshCw, Search, Languages, Hash,
+  Play, TrendingUp, Users, CheckCircle2, Star, Filter,
+  GitBranch, Circle, ArrowUpRight, SlidersHorizontal
+} from "lucide-react";
 
-const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
+// ─── Constants ───────────────────────────────────────────────────────────────
 
-const STATUS_BADGES = [
-  { key: "discovered", color: "#9CA3AF" },
-  { key: "analyzing",  color: "#FBBF24" },
-  { key: "analyzed",   color: "#C084FC" },
-  { key: "contacting", color: "#60A5FA" },
-  { key: "responded",  color: "#F97316" },
-  { key: "qualified",  color: "#A78BFA" },
-  { key: "won",        color: "#34D399" },
-  { key: "lost",       color: "#F87171" },
+const SPRING = { type: "spring" as const, stiffness: 120, damping: 22 };
+const FADE_UP = {
+  hidden: { opacity: 0, y: 14 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { ...SPRING, delay: i * 0.05 },
+  }),
+};
+
+const STATUS_META = [
+  { key: "discovered", label: "New",       color: "#94A3B8", icon: Circle },
+  { key: "analyzing",  label: "Analyzing", color: "#FBBF24", icon: Activity },
+  { key: "analyzed",   label: "Analyzed",  color: "#C084FC", icon: Star },
+  { key: "contacting", label: "Contacted", color: "#60A5FA", icon: ArrowUpRight },
+  { key: "responded",  label: "Responded", color: "#F97316", icon: TrendingUp },
+  { key: "qualified",  label: "Qualified", color: "#A78BFA", icon: CheckCircle2 },
+  { key: "won",        label: "Won",       color: "#34D399", icon: Star },
+  { key: "lost",       label: "Lost",      color: "#F87171", icon: Circle },
 ] as const;
 
+// ─── Status Chip ─────────────────────────────────────────────────────────────
+
+function StatusChip({
+  label,
+  color,
+  count,
+  icon: Icon,
+}: {
+  label: string;
+  color: string;
+  count: number;
+  icon: typeof Circle;
+}) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03, y: -1 }}
+      transition={{ duration: 0.15 }}
+      className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-default select-none"
+      style={{
+        background: `${color}12`,
+        border: `1px solid ${color}25`,
+      }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ background: color, boxShadow: `0 0 5px ${color}` }}
+      />
+      <span className="text-[12px] font-medium" style={{ color }}>
+        {label}
+      </span>
+      <span
+        className="text-[11px] font-bold tabular-nums px-1.5 py-0 rounded-full"
+        style={{ background: `${color}20`, color }}
+      >
+        {count}
+      </span>
+    </motion.div>
+  );
+}
+
+// ─── Pipeline Summary Card ────────────────────────────────────────────────────
+
+function SummaryCard({
+  label,
+  value,
+  sub,
+  accent,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent: string;
+  icon: typeof Zap;
+}) {
+  return (
+    <div
+      className="glass-card rounded-2xl p-4 flex items-center gap-3"
+    >
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}
+      >
+        <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={1.8} />
+      </div>
+      <div>
+        <p className="text-[11px] font-medium" style={{ color: "var(--text-subtle)" }}>{label}</p>
+        <p className="text-[18px] font-bold leading-tight" style={{ color: "var(--text)" }}>{value}</p>
+        {sub && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-subtle)" }}>{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function PipelinePage() {
-  const { t }   = useLang();
+  const { t } = useLang();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery]           = useState("");
   const [maxResults, setMaxResults] = useState(10);
   const [lang, setLang]             = useState<"ar" | "en" | "nl" | "fr" | "es" | "de">("en");
   const [running, setRunning]       = useState(false);
+  const [showForm, setShowForm]     = useState(false);
 
   const { play: playChime } = useCompletionSound();
-  const activeRunsRef  = useRef<Map<string, string>>(new Map());
+  const activeRunsRef   = useRef<Map<string, string>>(new Map());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data, refresh } = useRealtimeData(
@@ -67,27 +158,13 @@ export default function PipelinePage() {
               type: "pipeline_complete",
               title: "Pipeline complete ✨",
               body: `Found ${run.leadsFound ?? 0} leads · ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
-              query: q,
-              leadsFound: run.leadsFound ?? 0,
-              emailsDrafted: run.emailsDrafted ?? 0,
+              query: q, leadsFound: run.leadsFound ?? 0, emailsDrafted: run.emailsDrafted ?? 0,
             });
-            if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-              new Notification("FindX — Pipeline complete ✨", {
-                body: `Found ${run.leadsFound ?? 0} leads for "${q}"`,
-                icon: "/favicon.svg",
-              });
-            }
           } else if (run.status === "failed") {
             activeRunsRef.current.delete(runId);
             refresh();
-            await dispatchNotification({
-              type: "pipeline_failed",
-              title: "Pipeline failed",
-              body: `Run for "${q}" encountered an error. ${run.error ?? ""}`.trim(),
-              query: q,
-            });
           }
-        } catch { /* network blip */ }
+        } catch { /* blip */ }
       }
     }, 4_000);
   }
@@ -102,136 +179,232 @@ export default function PipelinePage() {
       const savedQuery = query.trim();
       const result = await runAgentPipeline({ query: savedQuery, maxResults, language: lang });
       setQuery("");
+      setShowForm(false);
       refresh();
       activeRunsRef.current.set(result.runId, savedQuery);
       startPollInterval();
-    } catch {
-      /* error handled by fetchApi */
-    } finally {
+    } catch { /* handled */ } finally {
       setRunning(false);
     }
   }
 
+  // Compute counts
   const statusCounts: Record<string, number> = {};
   leads.forEach((l) => { statusCounts[l.status] = (statusCounts[l.status] ?? 0) + 1; });
 
-  const runBar = (
+  const wonCount    = statusCounts["won"] ?? 0;
+  const analyzedCount = statusCounts["analyzed"] ?? 0;
+  const contactedCount = statusCounts["contacting"] ?? 0;
+  const convRate    = leads.length > 0 ? Math.round((wonCount / leads.length) * 100) : 0;
+
+  // Actions slot in PageShell top bar
+  const headerActions = (
     <div className="flex items-center gap-2">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleRun()}
-        placeholder={t.pipeline.placeholder}
-        className="input text-[12px] py-1.5 w-56"
-      />
-      <select
-        value={maxResults}
-        onChange={(e) => setMaxResults(Number(e.target.value))}
-        className="input text-[12px] py-1.5 w-20"
-      >
-        {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
-      </select>
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as "ar" | "en" | "nl" | "fr" | "es" | "de")}
-        className="input text-[12px] py-1.5 w-28"
-      >
-        <option value="ar">🇸🇦 {t.agents.arabic}</option>
-        <option value="en">🇬🇧 {t.agents.english}</option>
-        <option value="nl">🇳🇱 {t.agents.dutch}</option>
-        <option value="fr">🇫🇷 {t.agents.french}</option>
-        <option value="es">🇪🇸 {t.agents.spanish}</option>
-        <option value="de">🇩🇪 {t.agents.german}</option>
-      </select>
-      <button
-        onClick={handleRun}
-        disabled={running || !query.trim()}
-        className="btn btn-primary text-[12px] px-3 py-1.5 gap-1.5 font-semibold"
-      >
-        {running
-          ? <Activity className="w-3.5 h-3.5 animate-pulse" />
-          : <Zap className="w-3.5 h-3.5" strokeWidth={2} />}
-        {running ? t.pipeline.running : t.pipeline.runPipeline}
-      </button>
       <button
         onClick={refresh}
-        className="btn btn-ghost px-2 py-1.5"
+        className="btn btn-ghost px-2.5 py-2"
         title={t.pipeline.refresh}
       >
         <RefreshCw className="w-3.5 h-3.5" />
+      </button>
+      <button
+        onClick={() => setShowForm((v) => !v)}
+        className={`btn gap-2 px-4 py-2 text-[12px] font-semibold ${showForm ? "btn-secondary" : "btn-primary"}`}
+      >
+        <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
+        {showForm ? "Close" : t.pipeline.runPipeline}
       </button>
     </div>
   );
 
   return (
-    <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads`} actions={runBar}>
+    <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads`} actions={headerActions}>
 
-      {/* ── Status badges ─────────────────────────────────────── */}
+      {/* ── Summary Cards ────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={SPRING}
-        className="flex flex-wrap gap-2 mb-6"
+        custom={0}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"
       >
-        {STATUS_BADGES.map((s) => (
-          <span
-            key={s.key}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-semibold"
-            style={{
-              background: `${s.color}15`,
-              color: s.color,
-              border: `1px solid ${s.color}28`,
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: s.color, boxShadow: `0 0 4px ${s.color}` }}
-            />
-            {t.leads.status[s.key]}
-            <span
-              className="font-bold tabular-nums"
-              style={{ color: s.color }}
-            >
-              {statusCounts[s.key] ?? 0}
-            </span>
-          </span>
-        ))}
+        <SummaryCard icon={Users}        label="Total Leads"  value={leads.length}     accent="#60A5FA" />
+        <SummaryCard icon={Star}         label="Analyzed"     value={analyzedCount}    accent="#C084FC" />
+        <SummaryCard icon={ArrowUpRight} label="Contacted"    value={contactedCount}   accent="#F97316" />
+        <SummaryCard icon={TrendingUp}   label="Conversion"   value={`${convRate}%`}   accent="#34D399" sub={`${wonCount} won`} />
       </motion.div>
 
-      {/* ── Board / empty state ───────────────────────────────── */}
-      {leads.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={SPRING}
-          className="flex flex-col items-center justify-center py-24 rounded-2xl"
-          style={{
-            border: "2px dashed var(--glass-border-strong)",
-            background: "var(--glass-raised)",
-          }}
-        >
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.20)" }}
+      {/* ── Run Pipeline Form ────────────────────────────────── */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden mb-5"
           >
-            <Zap className="w-7 h-7" style={{ color: "#FBBF24", opacity: 0.6 }} strokeWidth={1.5} />
+            <div className="glass-card rounded-2xl overflow-hidden">
+              <div
+                className="flex items-center gap-2.5 px-5 py-3.5"
+                style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+              >
+                <GitBranch className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={2} />
+                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                  Launch AI Pipeline
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>
+                  · Discovery → Analysis → Outreach
+                </p>
+              </div>
+
+              <div className="p-5 flex flex-col gap-3">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    style={{ color: "var(--text-subtle)" }}
+                    strokeWidth={1.8}
+                  />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRun()}
+                    placeholder={t.pipeline.placeholder}
+                    className="input pl-10 text-[13px]"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                  >
+                    <Hash className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
+                    <label className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                      Max
+                    </label>
+                    <select
+                      value={maxResults}
+                      onChange={(e) => setMaxResults(Number(e.target.value))}
+                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                  >
+                    <Languages className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
+                    <select
+                      value={lang}
+                      onChange={(e) => setLang(e.target.value as typeof lang)}
+                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
+                      style={{ color: "var(--text)" }}
+                    >
+                      <option value="ar">🇸🇦 Arabic</option>
+                      <option value="en">🇬🇧 English</option>
+                      <option value="nl">🇳🇱 Dutch</option>
+                      <option value="fr">🇫🇷 French</option>
+                      <option value="es">🇪🇸 Spanish</option>
+                      <option value="de">🇩🇪 German</option>
+                    </select>
+                  </div>
+
+                  <div className="flex-1" />
+
+                  <button
+                    onClick={handleRun}
+                    disabled={running || !query.trim()}
+                    className="btn btn-primary px-5 py-2 text-[13px] font-semibold gap-2"
+                  >
+                    {running ? (
+                      <><Activity className="w-4 h-4 animate-spin" /> Running…</>
+                    ) : (
+                      <><Play className="w-4 h-4" strokeWidth={2.5} /> Run Pipeline</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Status Strip ─────────────────────────────────────── */}
+      {leads.length > 0 && (
+        <motion.div
+          custom={1}
+          variants={FADE_UP}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-wrap items-center gap-2 mb-5"
+        >
+          <div className="flex items-center gap-1.5 mr-1" style={{ color: "var(--text-subtle)" }}>
+            <Filter className="w-3.5 h-3.5" strokeWidth={1.8} />
+            <span className="text-[11px] font-medium">Status</span>
           </div>
-          <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>
-            {t.pipeline.noLeads}
-          </p>
-          <p className="text-[12px] mt-1" style={{ color: "var(--text-subtle)" }}>
-            {t.pipeline.noLeadsHint}
-          </p>
+          {STATUS_META.map((s) => (
+            <StatusChip
+              key={s.key}
+              label={s.label}
+              color={s.color}
+              count={statusCounts[s.key] ?? 0}
+              icon={s.icon}
+            />
+          ))}
         </motion.div>
-      ) : (
-        <KanbanBoard
-          leads={leads}
-          onSelectLead={(l: Lead) => setSelectedId(l.id)}
-          onLeadMoved={refresh}
-        />
       )}
+
+      {/* ── Kanban Board / Empty ──────────────────────────────── */}
+      <motion.div
+        custom={2}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="visible"
+      >
+        {leads.length === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center py-28 rounded-2xl"
+            style={{
+              border: "2px dashed var(--glass-border-strong)",
+              background: "var(--glass-raised)",
+            }}
+          >
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+              style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.20)" }}
+            >
+              <GitBranch className="w-8 h-8" style={{ color: "#FBBF24", opacity: 0.7 }} strokeWidth={1.5} />
+            </motion.div>
+            <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
+              {t.pipeline.noLeads}
+            </p>
+            <p className="text-[13px] mb-5" style={{ color: "var(--text-subtle)" }}>
+              {t.pipeline.noLeadsHint}
+            </p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
+            >
+              <Zap className="w-4 h-4" strokeWidth={2.5} />
+              Launch Pipeline
+            </button>
+          </div>
+        ) : (
+          <KanbanBoard
+            leads={leads}
+            onSelectLead={(l: Lead) => setSelectedId(l.id)}
+            onLeadMoved={refresh}
+          />
+        )}
+      </motion.div>
 
       <LeadDetailPanel
         leadId={selectedId}

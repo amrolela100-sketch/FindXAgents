@@ -1,45 +1,54 @@
 import { useState } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { Plus, Building2, Trash2, Check, Edit2, X, ChevronRight, Target, MapPin, Briefcase, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus, Building2, Trash2, Check, Edit2, X, ChevronRight,
+  Target, MapPin, Briefcase, Loader2, Layers, Globe,
+  CheckCircle2, AlertCircle, Sparkles, FolderOpen
+} from "lucide-react";
 import { useWorkspace, type Workspace } from "../lib/workspace-context";
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const SPRING = { type: "spring" as const, stiffness: 120, damping: 22 };
+const FADE_UP = {
+  hidden: { opacity: 0, y: 14 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { ...SPRING, delay: i * 0.06 },
+  }),
 };
 
-const INDUSTRIES = ["SaaS", "Fintech", "E-commerce", "Logistics", "Marketing", "Healthcare", "Manufacturing", "Real Estate", "Education", "Food & Beverage", "Retail", "Construction", "Other"];
+const INDUSTRIES = [
+  "SaaS", "Fintech", "E-commerce", "Logistics", "Marketing",
+  "Healthcare", "Manufacturing", "Real Estate", "Education",
+  "Food & Beverage", "Retail", "Construction", "Other",
+];
 
 const REGIONS: { group: string; options: string[] }[] = [
-  {
-    group: "🇦🇪 UAE",
-    options: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "UAE – All"],
-  },
-  {
-    group: "🇸🇦 Saudi Arabia",
-    options: ["Riyadh", "Jeddah", "Dammam", "Mecca", "Medina", "Saudi Arabia – All"],
-  },
-  {
-    group: "🌍 MENA",
-    options: ["Egypt – Cairo", "Qatar – Doha", "Kuwait", "Bahrain", "Oman – Muscat", "Jordan – Amman", "Iraq – Baghdad", "Syria – Damascus", "Lebanon – Beirut", "Libya", "Tunisia", "Morocco – Casablanca", "Algeria"],
-  },
-  {
-    group: "🇳🇱 Netherlands",
-    options: ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Heel Nederland"],
-  },
-  {
-    group: "🌍 Europe",
-    options: ["London", "Paris", "Berlin", "Madrid", "Rome", "Barcelona", "Vienna", "Brussels", "Stockholm", "Copenhagen"],
-  },
-  {
-    group: "🌏 Asia",
-    options: ["Istanbul", "Singapore", "Hong Kong", "Mumbai", "Karachi", "Lahore", "Nairobi", "Lagos"],
-  },
-  {
-    group: "🌎 Americas",
-    options: ["New York", "Los Angeles", "Miami", "Toronto", "São Paulo"],
-  },
+  { group: "🇦🇪 UAE", options: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "UAE – All"] },
+  { group: "🇸🇦 Saudi Arabia", options: ["Riyadh", "Jeddah", "Dammam", "Mecca", "Medina", "Saudi Arabia – All"] },
+  { group: "🌍 MENA", options: ["Egypt – Cairo", "Qatar – Doha", "Kuwait", "Bahrain", "Oman – Muscat", "Jordan – Amman", "Iraq – Baghdad", "Syria – Damascus", "Lebanon – Beirut", "Libya", "Tunisia", "Morocco – Casablanca", "Algeria"] },
+  { group: "🇳🇱 Netherlands", options: ["Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Heel Nederland"] },
+  { group: "🌍 Europe", options: ["London", "Paris", "Berlin", "Madrid", "Rome", "Barcelona", "Vienna", "Brussels", "Stockholm", "Copenhagen"] },
+  { group: "🌏 Asia", options: ["Istanbul", "Singapore", "Hong Kong", "Mumbai", "Karachi", "Lahore", "Nairobi", "Lagos"] },
+  { group: "🌎 Americas", options: ["New York", "Los Angeles", "Miami", "Toronto", "São Paulo"] },
 ];
+
+// ─── Field Label ──────────────────────────────────────────────────────────────
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label
+      className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5"
+      style={{ color: "var(--text-muted)" }}
+    >
+      {children}
+    </label>
+  );
+}
+
+// ─── Workspace Form ───────────────────────────────────────────────────────────
 
 function WorkspaceForm({
   initial,
@@ -53,48 +62,54 @@ function WorkspaceForm({
   saving: boolean;
 }) {
   const [form, setForm] = useState({
-    name: initial?.name ?? "",
-    description: initial?.description ?? "",
-    icp: initial?.icp ?? "",
+    name:           initial?.name ?? "",
+    description:    initial?.description ?? "",
+    icp:            initial?.icp ?? "",
     targetIndustry: initial?.targetIndustry ?? "",
-    targetCity: initial?.targetCity ?? "",
+    targetCity:     initial?.targetCity ?? "",
   });
+
+  const valid = form.name.trim().length > 0;
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Name *</label>
+      <div>
+        <FieldLabel>Name *</FieldLabel>
         <input
-          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+          className="input text-[13px]"
           placeholder="e.g. Enterprise NL Q3"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          autoFocus
         />
       </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Description</label>
+
+      <div>
+        <FieldLabel>Description</FieldLabel>
         <input
-          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
-          placeholder="optional"
+          className="input text-[13px]"
+          placeholder="Short note (optional)"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
         />
       </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">ICP</label>
+
+      <div>
+        <FieldLabel>Ideal Customer Profile (ICP)</FieldLabel>
         <textarea
           rows={3}
-          className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition resize-none"
-          placeholder="Describe your ideal customer profile..."
+          className="input text-[13px] resize-none"
+          placeholder="Describe your ideal customer — size, pain points, tech stack…"
           value={form.icp}
           onChange={(e) => setForm((f) => ({ ...f, icp: e.target.value }))}
         />
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Industry</label>
+        <div>
+          <FieldLabel>Industry</FieldLabel>
           <select
-            className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+            className="input text-[13px]"
             value={form.targetIndustry}
             onChange={(e) => setForm((f) => ({ ...f, targetIndustry: e.target.value }))}
           >
@@ -102,34 +117,38 @@ function WorkspaceForm({
             {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
           </select>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[var(--text)] uppercase tracking-wider">Region</label>
+        <div>
+          <FieldLabel>Region</FieldLabel>
           <select
-            className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-lg text-sm bg-[var(--glass)] focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 focus:border-[#1A1A1A] transition"
+            className="input text-[13px]"
             value={form.targetCity}
             onChange={(e) => setForm((f) => ({ ...f, targetCity: e.target.value }))}
           >
             <option value="">Global / All Regions</option>
-            {REGIONS.map((group) => (
-              <optgroup key={group.group} label={group.group}>
-                {group.options.map((c) => <option key={c} value={c}>{c}</option>)}
+            {REGIONS.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.options.map((c) => <option key={c} value={c}>{c}</option>)}
               </optgroup>
             ))}
           </select>
         </div>
       </div>
-      <div className="flex gap-2 pt-1">
+
+      <div className="flex items-center gap-2 pt-2">
         <button
           onClick={() => onSave(form)}
-          disabled={saving || !form.name.trim()}
-          className="flex items-center gap-1.5 bg-[#1A1A1A] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#2A2A2A] transition disabled:opacity-50"
+          disabled={saving || !valid}
+          className="btn btn-primary text-[13px] px-4 py-2 gap-2 font-semibold"
         >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          Save
+          {saving
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+          }
+          Save workspace
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] border-[var(--glass-border)] hover:bg-[var(--bg)] transition"
+          className="btn btn-ghost text-[13px] px-4 py-2"
         >
           Cancel
         </button>
@@ -138,15 +157,19 @@ function WorkspaceForm({
   );
 }
 
+// ─── Workspace Card ───────────────────────────────────────────────────────────
+
 function WorkspaceCard({
   ws,
   isActive,
+  index,
   onSwitch,
   onEdit,
   onDelete,
 }: {
   ws: Workspace;
   isActive: boolean;
+  index: number;
   onSwitch: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -155,237 +178,477 @@ function WorkspaceCard({
 
   return (
     <motion.div
-      variants={fadeUp}
-      className={`bg-[var(--glass)] border rounded-2xl p-5 space-y-4 transition-shadow hover:shadow-md ${
-        isActive ? "border-[#1A1A1A] ring-2 ring-[#1A1A1A]/8" : "border-[var(--glass-border)]"
-      }`}
+      custom={index}
+      variants={FADE_UP}
+      initial="hidden"
+      animate="visible"
+      whileHover={!isActive ? { y: -2, transition: { duration: 0.2 } } : {}}
+      className="glass-card rounded-2xl overflow-hidden"
+      style={isActive ? {
+        border: "1.5px solid rgba(245,158,11,0.40)",
+        boxShadow: "0 0 0 3px rgba(245,158,11,0.08), 0 4px 24px rgba(0,0,0,0.10)",
+      } : {}}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isActive ? "bg-[#1A1A1A]" : "bg-[var(--glass-raised)]"}`}>
-            <Building2 className={`w-5 h-5 ${isActive ? "text-white" : "text-[var(--text-muted)]"}`} />
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-[var(--text)] truncate">{ws.name}</p>
-            {ws.description && <p className="text-xs text-[var(--text-muted)] truncate">{ws.description}</p>}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {isActive && (
-            <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full">
-              Active
-            </span>
-          )}
-          <button onClick={onEdit} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg)] hover:text-[var(--text)] transition">
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition"
+      {/* Active indicator bar */}
+      {isActive && (
+        <div
+          className="h-0.5 w-full"
+          style={{ background: "linear-gradient(90deg, var(--brand), transparent)" }}
+        />
+      )}
+
+      <div className="p-5 space-y-4">
+        {/* Header row */}
+        <div className="flex items-start gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={isActive ? {
+              background: "linear-gradient(135deg, var(--brand), #F97316)",
+              boxShadow: "0 4px 14px rgba(245,158,11,0.35)",
+            } : {
+              background: "var(--glass-raised)",
+              border: "1px solid var(--glass-border)",
+            }}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+            <Building2
+              className="w-5 h-5"
+              style={{ color: isActive ? "#fff" : "var(--text-muted)" }}
+              strokeWidth={1.8}
+            />
+          </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {ws.targetIndustry && (
-          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-            <Briefcase className="w-3 h-3" />
-            <span className="truncate">{ws.targetIndustry}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-[14px] tracking-tight truncate" style={{ color: "var(--text)" }}>
+                {ws.name}
+              </p>
+              {isActive && (
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1"
+                  style={{
+                    background: "rgba(52,211,153,0.12)",
+                    color: "#34D399",
+                    border: "1px solid rgba(52,211,153,0.25)",
+                  }}
+                >
+                  <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                  Active
+                </span>
+              )}
+            </div>
+            {ws.description && (
+              <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
+                {ws.description}
+              </p>
+            )}
           </div>
-        )}
-        {ws.targetCity && (
-          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-            <MapPin className="w-3 h-3" />
-            <span className="truncate">{ws.targetCity}</span>
+
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <button
+              onClick={onEdit}
+              className="btn btn-ghost w-7 h-7 p-0 rounded-lg"
+              title="Edit"
+            >
+              <Edit2 className="w-3.5 h-3.5" strokeWidth={1.8} />
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="btn btn-ghost w-7 h-7 p-0 rounded-lg"
+              title="Delete"
+              style={{ color: confirmDelete ? "#F87171" : undefined }}
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />
+            </button>
           </div>
-        )}
+        </div>
+
+        {/* Tags row */}
+        <div className="flex flex-wrap gap-2">
+          {ws.targetIndustry && (
+            <div
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+              style={{
+                background: "rgba(192,132,252,0.10)",
+                color: "#C084FC",
+                border: "1px solid rgba(192,132,252,0.20)",
+              }}
+            >
+              <Briefcase className="w-3 h-3" strokeWidth={1.8} />
+              {ws.targetIndustry}
+            </div>
+          )}
+          {ws.targetCity && (
+            <div
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+              style={{
+                background: "rgba(96,165,250,0.10)",
+                color: "#60A5FA",
+                border: "1px solid rgba(96,165,250,0.20)",
+              }}
+            >
+              <MapPin className="w-3 h-3" strokeWidth={1.8} />
+              {ws.targetCity}
+            </div>
+          )}
+          {!ws.targetIndustry && !ws.targetCity && (
+            <div
+              className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full"
+              style={{
+                background: "var(--glass-raised)",
+                color: "var(--text-subtle)",
+                border: "1px solid var(--glass-border)",
+              }}
+            >
+              <Globe className="w-3 h-3" strokeWidth={1.8} />
+              Global / All Regions
+            </div>
+          )}
+        </div>
+
+        {/* ICP preview */}
         {ws.icp && (
-          <div className="col-span-2 flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
-            <Target className="w-3 h-3 mt-0.5 flex-shrink-0" />
-            <span className="line-clamp-2">{ws.icp}</span>
+          <div
+            className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-[12px] leading-relaxed"
+            style={{
+              background: "var(--glass-raised)",
+              border: "1px solid var(--glass-border)",
+            }}
+          >
+            <Target className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "var(--brand)" }} strokeWidth={1.8} />
+            <span className="line-clamp-2" style={{ color: "var(--text-muted)" }}>{ws.icp}</span>
           </div>
         )}
-      </div>
 
-      {confirmDelete ? (
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-xs text-red-600 flex-1">Are you sure?</span>
-          <button onClick={onDelete} className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition">
-            Delete
-          </button>
-          <button onClick={() => setConfirmDelete(false)} className="text-xs text-[var(--text-muted)] px-3 py-1.5 rounded-lg border-[var(--glass-border)] hover:bg-[var(--bg)] transition">
-            Cancel
-          </button>
-        </div>
-      ) : !isActive ? (
-        <button
-          onClick={onSwitch}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border-[var(--glass-border)] text-sm text-[var(--text-muted)] hover:border-[#1A1A1A] hover:text-[var(--text)] hover:bg-[var(--bg)] transition"
-        >
-          Switch <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      ) : null}
+        {/* Actions */}
+        <AnimatePresence mode="wait">
+          {confirmDelete ? (
+            <motion.div
+              key="confirm"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              className="flex items-center gap-2 pt-1"
+            >
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#F87171" }} strokeWidth={1.8} />
+              <span className="text-[12px] flex-1" style={{ color: "#F87171" }}>
+                Delete this workspace?
+              </span>
+              <button
+                onClick={onDelete}
+                className="btn text-[12px] px-3 py-1.5 font-semibold gap-1"
+                style={{ background: "rgba(248,113,113,0.12)", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="btn btn-ghost text-[12px] px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          ) : !isActive ? (
+            <motion.button
+              key="switch"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              onClick={onSwitch}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold transition-all"
+              style={{
+                background: "var(--glass-raised)",
+                border: "1px solid var(--glass-border)",
+                color: "var(--text-muted)",
+              }}
+              whileHover={{ scale: 1.01, borderColor: "var(--brand)" }}
+            >
+              Switch to workspace
+              <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} />
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function WorkspacePage() {
-  const { workspaces, activeWorkspace, loading, switchWorkspace, createWorkspace, updateWorkspace, deleteWorkspace } = useWorkspace();
+  const {
+    workspaces,
+    activeWorkspace,
+    loading,
+    switchWorkspace,
+    createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
+  } = useWorkspace();
+
   const [showCreate, setShowCreate] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
 
   const handleCreate = async (data: Partial<Workspace>) => {
-    setSaving(true);
-    setError(null);
-    try {
-      await createWorkspace(data);
-      setShowCreate(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+    setSaving(true); setError(null);
+    try { await createWorkspace(data); setShowCreate(false); }
+    catch (err) { setError(err instanceof Error ? err.message : "Failed to save"); }
+    finally { setSaving(false); }
   };
 
   const handleUpdate = async (id: string, data: Partial<Workspace>) => {
-    setSaving(true);
-    setError(null);
-    try {
-      await updateWorkspace(id, data);
-      setEditingId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+    setSaving(true); setError(null);
+    try { await updateWorkspace(id, data); setEditingId(null); }
+    catch (err) { setError(err instanceof Error ? err.message : "Failed to save"); }
+    finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await deleteWorkspace(id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
-    }
+    try { await deleteWorkspace(id); }
+    catch (err) { setError(err instanceof Error ? err.message : "Failed to delete"); }
   };
 
   const handleSwitch = async (id: string) => {
-    try {
-      await switchWorkspace(id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to switch");
-    }
+    try { await switchWorkspace(id); }
+    catch (err) { setError(err instanceof Error ? err.message : "Failed to switch"); }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] p-4 sm:p-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+
+        {/* ── Page Header ──────────────────────────────────── */}
+        <motion.div
+          custom={0}
+          variants={FADE_UP}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+        >
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[var(--text)]">Workspaces</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-0.5">
-              Manage multiple prospecting campaigns, each with their own ICP and region.
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: "rgba(192,132,252,0.12)", border: "1px solid rgba(192,132,252,0.22)" }}
+              >
+                <Layers className="w-4 h-4" style={{ color: "#C084FC" }} strokeWidth={1.8} />
+              </div>
+              <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                Workspaces
+              </h1>
+            </div>
+            <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+              Manage multiple prospecting campaigns with their own ICP and region.
             </p>
           </div>
           <button
             onClick={() => { setShowCreate(true); setEditingId(null); }}
-            className="flex items-center justify-center gap-1.5 bg-[#1A1A1A] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#2A2A2A] transition flex-shrink-0"
+            className="btn btn-primary px-4 py-2.5 text-[13px] font-semibold gap-2 flex-shrink-0"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
             New workspace
           </button>
         </motion.div>
 
-        {/* Active workspace banner */}
-        {activeWorkspace && (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-[#1A1A1A] rounded-2xl p-5 text-white flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[var(--glass)]/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-0.5">Active workspace</p>
-              <p className="font-semibold text-white truncate">{activeWorkspace.name}</p>
-              {activeWorkspace.targetIndustry && (
-                <p className="text-xs text-white/60 mt-0.5">{activeWorkspace.targetIndustry}{activeWorkspace.targetCity ? ` · ${activeWorkspace.targetCity}` : ""}</p>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl">
-            <X className="w-4 h-4 flex-shrink-0" />
-            {error}
-            <button onClick={() => setError(null)} className="ml-auto"><X className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
-
-        {/* Create form */}
+        {/* ── Active Workspace Banner ───────────────────── */}
         <AnimatePresence>
-          {showCreate && (
+          {activeWorkspace && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="glass-card rounded-2xl p-6 space-y-2"
+              custom={1}
+              variants={FADE_UP}
+              initial="hidden"
+              animate="visible"
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, var(--brand) 0%, #F97316 100%)",
+                boxShadow: "0 8px 32px rgba(245,158,11,0.30)",
+              }}
             >
-              <p className="font-semibold text-[var(--text)] mb-4">Create new workspace</p>
-              <WorkspaceForm onSave={handleCreate} onCancel={() => setShowCreate(false)} saving={saving} />
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.18)" }}
+                >
+                  <CheckCircle2 className="w-5 h-5 text-white" strokeWidth={2} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-0.5">
+                    Active workspace
+                  </p>
+                  <p className="font-bold text-white truncate text-[15px]">
+                    {activeWorkspace.name}
+                  </p>
+                  {(activeWorkspace.targetIndustry || activeWorkspace.targetCity) && (
+                    <p className="text-[11px] text-white/70 mt-0.5">
+                      {activeWorkspace.targetIndustry}
+                      {activeWorkspace.targetIndustry && activeWorkspace.targetCity ? " · " : ""}
+                      {activeWorkspace.targetCity}
+                    </p>
+                  )}
+                </div>
+                <div
+                  className="text-[11px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5"
+                  style={{ background: "rgba(255,255,255,0.20)", color: "#fff" }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  Running
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Workspace list */}
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-[var(--text-muted)]" />
-          </div>
-        ) : workspaces.length === 0 ? (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="bg-[var(--glass)] border border-dashed border-[#D4CFC5] rounded-2xl p-12 text-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--glass-raised)] flex items-center justify-center mx-auto">
-              <Building2 className="w-6 h-6 text-[var(--text-muted)]" />
-            </div>
-            <div>
-              <p className="font-semibold text-[var(--text)]">No workspaces yet</p>
-              <p className="text-sm text-[var(--text-muted)] mt-1">Create your first workspace to start prospecting.</p>
-            </div>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-1.5 bg-[#1A1A1A] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#2A2A2A] transition"
+        {/* ── Error Alert ───────────────────────────────── */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px]"
+              style={{
+                background: "rgba(248,113,113,0.10)",
+                border: "1px solid rgba(248,113,113,0.25)",
+                color: "#F87171",
+              }}
             >
-              <Plus className="w-4 h-4" /> First workspace
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="grid sm:grid-cols-2 gap-4">
-            {workspaces.map((ws) =>
-              editingId === ws.id ? (
-                <div key={ws.id} className="bg-[var(--glass)] border border-[#1A1A1A] rounded-2xl p-5">
-                  <p className="font-semibold text-[var(--text)] mb-4">Edit workspace</p>
+              <AlertCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
+              <span className="flex-1">{error}</span>
+              <button onClick={() => setError(null)} className="opacity-70 hover:opacity-100">
+                <X className="w-4 h-4" strokeWidth={1.8} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Create Form ───────────────────────────────── */}
+        <AnimatePresence>
+          {showCreate && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="glass-card rounded-2xl overflow-hidden">
+                <div
+                  className="flex items-center justify-between px-5 py-3.5"
+                  style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={1.8} />
+                    <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                      Create new workspace
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreate(false)}
+                    className="btn btn-ghost w-7 h-7 p-0 rounded-lg"
+                  >
+                    <X className="w-3.5 h-3.5" strokeWidth={1.8} />
+                  </button>
+                </div>
+                <div className="p-5">
                   <WorkspaceForm
-                    initial={ws}
-                    onSave={(data) => handleUpdate(ws.id, data)}
-                    onCancel={() => setEditingId(null)}
+                    onSave={handleCreate}
+                    onCancel={() => setShowCreate(false)}
                     saving={saving}
                   />
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Workspace Grid / Loading / Empty ─────────── */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--text-muted)" }} />
+            <p className="text-[13px]" style={{ color: "var(--text-subtle)" }}>Loading workspaces…</p>
+          </div>
+        ) : workspaces.length === 0 ? (
+          <motion.div
+            custom={2}
+            variants={FADE_UP}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col items-center justify-center py-24 rounded-2xl"
+            style={{
+              border: "2px dashed var(--glass-border-strong)",
+              background: "var(--glass-raised)",
+            }}
+          >
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: "rgba(192,132,252,0.10)", border: "1px solid rgba(192,132,252,0.20)" }}
+            >
+              <FolderOpen className="w-7 h-7" style={{ color: "#C084FC", opacity: 0.6 }} strokeWidth={1.5} />
+            </div>
+            <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
+              No workspaces yet
+            </p>
+            <p className="text-[13px] mb-5" style={{ color: "var(--text-subtle)" }}>
+              Create your first workspace to start prospecting
+            </p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              First workspace
+            </button>
+          </motion.div>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {workspaces.map((ws, i) =>
+              editingId === ws.id ? (
+                <motion.div
+                  key={ws.id}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass-card rounded-2xl overflow-hidden"
+                  style={{ border: "1.5px solid var(--brand)", gridColumn: "1 / -1" }}
+                >
+                  <div
+                    className="flex items-center justify-between px-5 py-3.5"
+                    style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Edit2 className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={1.8} />
+                      <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                        Edit workspace
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="btn btn-ghost w-7 h-7 p-0 rounded-lg"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={1.8} />
+                    </button>
+                  </div>
+                  <div className="p-5">
+                    <WorkspaceForm
+                      initial={ws}
+                      onSave={(data) => handleUpdate(ws.id, data)}
+                      onCancel={() => setEditingId(null)}
+                      saving={saving}
+                    />
+                  </div>
+                </motion.div>
               ) : (
                 <WorkspaceCard
                   key={ws.id}
                   ws={ws}
                   isActive={activeWorkspace?.id === ws.id}
+                  index={i}
                   onSwitch={() => handleSwitch(ws.id)}
                   onEdit={() => setEditingId(ws.id)}
                   onDelete={() => handleDelete(ws.id)}
                 />
               )
             )}
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
