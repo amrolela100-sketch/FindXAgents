@@ -65,7 +65,7 @@ const fadeUp: Variants = {
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  const base = (import.meta.env.VITE_API_URL as string) || "/api";
+  const base = "/api"; // Use Vercel proxy to avoid cross-origin issues
   const res = await fetch(`${base}${path}`, {
     ...options,
     headers: {
