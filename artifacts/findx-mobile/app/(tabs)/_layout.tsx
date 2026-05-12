@@ -5,12 +5,10 @@ import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-
-// ── Native Tabs (iOS Liquid Glass / SF Symbols) ────────────────────────────
 
 function NativeTabLayout() {
   return (
@@ -39,8 +37,6 @@ function NativeTabLayout() {
   );
 }
 
-// ── Classic Tab Layout with Glass BlurView ─────────────────────────────────
-
 function TabIcon({
   name,
   color,
@@ -53,14 +49,7 @@ function TabIcon({
   return (
     <View style={styles.iconWrapper}>
       <Feather name={name} size={22} color={color} />
-      {focused && (
-        <View
-          style={[
-            styles.activeDot,
-            { backgroundColor: color },
-          ]}
-        />
-      )}
+      {focused && <View style={[styles.activeDot, { backgroundColor: color }]} />}
     </View>
   );
 }
@@ -68,7 +57,6 @@ function TabIcon({
 function ClassicTabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-
   const tabBarHeight = 56 + insets.bottom;
 
   return (
@@ -91,86 +79,60 @@ function ClassicTabLayout() {
             <BlurView
               tint={colors.isDark ? "dark" : "light"}
               intensity={65}
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  borderTopWidth: 1,
-                  borderTopColor: colors.tabBarBorder,
-                },
-              ]}
+              style={[StyleSheet.absoluteFill, { borderTopWidth: 1, borderTopColor: colors.tabBarBorder }]}
             />
           ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                {
-                  backgroundColor: colors.tabBarBackground,
-                  borderTopWidth: 1,
-                  borderTopColor: colors.tabBarBorder,
-                },
+                { backgroundColor: colors.tabBarBackground, borderTopWidth: 1, borderTopColor: colors.tabBarBorder },
               ]}
             />
           ),
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
         tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: "Inter_500Medium",
-          marginTop: -2,
-        },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: -2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="home" color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ color, focused }) => <TabIcon name="home" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="leads"
         options={{
           title: "Leads",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="users" color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ color, focused }) => <TabIcon name="users" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="runs"
         options={{
           title: "Runs",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="play-circle" color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ color, focused }) => <TabIcon name="play-circle" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="agents"
         options={{
           title: "Agents",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="cpu" color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ color, focused }) => <TabIcon name="cpu" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="user-circle" color={color} focused={focused} />
-          ),
+          tabBarIcon: ({ color, focused }) => <TabIcon name="user" color={color} focused={focused} />,
         }}
       />
     </Tabs>
   );
 }
-
-// ── Root Export ────────────────────────────────────────────────────────────
 
 export default function TabLayout() {
   if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
@@ -180,14 +142,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconWrapper: {
-    alignItems: "center",
-    width: 28,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 999,
-    marginTop: 3,
-  },
+  iconWrapper: { alignItems: "center", width: 28 },
+  activeDot: { width: 4, height: 4, borderRadius: 999, marginTop: 3 },
 });
