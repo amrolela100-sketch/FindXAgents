@@ -18,11 +18,9 @@ async function getSmtpConfig(wsId: string) {
 }
 
 async function getResendConfig(wsId: string) {
+  // Workspace-scoped only — no global fallback to prevent cross-user data leakage
   const [ws] = await db.select().from(resendConfigs).where(eq(resendConfigs.workspaceId, wsId)).limit(1);
-  if (ws) return ws;
-  // global fallback
-  const [global] = await db.select().from(resendConfigs).where(isNull(resendConfigs.workspaceId)).limit(1);
-  return global ?? null;
+  return ws ?? null;
 }
 
 async function getEmailSettings(wsId: string) {
