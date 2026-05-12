@@ -96,52 +96,49 @@ export class AgentRunner {
         .set({ status: "running" })
         .where(eq(agentPipelineRuns.id, this.runId));
 
-      // Load or create agent
-      let [agent] = await db.select().from(agents).where(eq(agents.name, "research")).limit(1);
-      if (!agent) [agent] = await db.select().from(agents).limit(1);
-      if (!agent) {
-        const [created] = await db.insert(agents).values({
-          name: "research",
-          displayName: "Research Agent",
-          description: "Discovers and qualifies business leads",
-          role: "research",
-          icon: "Search",
-          model: "google/gemini-2.5-flash",
-          maxIterations: 15,
-          maxTokens: 4096,
-          systemPrompt: "You are a B2B research agent that discovers and qualifies business leads.",
-          toolNames: ["web_search", "kvk_search", "save_lead"],
-          pipelineOrder: 1,
-          isActive: true,
-        }).returning();
-        agent = created;
-      }
+      // ── Load pipeline agents from DB ─────────────────────────────────────
+      // Prefer dedicated agents by role; fall back to "research" for legacy setups.
+      const loadAgent = async (name: string, fallbackName?: string) => {
+        let [a] = await db.select().from(agents).where(eq(agents.name, name)).limit(1);
+        if (!a && fallbackName) {
+          [a] = await db.select().from(agents).where(eq(agents.name, fallbackName)).limit(1);
+        }
+        if (!a) {
+          // Last resort: any active agent
+          [a] = await db.select().from(agents).where(eq(agents.isActive, true)).limit(1);
+        }
+        return a;
+      };
 
-      const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, agent.id));
-      const pipelineSkills = skills.length > 0
-        ? skills.map(s => s.name)
-        : ["discover-web", "qualify-ai", "generate-outreach", "stage-pipeline"];
+      const discoveryAgent = await loadAgent("discovery", "research");
+      const analysisAgent  = await loadAgent("analysis",  "research");
+      const outreachAgent  = await loadAgent("outreach",  "research");
+
+      // Guard: at least one agent must exist
+      if (!discoveryAgent) {
+        throw new Error("No active agents found in database. Run the seed script or create agents via the Admin panel.");
+      }
 
       let discoveredLeadIds: string[] = [];
       const startTime = Date.now();
 
-      for (const skill of pipelineSkills) {
-        await logToDB(agent.id, this.runId, skill, "info", `Starting skill execution: ${skill}`);
+      // ── Phase 1: Discovery ───────────────────────────────────────────────
+      await logToDB(discoveryAgent.id, this.runId, "discover-web", "info", `🔍 Discovery phase started — query: "${query}"`);
+      discoveredLeadIds = await this.skillDiscoverWeb(discoveryAgent.id, query, maxResults, userId, this.workspaceId);
+      await logToDB(discoveryAgent.id, this.runId, "discover-web", "info", `🔍 Discovery complete — ${discoveredLeadIds.length} leads found`);
 
-        if (skill === "discover-kvk" || skill === "discover-web") {
-          discoveredLeadIds = await this.skillDiscoverWeb(agent.id, query, maxResults, userId, this.workspaceId);
-        } else if (skill === "qualify-ai") {
-          await this.skillQualifyAi(agent.id, discoveredLeadIds, language);
-        } else if (skill === "generate-outreach") {
-          await this.skillGenerateOutreach(agent.id, discoveredLeadIds, language);
-        } else if (skill === "stage-pipeline") {
-          await this.skillStagePipeline(agent.id, discoveredLeadIds);
-        } else {
-          await logToDB(agent.id, this.runId, skill, "warn", `Unknown skill: ${skill}. Skipping.`);
-        }
+      // ── Phase 2: Analysis ────────────────────────────────────────────────
+      await logToDB(analysisAgent.id, this.runId, "qualify-ai", "info", `🧠 Analysis phase started — ${discoveredLeadIds.length} leads to analyze`);
+      await this.skillQualifyAi(analysisAgent.id, discoveredLeadIds, language);
+      await logToDB(analysisAgent.id, this.runId, "qualify-ai", "info", `🧠 Analysis phase complete`);
 
-        await logToDB(agent.id, this.runId, skill, "info", `Completed skill execution: ${skill}`);
-      }
+      // ── Phase 3: Outreach ────────────────────────────────────────────────
+      await logToDB(outreachAgent.id, this.runId, "generate-outreach", "info", `✉️ Outreach phase started`);
+      await this.skillGenerateOutreach(outreachAgent.id, discoveredLeadIds, language);
+      await logToDB(outreachAgent.id, this.runId, "generate-outreach", "info", `✉️ Outreach phase complete`);
+
+      // ── Phase 4: Stage pipeline ──────────────────────────────────────────
+      await this.skillStagePipeline(discoveryAgent.id, discoveredLeadIds);
 
       await db.update(agentPipelineRuns)
         .set({ status: "completed", completedAt: new Date() })
