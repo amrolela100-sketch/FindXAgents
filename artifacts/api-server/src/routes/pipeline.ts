@@ -1,26 +1,34 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { leads, pipelineStages } from "@workspace/db";
-import { count, sql } from "drizzle-orm";
+import { count, sql, eq, and } from "drizzle-orm";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
 
-router.get("/pipeline", async (_req, res) => {
+router.use(requireAuth, requireWorkspace);
+
+router.get("/pipeline", async (req, res) => {
   try {
+    const wsId = req.user!.activeWorkspaceId;
+
     const stages = await db
       .select()
       .from(pipelineStages)
       .orderBy(pipelineStages.order);
 
+    // Status counts and stage lead counts scoped to active workspace
     const statusCountsRaw = await db
       .select({ status: leads.status, count: count() })
       .from(leads)
+      .where(eq(leads.workspaceId, wsId))
       .groupBy(leads.status);
 
     const leadCountsByStage = await db
       .select({ stageId: leads.pipelineStageId, count: count() })
       .from(leads)
+      .where(eq(leads.workspaceId, wsId))
       .groupBy(leads.pipelineStageId);
 
     const countMap = new Map(leadCountsByStage.map((r: { stageId: string | null; count: number }) => [r.stageId, Number(r.count)]));
