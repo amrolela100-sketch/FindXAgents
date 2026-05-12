@@ -84,18 +84,21 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 // ─── Small components ─────────────────────────────────────────────────────────
 
 function StatCard({
-  icon: Icon, label, value, sub, color = "bg-[var(--glass-raised)] text-[var(--text)]",
+  icon: Icon, label, value, sub, accent = "#94A3B8",
 }: {
-  icon: typeof Users; label: string; value: number | string; sub?: string; color?: string;
+  icon: typeof Users; label: string; value: number | string; sub?: string; accent?: string;
 }) {
   return (
     <motion.div variants={fadeUp} className="glass-card rounded-2xl p-5">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${color}`}>
+      <div
+        className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+        style={{ background: `${accent}18`, border: `1px solid ${accent}30`, color: accent }}
+      >
         <Icon className="w-4 h-4" />
       </div>
-      <p className="text-3xl font-bold text-[var(--text)]">{value}</p>
-      <p className="text-sm text-[var(--text-muted)] mt-1">{label}</p>
-      {sub && <p className="text-xs text-emerald-600 font-medium mt-2">{sub}</p>}
+      <p className="text-3xl font-bold" style={{ color: "var(--text)" }}>{value}</p>
+      <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{label}</p>
+      {sub && <p className="text-xs font-medium mt-2" style={{ color: "var(--text-subtle)" }}>{sub}</p>}
     </motion.div>
   );
 }
