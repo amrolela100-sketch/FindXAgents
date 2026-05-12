@@ -623,9 +623,6 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>No AI providers configured</p>
                     <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>Add one or set env vars as fallback</p>
-                    <button onClick={openAddForm} className="btn btn-primary text-[12px] px-4 py-2 gap-1.5 mt-1">
-                      <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Add first provider
-                    </button>
                   </div>
                 ) : (
                   aiProviders.map((provider) => {
