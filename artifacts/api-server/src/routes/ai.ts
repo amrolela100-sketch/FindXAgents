@@ -21,7 +21,7 @@ function isAdmin(email: string): boolean {
 const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?: string }> = {
   openai: { defaultModel: "gpt-4o", defaultBaseUrl: "https://api.openai.com/v1" },
   anthropic: { defaultModel: "claude-sonnet-4-20250514", defaultBaseUrl: "https://api.anthropic.com" },
-  gemini: { defaultModel: "gemini-1.5-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta" },
+  gemini: { defaultModel: "gemini-2.0-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
   groq: { defaultModel: "llama-3.3-70b-versatile", defaultBaseUrl: "https://api.groq.com/openai/v1" },
   deepseek: { defaultModel: "deepseek-chat", defaultBaseUrl: "https://api.deepseek.com/v1" },
   glm: { defaultModel: "glm-4", defaultBaseUrl: process.env.GLM_BASE_URL || "https://open.bigmodel.cn/api/paas/v4" },
@@ -29,7 +29,7 @@ const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?:
   kimi: { defaultModel: "moonshot-v1-8k", defaultBaseUrl: "https://api.moonshot.cn/v1" },
   ollama: { defaultModel: "llama3", defaultBaseUrl: "http://localhost:11434/v1" },
   openrouter: { defaultModel: "google/gemini-2.0-flash", defaultBaseUrl: "https://openrouter.ai/api/v1" },
-  google: { defaultModel: "gemini-2.0-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta" },
+  google: { defaultModel: "gemini-2.5-flash", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
   mistral: { defaultModel: "mistral-large-latest", defaultBaseUrl: "https://api.mistral.ai/v1" },
   together: { defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo", defaultBaseUrl: "https://api.together.xyz/v1" },
   custom: { defaultModel: "", defaultBaseUrl: "" },
@@ -150,6 +150,8 @@ router.patch("/ai/providers/:id", async (req, res) => {
     const data = parsed.data;
     const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
     if (data.temperature !== undefined) update.temperature = data.temperature === null ? null : String(data.temperature);
+    // Never overwrite stored apiKey with empty/undefined — omit the field entirely
+    if (!data.apiKey) delete update.apiKey;
 
     const [provider] = await db.update(aiProviders).set(update as Partial<typeof aiProviders.$inferInsert>).where(eq(aiProviders.id, String(req.params.id))).returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
