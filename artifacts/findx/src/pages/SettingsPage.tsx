@@ -631,10 +631,10 @@ export default function SettingsPage() {
                 subtitle="Configure language models for the pipeline"
                 accent="#C084FC"
                 action={
-                  <button onClick={openAddForm} className="btn btn-primary text-[12px] px-3.5 py-2 gap-1.5 font-semibold">
+                  <motion.button onClick={openAddForm} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn btn-primary text-[12px] px-3.5 py-2 gap-1.5 font-semibold">
                     <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
                     Add Provider
-                  </button>
+                  </motion.button>
                 }
               />
 
@@ -653,17 +653,25 @@ export default function SettingsPage() {
                     <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>Add one or set env vars as fallback</p>
                   </div>
                 ) : (
-                  aiProviders.map((provider) => {
+                  <AnimatePresence mode="popLayout">
+                  {aiProviders.map((provider, idx) => {
                     const info = PROVIDER_TYPES.find((t) => t.value === provider.providerType);
                     const isTest = testing === provider.id;
                     const result = testResult?.id === provider.id ? testResult : null;
                     return (
-                      <div
+                      <motion.div
                         key={provider.id}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
+                        layout
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                        transition={{ ...SPRING, delay: idx * 0.04 }}
+                        whileHover={{ y: -1, boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl"
                         style={{
                           background: provider.isDefault ? "var(--glass-raised)" : "var(--glass)",
                           border: `1px solid ${provider.isDefault ? "var(--glass-border-strong)" : "var(--glass-border)"}`,
+                          cursor: "default",
                         }}
                       >
                         <span className="text-xl flex-shrink-0">{info?.icon ?? "🤖"}</span>
@@ -692,10 +700,12 @@ export default function SettingsPage() {
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           {/* Test */}
-                          <button
+                          <motion.button
                             onClick={() => handleTestProvider(provider.id)}
                             disabled={isTest}
                             title="Test connection"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                             style={{
                               background: "rgba(96,165,250,0.10)",
@@ -705,12 +715,14 @@ export default function SettingsPage() {
                           >
                             {isTest ? <Loader2 className="w-3 h-3 animate-spin" /> : <TestTube className="w-3 h-3" strokeWidth={2} />}
                             <span>Test</span>
-                          </button>
+                          </motion.button>
                           {/* Set Default */}
                           {!provider.isDefault && (
-                            <button
+                            <motion.button
                               onClick={() => handleSetDefault(provider.id)}
                               title="Set as default"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                               style={{
                                 background: "rgba(245,158,11,0.10)",
@@ -720,12 +732,14 @@ export default function SettingsPage() {
                             >
                               <Star className="w-3 h-3" strokeWidth={2} />
                               <span>Default</span>
-                            </button>
+                            </motion.button>
                           )}
                           {/* Edit */}
-                          <button
+                          <motion.button
                             onClick={() => openEditForm(provider)}
                             title="Edit"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                             style={{
                               background: "var(--glass-raised)",
@@ -735,11 +749,13 @@ export default function SettingsPage() {
                           >
                             <Settings2 className="w-3 h-3" strokeWidth={2} />
                             <span>Edit</span>
-                          </button>
+                          </motion.button>
                           {/* Delete */}
-                          <button
+                          <motion.button
                             onClick={() => handleDeleteProvider(provider.id)}
                             title="Delete"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
                             style={{
                               background: "rgba(248,113,113,0.08)",
@@ -749,11 +765,12 @@ export default function SettingsPage() {
                           >
                             <Trash2 className="w-3 h-3" strokeWidth={2} />
                             <span>Delete</span>
-                          </button>
+                          </motion.button>
                         </div>
-                      </div>
+                      </motion.div>
                     );
-                  })
+                  })}
+                  </AnimatePresence>
                 )}
 
                 {aiError && <Alert type="error" message={aiError} onClose={() => setAiError(null)} />}
