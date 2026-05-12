@@ -389,8 +389,16 @@ export default function SettingsPage() {
     setSaving(true); setAiError(null);
     try {
       const payload = { name: form.name, providerType: form.providerType, apiKey: form.apiKey || undefined, baseUrl: form.baseUrl || undefined, model: form.model, temperature: form.temperature || undefined, maxTokens: form.maxTokens };
-      if (editingId) await updateAiProvider(editingId, payload as any);
-      else await createAiProvider(payload);
+      if (editingId) {
+        await updateAiProvider(editingId, payload as any);
+      } else {
+        const result = await createAiProvider(payload);
+        // Auto set as default if this is the first (or only) provider
+        const isFirst = !aiProviders || aiProviders.length === 0;
+        if (isFirst && result?.provider?.id) {
+          await setDefaultAiProvider(result.provider.id);
+        }
+      }
       setShowForm(false); setEditingId(null); await loadAiProviders();
     } catch (err) { setAiError(err instanceof Error ? err.message : "Failed to save"); }
     finally { setSaving(false); }
