@@ -1,113 +1,95 @@
+import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
-import type { ComponentProps } from "react";
+import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
+  Alert,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassCard } from "@/components/ui/GlassCard";
+import { RunStatusBadge, StatusBadge } from "@/components/ui/Badge";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { Button } from "@/components/ui/Button";
 import { useColors } from "@/hooks/useColors";
-import { getAgentRun, getRunLogs } from "@/lib/api";
-import { RUN_STATUS_COLORS, RUN_STATUS_BG, STATUS_COLORS, STATUS_BG, STATUS_LABELS } from "@/lib/types";
-import type { AgentLog, Lead } from "@/lib/types";
+import { getAgentRunM, cancelRunM, getAgentLogsM } from "@/lib/api-helpers";
+import type { AgentPipelineRun, AgentLog, Lead } from "@/lib/types";
 
-type FeatherName = ComponentProps<typeof Feather>["name"];
-type Tab = "leads" | "logs";
-
-function LogItem({ log }: { log: AgentLog }) {
+function StatTile({
+  icon, value, label, color, bg,
+}: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  value: number;
+  label: string;
+  color: string;
+  bg: string;
+}) {
   const colors = useColors();
-  const levelColor = log.level === "error" ? "#DC2626" : log.level === "warn" ? "#B45309" : colors.subtle;
-  const levelBg = log.level === "error" ? "#FEF2F2" : log.level === "warn" ? "#FFFBEB" : colors.secondary;
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <Pressable
-      style={[styles.logItem, { borderBottomColor: colors.border }]}
-      onPress={() => setExpanded(e => !e)}
-    >
-      <View style={styles.logHeader}>
-        <View style={[styles.levelPill, { backgroundColor: levelBg }]}>
-          <Text style={[styles.levelText, { color: levelColor, fontFamily: "Inter_600SemiBold" }]}>
-            {log.level}
-          </Text>
+    <GlassCard noPadding style={styles.statTile}>
+      <View style={styles.statTileInner}>
+        <View style={[styles.statTileIcon, { backgroundColor: bg }]}>
+          <Feather name={icon} size={16} color={color} />
         </View>
-        <Text style={[styles.logPhase, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]} numberOfLines={1}>
-          {log.phase}
-          {log.agent?.displayName ? ` · ${log.agent.displayName}` : ""}
-        </Text>
-        {log.duration !== null && log.duration !== undefined && (
-          <Text style={[styles.logDuration, { color: colors.subtle, fontFamily: "Inter_400Regular" }]}>
-            {log.duration}ms
-          </Text>
-        )}
+        <Text style={[styles.statTileValue, { color: colors.foreground }]}>{value}</Text>
+        <Text style={[styles.statTileLabel, { color: colors.foregroundMuted }]}>{label}</Text>
       </View>
-      <Text
-        style={[styles.logMessage, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-        numberOfLines={expanded ? undefined : 2}
-      >
-        {log.message}
-      </Text>
-      {log.toolName && (
-        <View style={[styles.toolTag, { backgroundColor: "#EFF6FF" }]}>
-          <Feather name={"tool" satisfies FeatherName} size={10} color="#1D4ED8" />
-          <Text style={[styles.toolText, { color: "#1D4ED8", fontFamily: "Inter_500Medium" }]}>
-            {log.toolName}
-          </Text>
-        </View>
-      )}
-    </Pressable>
+    </GlassCard>
   );
 }
 
-function LeadItem({ lead, onPress }: { lead: Lead; onPress: () => void }) {
+function LogItem({ log }: { log: AgentLog }) {
   const colors = useColors();
-  const statusColor = STATUS_COLORS[lead.status];
-  const statusBg = STATUS_BG[lead.status];
-  const score = lead.leadScore;
-  const scoreColor = score === null ? colors.mutedForeground : score >= 80 ? "#047857" : score >= 50 ? "#B45309" : "#DC2626";
-
+  const levelColor: Record<string, string> = {
+    info: colors.info,
+    warn: colors.warning,
+    error: colors.danger,
+    debug: colors.foregroundSubtle,
+    success: colors.success,
+  };
+  const color = levelColor[log.level.toLowerCase()] ?? colors.foregroundMuted;
+  const ts = new Date(log.createdAt).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.leadCard,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          borderLeftColor: statusColor,
-          opacity: pressed ? 0.75 : 1,
-        },
-      ]}
-      onPress={onPress}
-    >
-      <View style={styles.leadRow}>
-        <View style={styles.leadInfo}>
-          <Text style={[styles.leadName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
-            {lead.businessName}
-          </Text>
-          <Text style={[styles.leadLocation, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+    <View style={[styles.logItem, { borderLeftColor: color }]}>
+      <Text style={[styles.logTs, { color: colors.foregroundSubtle }]}>{ts}</Text>
+      {log.toolName && (
+        <View style={[styles.logTool, { backgroundColor: `${colors.brand}18` }]}>
+          <Text style={[styles.logToolText, { color: colors.brand }]}>{log.toolName}</Text>
+        </View>
+      )}
+      <Text style={[styles.logMsg, { color: colors.foreground }]}>{log.message}</Text>
+    </View>
+  );
+}
+
+function RunLeadRow({ lead, onPress }: { lead: Lead; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <GlassCard onPress={onPress} noPadding style={styles.runLeadCard}>
+      <View style={styles.runLeadInner}>
+        <ScoreRing score={lead.leadScore} size={42} strokeWidth={3} />
+        <View style={styles.runLeadInfo}>
+          <Text style={[styles.runLeadName, { color: colors.foreground }]} numberOfLines={1}>{lead.businessName}</Text>
+          <Text style={[styles.runLeadCity, { color: colors.foregroundMuted }]} numberOfLines={1}>
             {lead.city}{lead.industry ? ` · ${lead.industry}` : ""}
           </Text>
         </View>
-        <View style={styles.leadRight}>
-          {score !== null && (
-            <Text style={[styles.leadScore, { color: scoreColor, fontFamily: "PlayfairDisplay_700Bold" }]}>{score}</Text>
-          )}
-          <View style={[styles.badge, { backgroundColor: statusBg }]}>
-            <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-              {STATUS_LABELS[lead.status]}
-            </Text>
-          </View>
-        </View>
+        <StatusBadge status={lead.status} />
       </View>
-    </Pressable>
+    </GlassCard>
   );
 }
 
@@ -116,245 +98,189 @@ export default function RunDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isWeb = Platform.OS === "web";
-  const [activeTab, setActiveTab] = useState<Tab>("leads");
+  const queryClient = useQueryClient();
+  const [showLogs, setShowLogs] = useState(false);
+  const logsScrollRef = useRef<ScrollView>(null);
 
-  const { data: runData, isLoading: runLoading } = useQuery({
+  const { data: run, isLoading } = useQuery({
     queryKey: ["run", id],
-    queryFn: () => getAgentRun(id!),
+    queryFn: () => getAgentRunM(id!),
     enabled: !!id,
-    refetchInterval: (query) => {
-      const run = query.state.data?.run;
-      return run?.status === "running" || run?.status === "queued" ? 5000 : false;
+    refetchInterval: (query) =>
+      query.state.data?.status === "running" ? 3000 : false,
+  });
+
+  const { data: logs } = useQuery({
+    queryKey: ["run-logs", id],
+    queryFn: () => getAgentLogsM(id!),
+    enabled: !!id && showLogs,
+    refetchInterval: run?.status === "running" ? 3000 : false,
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelRunM(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["run", id] });
+      queryClient.invalidateQueries({ queryKey: ["runs-infinite"] });
     },
   });
 
-  const { data: logsData, isLoading: logsLoading } = useQuery({
-    queryKey: ["run-logs", id],
-    queryFn: () => getRunLogs(id!),
-    enabled: !!id && activeTab === "logs",
-  });
+  const isRunning = run?.status === "running" || run?.status === "queued";
 
-  const run = runData?.run;
-  const leads = run?.leads ?? [];
-  const logs = logsData?.logs ?? [];
-  const topPad = isWeb ? 67 : insets.top;
-  const bottomPad = isWeb ? 34 : insets.bottom;
-
-  if (runLoading) {
-    return (
-      <View style={[styles.loadingScreen, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.foreground} size="large" />
-      </View>
-    );
-  }
-
-  if (!run) {
-    return (
-      <View style={[styles.loadingScreen, { backgroundColor: colors.background }]}>
-        <Feather name={"alert-circle" satisfies FeatherName} size={36} color={colors.subtle} />
-        <Text style={[styles.notFound, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Run not found
-        </Text>
-      </View>
-    );
-  }
-
-  const statusColor = RUN_STATUS_COLORS[run.status];
-  const statusBg = RUN_STATUS_BG[run.status];
+  const bgColors = colors.isDark
+    ? (["#080810", "#0D0C1E"] as const)
+    : (["#E8E6F4", "#F0EFF8"] as const);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.topBar, { paddingTop: topPad + 8, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()} testID="run-back-btn">
-          <Feather name={"arrow-left" satisfies FeatherName} size={20} color={colors.foreground} />
-        </Pressable>
-        <View style={styles.topBarTitle}>
-          <Text style={[styles.runQuery, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]} numberOfLines={2}>
-            {run.query}
-          </Text>
-          <View style={styles.topBarRow}>
-            <View style={[styles.badge, { backgroundColor: statusBg }]}>
-              <Text style={[styles.badgeText, { color: statusColor, fontFamily: "Inter_600SemiBold" }]}>
-                {run.status}
-              </Text>
-            </View>
-            <Text style={[styles.runDate, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {new Date(run.createdAt).toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={[styles.statsRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>{run.leadsFound}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>discovered</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>{run.leadsAnalyzed}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>analyzed</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "PlayfairDisplay_700Bold" }]}>{run.emailsDrafted}</Text>
-          <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>emailed</Text>
-        </View>
-      </View>
-
-      <View style={[styles.tabBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-        <Pressable
-          style={[styles.tabBtn, activeTab === "leads" && { borderBottomColor: colors.foreground, borderBottomWidth: 2 }]}
-          onPress={() => setActiveTab("leads")}
-        >
-          <Text style={[styles.tabText, { color: activeTab === "leads" ? colors.foreground : colors.mutedForeground, fontFamily: activeTab === "leads" ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
-            Leads ({run.leadsFound})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tabBtn, activeTab === "logs" && { borderBottomColor: colors.foreground, borderBottomWidth: 2 }]}
-          onPress={() => setActiveTab("logs")}
-        >
-          <Text style={[styles.tabText, { color: activeTab === "logs" ? colors.foreground : colors.mutedForeground, fontFamily: activeTab === "logs" ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
-            Logs
-          </Text>
-        </Pressable>
-      </View>
-
-      {activeTab === "leads" && (
-        <FlatList
-          data={leads}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: bottomPad + 24 }}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={leads.length > 0}
-          renderItem={({ item }) => (
-            <LeadItem
-              lead={item}
-              onPress={() => router.push({ pathname: "/lead/[id]", params: { id: item.id } })}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Feather name={"users" satisfies FeatherName} size={36} color={colors.subtle} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                No leads in this run
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {run.status === "running" ? "Run is still in progress..." : "Run completed with no leads"}
-              </Text>
-            </View>
-          }
-        />
-      )}
-
-      {activeTab === "logs" && (
-        logsLoading ? (
-          <ActivityIndicator color={colors.foreground} style={styles.loader} />
-        ) : (
-          <FlatList
-            data={logs}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingBottom: bottomPad + 24 }}
-            scrollEnabled={logs.length > 0}
-            renderItem={({ item }) => <LogItem log={item} />}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Feather name={"file-text" satisfies FeatherName} size={36} color={colors.subtle} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  No logs yet
-                </Text>
-              </View>
-            }
+    <LinearGradient colors={bgColors} style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={30}
+            tint={colors.isDark ? "dark" : "light"}
+            style={[StyleSheet.absoluteFill, { borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
           />
-        )
-      )}
-    </View>
+        ) : (
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.glassBackground, borderBottomColor: colors.divider, borderBottomWidth: 1 }]}
+          />
+        )}
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={colors.foreground} />
+        </Pressable>
+        {run && (
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.headerContent}>
+            <View style={styles.headerTop}>
+              <Text style={[styles.runQuery, { color: colors.foreground }]} numberOfLines={2}>{run.query}</Text>
+              <RunStatusBadge status={run.status} />
+            </View>
+            <Text style={[styles.runDate, { color: colors.foregroundMuted }]}>
+              {new Date(run.createdAt).toLocaleString()}
+            </Text>
+          </Animated.View>
+        )}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {!isLoading && run && (
+          <>
+            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
+              <StatTile icon="users" value={run.leadsFound} label="Discovered" color={colors.statusContactingText} bg={colors.statusContactingBg} />
+              <StatTile icon="bar-chart-2" value={run.leadsAnalyzed} label="Analyzed" color={colors.statusAnalyzedText} bg={colors.statusAnalyzedBg} />
+              <StatTile icon="mail" value={run.emailsDrafted} label="Emailed" color={colors.statusWonText} bg={colors.statusWonBg} />
+            </Animated.View>
+
+            {isRunning && (
+              <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+                <Button
+                  label="Cancel Run"
+                  variant="danger"
+                  icon={<Feather name="x-circle" size={16} color="#FFF" />}
+                  onPress={() => {
+                    Alert.alert("Cancel Run", "Stop this run?", [
+                      { text: "Keep Running", style: "cancel" },
+                      { text: "Cancel", style: "destructive", onPress: () => cancelMutation.mutate() },
+                    ]);
+                  }}
+                  loading={cancelMutation.isPending}
+                  fullWidth
+                  style={{ marginBottom: 16 }}
+                />
+              </Animated.View>
+            )}
+
+            {run.leads && run.leads.length > 0 && (
+              <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                  Leads ({run.leads.length})
+                </Text>
+                <View style={styles.leadsList}>
+                  {run.leads.map((lead) => (
+                    <RunLeadRow key={lead.id} lead={lead} onPress={() => router.push(`/lead/${lead.id}`)} />
+                  ))}
+                </View>
+              </Animated.View>
+            )}
+
+            <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+              <Pressable
+                onPress={() => setShowLogs((s) => !s)}
+                style={[styles.logsToggle, { backgroundColor: colors.glassBackground, borderColor: colors.glassBorder }]}
+              >
+                <Feather name="terminal" size={15} color={colors.foreground} />
+                <Text style={[styles.logsToggleText, { color: colors.foreground }]}>
+                  {showLogs ? "Hide" : "Show"} Logs
+                </Text>
+                <Feather name={showLogs ? "chevron-up" : "chevron-down"} size={15} color={colors.foregroundSubtle} />
+              </Pressable>
+
+              {showLogs && logs && logs.length > 0 && (
+                <Animated.View entering={FadeInDown.duration(300)}>
+                  <GlassCard noPadding style={styles.logsCard}>
+                    <ScrollView
+                      style={styles.logsScroll}
+                      ref={logsScrollRef}
+                      onContentSizeChange={() => logsScrollRef.current?.scrollToEnd({ animated: false })}
+                    >
+                      {logs.map((log) => <LogItem key={log.id} log={log} />)}
+                    </ScrollView>
+                  </GlassCard>
+                </Animated.View>
+              )}
+            </Animated.View>
+
+            {run.error && (
+              <Animated.View entering={FadeInDown.delay(350).duration(400)}>
+                <GlassCard noPadding style={[styles.errorCard, { borderColor: colors.danger }]}>
+                  <View style={styles.errorInner}>
+                    <Feather name="alert-circle" size={18} color={colors.danger} />
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{run.error}</Text>
+                  </View>
+                </GlassCard>
+              </Animated.View>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  notFound: { fontSize: 15 },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    gap: 10,
-  },
-  backBtn: { padding: 4, marginTop: 2 },
-  topBarTitle: { flex: 1, gap: 6 },
-  runQuery: { fontSize: 17, lineHeight: 24 },
-  topBarRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  runDate: { fontSize: 12 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  badgeText: { fontSize: 10, textTransform: "capitalize" },
-  statsRow: {
-    flexDirection: "row",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  statItem: { flex: 1, alignItems: "center", gap: 2 },
-  statValue: { fontSize: 24 },
-  statLabel: { fontSize: 11 },
-  statDivider: { width: 1, marginVertical: 4 },
-  tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-  },
-  tabBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: -1,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  tabText: { fontSize: 13 },
-  leadCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderLeftWidth: 3,
-    padding: 14,
-    marginBottom: 8,
-  },
-  leadRow: { flexDirection: "row", alignItems: "center" },
-  leadInfo: { flex: 1 },
-  leadName: { fontSize: 14, marginBottom: 3 },
-  leadLocation: { fontSize: 12 },
-  leadRight: { alignItems: "flex-end", gap: 4 },
-  leadScore: { fontSize: 20 },
-  logItem: {
-    padding: 14,
-    borderBottomWidth: 1,
-    gap: 6,
-  },
-  logHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  levelPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  levelText: { fontSize: 10 },
-  logPhase: { flex: 1, fontSize: 11 },
-  logDuration: { fontSize: 10 },
-  logMessage: { fontSize: 13, lineHeight: 19 },
-  toolTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  toolText: { fontSize: 10 },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyTitle: { fontSize: 16 },
-  emptySubtitle: { fontSize: 13, textAlign: "center", paddingHorizontal: 30 },
-  loader: { marginTop: 40 },
+  root: { flex: 1 },
+  header: { paddingBottom: 0, zIndex: 10 },
+  backBtn: { padding: 16, paddingBottom: 8 },
+  headerContent: { paddingHorizontal: 20, paddingBottom: 16 },
+  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  runQuery: { fontSize: 18, fontFamily: "Inter_600SemiBold", flex: 1, lineHeight: 24 },
+  runDate: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 6 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  statTile: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  statTileInner: { padding: 14, alignItems: "flex-start", gap: 6 },
+  statTileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  statTileValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  statTileLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", marginBottom: 10 },
+  leadsList: { gap: 10, marginBottom: 20 },
+  runLeadCard: { borderRadius: 12, overflow: "hidden" },
+  runLeadInner: { flexDirection: "row", alignItems: "center", padding: 12, gap: 12 },
+  runLeadInfo: { flex: 1 },
+  runLeadName: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+  runLeadCity: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  logsToggle: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
+  logsToggleText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
+  logsCard: { borderRadius: 12, overflow: "hidden", marginBottom: 16 },
+  logsScroll: { maxHeight: 320, padding: 12 },
+  logItem: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", gap: 6, paddingVertical: 6, paddingLeft: 10, borderLeftWidth: 2, marginBottom: 4 },
+  logTs: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 2 },
+  logTool: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  logToolText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  logMsg: { fontSize: 12, fontFamily: "Inter_400Regular", flex: 1, lineHeight: 16 },
+  errorCard: { borderRadius: 12, overflow: "hidden", borderWidth: 1 },
+  errorInner: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14 },
+  errorText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1, lineHeight: 18 },
 });
