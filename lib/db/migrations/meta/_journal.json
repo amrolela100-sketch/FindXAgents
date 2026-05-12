@@ -50,6 +50,20 @@
       "when": 1747000000000,
       "tag": "0006_add_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1747001000000,
+      "tag": "0006_add_provider_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1747002000000,
+      "tag": "0007_workspace_multitenancy",
+      "breakpoints": true
     }
   ]
 }
