@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -66,9 +66,10 @@ async function getActiveProvider() {
   };
 }
 
-router.get("/ai/providers", async (_req, res) => {
+router.get("/ai/providers", async (req, res) => {
   try {
-    const rows = await db.select().from(aiProviders).orderBy(desc(aiProviders.isDefault));
+    const wsId = req.user!.activeWorkspaceId;
+    const rows = await db.select().from(aiProviders).where(eq(aiProviders.workspaceId, wsId)).orderBy(desc(aiProviders.isDefault));
     const masked = rows.map((p) => ({ ...p, apiKey: maskKey(p.apiKey) }));
     const active = await getActiveProvider();
     return res.json({
@@ -103,6 +104,7 @@ router.post("/ai/providers", async (req, res) => {
     const data = aiProviderSchema.parse(req.body);
     const defaults = PROVIDER_DEFAULTS[data.providerType];
     const [provider] = await db.insert(aiProviders).values({
+      workspaceId: req.user!.activeWorkspaceId,
       name: data.name,
       providerType: data.providerType,
       apiKey: data.apiKey ?? null,
