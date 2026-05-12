@@ -46,7 +46,7 @@ type ProviderConfig = {
 const PROVIDER_TYPES: ProviderConfig[] = [
   { value: "openai", label: "OpenAI", icon: "🤖", color: "#10a37f", description: "GPT-4o, GPT-4 Turbo, o1 — best for reasoning", apiKeyLabel: "OpenAI API Key", apiKeyPlaceholder: "sk-...", apiKeyUrl: "https://platform.openai.com/api-keys", apiKeyUrlLabel: "platform.openai.com", defaultBaseUrl: "https://api.openai.com/v1", baseUrlEditable: false, models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1-mini", "o1-preview"], defaultModel: "gpt-4o" },
   { value: "anthropic", label: "Anthropic", icon: "🧠", color: "#d97706", description: "Claude 3.5 Sonnet & Opus — excellent for writing", apiKeyLabel: "Anthropic API Key", apiKeyPlaceholder: "sk-ant-...", apiKeyUrl: "https://console.anthropic.com/settings/keys", apiKeyUrlLabel: "console.anthropic.com", defaultBaseUrl: "https://api.anthropic.com/v1", baseUrlEditable: false, models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"], defaultModel: "claude-3-5-sonnet-20241022" },
-  { value: "google", label: "Google Gemini", icon: "✨", color: "#4285f4", description: "Gemini 2.5 Flash — large context, fast & cheap", apiKeyLabel: "Google AI API Key", apiKeyPlaceholder: "AIza...", apiKeyUrl: "https://aistudio.google.com/app/apikey", apiKeyUrlLabel: "aistudio.google.com", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta", baseUrlEditable: false, models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"], defaultModel: "gemini-2.0-flash" },
+  { value: "google", label: "Google Gemini", icon: "✨", color: "#4285f4", description: "Gemini 2.5 Flash — large context, fast & cheap", apiKeyLabel: "Google AI API Key", apiKeyPlaceholder: "AIza...", apiKeyUrl: "https://aistudio.google.com/app/apikey", apiKeyUrlLabel: "aistudio.google.com", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", baseUrlEditable: false, models: ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"], defaultModel: "gemini-2.5-flash" },
   { value: "groq", label: "Groq", icon: "⚡", color: "#f97316", description: "Ultra-fast Llama 3 & Mixtral inference", apiKeyLabel: "Groq API Key", apiKeyPlaceholder: "gsk_...", apiKeyUrl: "https://console.groq.com/keys", apiKeyUrlLabel: "console.groq.com", defaultBaseUrl: "https://api.groq.com/openai/v1", baseUrlEditable: false, models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"], defaultModel: "llama-3.3-70b-versatile" },
   { value: "openrouter", label: "OpenRouter", icon: "🔀", color: "#7c3aed", description: "100+ models from one API", apiKeyLabel: "OpenRouter API Key", apiKeyPlaceholder: "sk-or-v1-...", apiKeyUrl: "https://openrouter.ai/keys", apiKeyUrlLabel: "openrouter.ai", defaultBaseUrl: "https://openrouter.ai/api/v1", baseUrlEditable: false, models: ["google/gemini-2.5-flash", "google/gemini-2.0-flash-001", "openai/gpt-4o", "anthropic/claude-3.5-sonnet", "meta-llama/llama-3.3-70b-instruct"], defaultModel: "google/gemini-2.5-flash", keyPrefix: "sk-or-" },
   { value: "deepseek", label: "DeepSeek", icon: "🔭", color: "#0ea5e9", description: "DeepSeek V3 & R1 — top coding & reasoning", apiKeyLabel: "DeepSeek API Key", apiKeyPlaceholder: "sk-...", apiKeyUrl: "https://platform.deepseek.com/api_keys", apiKeyUrlLabel: "platform.deepseek.com", defaultBaseUrl: "https://api.deepseek.com/v1", baseUrlEditable: false, models: ["deepseek-chat", "deepseek-reasoner"], defaultModel: "deepseek-chat" },
@@ -396,15 +396,27 @@ export default function SettingsPage() {
   async function handleSaveProvider() {
     setSaving(true); setAiError(null);
     try {
-      const payload = { name: form.name, providerType: form.providerType, apiKey: form.apiKey || undefined, baseUrl: form.baseUrl || undefined, model: form.model, temperature: form.temperature || undefined, maxTokens: form.maxTokens };
+      // When editing: omit apiKey entirely if left blank (server keeps existing key)
+      // When creating: include apiKey if provided
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        providerType: form.providerType,
+        baseUrl: form.baseUrl || undefined,
+        model: form.model,
+        temperature: form.temperature || undefined,
+        maxTokens: form.maxTokens,
+      };
+      if (!editingId || form.apiKey) {
+        payload.apiKey = form.apiKey || undefined;
+      }
       if (editingId) {
         await updateAiProvider(editingId, payload as any);
       } else {
-        const result = await createAiProvider(payload);
+        const result = await createAiProvider(payload as any);
         // Auto set as default if this is the first (or only) provider
         const isFirst = !aiProviders || aiProviders.length === 0;
-        if (isFirst && result?.provider?.id) {
-          await setDefaultAiProvider(result.provider.id);
+        if (isFirst && (result as any)?.provider?.id) {
+          await setDefaultAiProvider((result as any).provider.id);
         }
       }
       setShowForm(false); setEditingId(null); await loadAiProviders();
