@@ -62,14 +62,14 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
 
   return (
     <div className="space-y-4">
-      <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+      <div className="p-4 rounded-xl glass-sm">
         <div className="flex items-center gap-3 mb-3">
           <Globe className="w-4 h-4 text-slate-400" />
           <span className="text-xs text-slate-400 font-medium">Email Language</span>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as typeof language)}
-            className="ml-auto text-xs bg-slate-700 border border-slate-600 text-slate-200 rounded-lg px-2 py-1"
+            className="ml-auto input text-xs !w-auto !py-1 !px-2"
           >
             {LANG_OPTIONS.map((l) => (
               <option key={l.value} value={l.value}>{l.label}</option>
@@ -93,7 +93,7 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
       ) : (
         <div className="space-y-3">
           {outreaches.map((o) => (
-            <div key={o.id} className="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+            <div key={o.id} className="p-4 rounded-xl glass-sm">
               {editingId === o.id ? (
                 <div className="space-y-2">
                   <input
