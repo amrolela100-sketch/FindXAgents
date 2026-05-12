@@ -1,5 +1,5 @@
 import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders } from "@workspace/db";
-import { eq, sql, and, ilike } from "drizzle-orm";
+import { eq, sql, and, ilike, isNull } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
@@ -24,11 +24,11 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): 
 }
 
 /** Resolve Tavily API key — DB config takes priority over env var */
-async function getTavilyKey(): Promise<string | null> {
+async function getTavilyKey(workspaceId?: string | null): Promise<string | null> {
   try {
     const [cfg] = await db.select({ apiKey: searchConfigs.apiKey })
       .from(searchConfigs)
-      .where(eq(searchConfigs.id, "default"))
+      .where(isNull(searchConfigs.workspaceId))
       .limit(1);
     if (cfg?.apiKey) return cfg.apiKey;
   } catch { /* fall through */ }
@@ -88,7 +88,7 @@ function isValidBusinessName(name: string): boolean {
 }
 
 export class AgentRunner {
-  constructor(private runId: string) {}
+  constructor(private runId: string, private workspaceId: string | null = null) {}
 
   async run(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     try {
@@ -129,7 +129,7 @@ export class AgentRunner {
         await logToDB(agent.id, this.runId, skill, "info", `Starting skill execution: ${skill}`);
 
         if (skill === "discover-kvk" || skill === "discover-web") {
-          discoveredLeadIds = await this.skillDiscoverWeb(agent.id, query, maxResults, userId);
+          discoveredLeadIds = await this.skillDiscoverWeb(agent.id, query, maxResults, userId, this.workspaceId);
         } else if (skill === "qualify-ai") {
           await this.skillQualifyAi(agent.id, discoveredLeadIds, language);
         } else if (skill === "generate-outreach") {
@@ -176,10 +176,10 @@ export class AgentRunner {
     }
   }
 
-  private async skillDiscoverWeb(agentId: string, query: string, maxResults: number, userId: string | null): Promise<string[]> {
+  private async skillDiscoverWeb(agentId: string, query: string, maxResults: number, userId: string | null, workspaceId: string | null = null): Promise<string[]> {
     const kvkKey = process.env.KVK_API_KEY;
     const googleKey = process.env.GOOGLE_MAPS_API_KEY;
-    const tavilyKey = await getTavilyKey();
+    const tavilyKey = await getTavilyKey(workspaceId);
     let items: any[] = [];
 
     // ── 1. Tavily search ────────────────────────────────────────────────────
