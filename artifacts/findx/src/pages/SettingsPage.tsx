@@ -360,7 +360,15 @@ export default function SettingsPage() {
     try { const d = await getSearchConfig(); setSearchConfig(d); } catch { }
   }
   async function loadTelegramSettings() {
-    try { const d = await getTelegramSettings(); const s = d.settings; const configured = !!(s?.botToken && s?.chatId); setTelegramSettingsState({ configured, chatId: s?.chatId }); if (s?.chatId) setTelegramForm((f) => ({ ...f, chatId: s.chatId! })); } catch { }
+    try {
+      const d = await getTelegramSettings();
+      // API returns { configured, chatId } directly — not { settings: { ... } }
+      const raw = d as any;
+      const configured = raw.configured ?? !!(raw.settings?.botToken && raw.settings?.chatId);
+      const chatId: string | undefined = raw.chatId ?? raw.settings?.chatId;
+      setTelegramSettingsState({ configured, chatId });
+      if (chatId) setTelegramForm((f) => ({ ...f, chatId }));
+    } catch { }
   }
 
   useEffect(() => {
@@ -1145,7 +1153,7 @@ export default function SettingsPage() {
                   <Alert type={telegramTestResult.success ? "success" : "error"} message={telegramTestResult.success ? "Test message sent!" : telegramTestResult.error ?? "Test failed"} />
                 )}
                 <div className="flex gap-2 pt-1">
-                  <button onClick={handleSaveTelegram} disabled={telegramSaving || !telegramForm.botToken || !telegramForm.chatId} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
+                  <button onClick={handleSaveTelegram} disabled={telegramSaving || (!telegramSettings?.configured && !telegramForm.botToken) || !telegramForm.chatId} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
                     {telegramSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
                     Save Settings
                   </button>
