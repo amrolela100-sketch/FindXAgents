@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useLang } from "../lib/lang-context";
+import { PageShell } from "../components/page-shell";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,25 +93,30 @@ function StatCard({
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${color}`}>
         <Icon className="w-4 h-4" />
       </div>
-      <p className="text-3xl font-serif font-bold text-[var(--text)]">{value}</p>
+      <p className="text-3xl font-bold text-[var(--text)]">{value}</p>
       <p className="text-sm text-[var(--text-muted)] mt-1">{label}</p>
       {sub && <p className="text-xs text-emerald-600 font-medium mt-2">{sub}</p>}
     </motion.div>
   );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  completed: "bg-emerald-50 text-emerald-700",
-  running:   "bg-blue-50 text-blue-700",
-  queued:    "bg-amber-50 text-amber-700",
-  failed:    "bg-red-50 text-red-700",
-  cancelled: "bg-[var(--glass-raised)] text-[var(--text-muted)]",
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  completed: { bg: "rgba(16,185,129,0.12)",  color: "#34D399", border: "rgba(16,185,129,0.28)"  },
+  running:   { bg: "rgba(59,130,246,0.12)",  color: "#60A5FA", border: "rgba(59,130,246,0.28)"  },
+  queued:    { bg: "rgba(245,158,11,0.12)",  color: "#FBBF24", border: "rgba(245,158,11,0.28)"  },
+  failed:    { bg: "rgba(239,68,68,0.12)",   color: "#F87171", border: "rgba(239,68,68,0.28)"   },
+  cancelled: { bg: "var(--glass-raised)",    color: "var(--text-muted)", border: "var(--glass-border)" },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_COLORS[status] ?? "bg-[var(--glass-raised)] text-[var(--text-muted)]";
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.cancelled;
   return (
-    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${cls}`}>{status}</span>
+    <span
+      className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -207,7 +213,7 @@ export default function OwnerDashboardPage() {
 
   if (!unlocked) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -231,17 +237,17 @@ export default function OwnerDashboardPage() {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
             placeholder="Owner password"
-            className="w-full px-3 py-2.5 border-[var(--glass-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10"
+            className="input"
           />
           <button
             onClick={handleUnlock}
             disabled={unlocking || !password}
-            className="w-full bg-[#1A1A1A] text-white rounded-xl py-2.5 text-sm font-medium hover:bg-[#2A2A2A] transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full btn btn-primary py-2.5 text-sm font-semibold gap-2 rounded-xl"
           >
             {unlocking && <Loader2 className="w-4 h-4 animate-spin" />}
             Unlock
           </button>
-          {unlockError && <p className="text-xs text-red-600">{unlockError}</p>}
+          {unlockError && <p className="text-xs font-medium" style={{ color: "var(--color-danger)" }}>{unlockError}</p>}
         </motion.div>
       </div>
     );
@@ -251,7 +257,7 @@ export default function OwnerDashboardPage() {
 
   if (loading && !stats) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-[var(--text-muted)]" />
       </div>
     );
@@ -259,7 +265,7 @@ export default function OwnerDashboardPage() {
 
   if (error && !stats) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+      <div className="min-h-[100dvh] flex items-center justify-center">
         <div className="text-center space-y-3">
           <Shield className="w-10 h-10 text-red-400 mx-auto" />
           <p className="font-semibold text-[var(--text)]">{error}</p>
@@ -280,7 +286,7 @@ export default function OwnerDashboardPage() {
   // ── main UI ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] p-4 sm:p-8">
+    <PageShell title="Owner Dashboard" subtitle="Full platform control">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* ── Header ── */}
@@ -293,21 +299,21 @@ export default function OwnerDashboardPage() {
                 Owner Dashboard
               </span>
             </div>
-            <h1 className="text-2xl font-serif font-bold text-[var(--text)]">Platform Overview</h1>
+            <h1 className="text-2xl font-bold text-[var(--text)]">Platform Overview</h1>
             <p className="text-sm text-[var(--text-muted)] mt-0.5">Full control and visibility across all users and activity.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={loadAll}
               disabled={loading}
-              className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] border-[var(--glass-border)] bg-[var(--glass)] px-3 py-2 rounded-xl hover:bg-[var(--bg)] transition disabled:opacity-50"
+              className="btn btn-secondary text-sm gap-1.5 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </button>
             <button
               onClick={handleLock}
-              className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] border-[var(--glass-border)] bg-[var(--glass)] px-3 py-2 rounded-xl hover:bg-[var(--bg)] transition"
+              className="btn btn-secondary text-sm gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               Lock
@@ -341,16 +347,16 @@ export default function OwnerDashboardPage() {
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               <StatCard icon={Users}     label="Total users"      value={stats.totalUsers}
                 sub={`${stats.onboardingCompleted} onboarded`}
-                color="bg-blue-50 text-blue-600" />
+                accent="#60A5FA" />
               <StatCard icon={TrendingUp} label="Total leads"     value={stats.totalLeads}
                 sub={`${stats.leadsThisWeek} this week`}
-                color="bg-emerald-50 text-emerald-600" />
+                accent="#34D399" />
               <StatCard icon={Zap}        label="Agent runs"      value={stats.totalRuns}
                 sub={`${stats.leadsContacted} contacted`}
-                color="bg-violet-50 text-violet-600" />
+                accent="#C084FC" />
               <StatCard icon={Activity}  label="Conversion rate"  value={`${stats.conversionRate}%`}
                 sub={`${stats.leadsWon} won`}
-                color="bg-amber-50 text-amber-600" />
+                accent="#FBBF24" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -358,8 +364,8 @@ export default function OwnerDashboardPage() {
               <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 space-y-3">
                 <p className="font-semibold text-[var(--text)]">Platform Health</p>
                 {(["api", "auth", "database", "agents"] as const).map((key) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b border-[#F0EDE6] last:border-0">
-                    <span className="text-sm text-[#4A4540] capitalize">{key}</span>
+                  <div key={key} className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: "var(--glass-border)" }}">
+                    <span className="text-sm" style={{ color: "var(--text-muted)" }}>{key}</span>
                     <span className={`text-xs font-medium flex items-center gap-1.5 ${stats.health[key] ? "text-emerald-600" : "text-amber-600"}`}>
                       {stats.health[key]
                         ? <><CheckCircle className="w-4 h-4" /> Operational</>
@@ -373,7 +379,7 @@ export default function OwnerDashboardPage() {
               <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 space-y-3">
                 <p className="font-semibold text-[var(--text)]">Lead Funnel</p>
                 {[
-                  { label: "Discovered",  value: stats.totalLeads,     color: "bg-[#1A1A1A]" },
+                  { label: "Discovered",  value: stats.totalLeads,     color: "bg-amber-400" },
                   { label: "Analyzed",    value: stats.leadsAnalyzed,   color: "bg-blue-500" },
                   { label: "Contacted",   value: stats.leadsContacted,  color: "bg-violet-500" },
                   { label: "Won",         value: stats.leadsWon,        color: "bg-emerald-500" },
@@ -382,7 +388,7 @@ export default function OwnerDashboardPage() {
                   return (
                     <div key={label}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-[#4A4540]">{label}</span>
+                        <span style={{ color: "var(--text-muted)" }}>{label}</span>
                         <span className="font-medium text-[var(--text)]">{value} <span className="text-[var(--text-muted)] font-normal">({pct}%)</span></span>
                       </div>
                       <div className="h-2 bg-[var(--glass-raised)] rounded-full overflow-hidden">
@@ -396,10 +402,10 @@ export default function OwnerDashboardPage() {
 
             {/* Recent runs */}
             <motion.div variants={fadeUp} className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#F0EDE6]">
+              <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }}">
                 <p className="font-semibold text-[var(--text)]">Latest Pipeline Runs</p>
               </div>
-              <div className="divide-y divide-[#F0EDE6]">
+              <div className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
                 {stats.recentRuns.length === 0 && (
                   <p className="px-6 py-8 text-sm text-center text-[var(--text-muted)]">No runs yet.</p>
                 )}
@@ -432,7 +438,7 @@ export default function OwnerDashboardPage() {
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Search by email…"
-                  className="w-full pl-9 pr-3 py-2 border-[var(--glass-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 bg-[var(--glass)]"
+                  className="input pl-9"
                 />
               </div>
               <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
@@ -442,14 +448,14 @@ export default function OwnerDashboardPage() {
             </div>
 
             <motion.div variants={fadeUp} className="glass-card rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
+              <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }} flex items-center justify-between">
                 <p className="font-semibold text-[var(--text)]">{filteredUsers.length} users</p>
                 <span className="text-xs text-[var(--text-muted)]">sorted by registration date</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#F0EDE6] bg-[#FAFAF7]">
+                    <tr className="border-b" style={{ borderColor: "var(--glass-border)" }} bg-[#FAFAF7]">
                       <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">User</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Role</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Leads</th>
@@ -459,12 +465,12 @@ export default function OwnerDashboardPage() {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Last active</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F0EDE6]">
+                  <tbody className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
                     {filteredUsers.length === 0 && (
                       <tr><td colSpan={7} className="px-6 py-10 text-center text-[var(--text-muted)]">No users found.</td></tr>
                     )}
                     {filteredUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-[#FAFAF7] transition-colors">
+                      <tr key={u.id} className="transition-colors" onMouseEnter={(e) => (e.currentTarget.style.background = "var(--glass-raised)")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-2.5">
                             <div className="w-7 h-7 rounded-full bg-[var(--glass-raised)] flex items-center justify-center text-xs font-semibold text-[var(--text)] flex-shrink-0">
@@ -479,12 +485,12 @@ export default function OwnerDashboardPage() {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {u.isOwner && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24", border: "1px solid rgba(251,191,36,0.28)" }}>
                                 <Crown className="w-3 h-3" /> Owner
                               </span>
                             )}
                             {u.isAdmin && !u.isOwner && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(168,85,247,0.12)", color: "#C084FC", border: "1px solid rgba(168,85,247,0.28)" }}>
                                 <Shield className="w-3 h-3" /> Admin
                               </span>
                             )}
@@ -501,8 +507,8 @@ export default function OwnerDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           {u.onboardingCompleted
-                            ? <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
-                            : <span className="flex items-center gap-1 text-xs text-amber-600 font-medium"><Clock3 className="w-3.5 h-3.5" /> Pending</span>
+                            ? <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#34D399" }}><CheckCircle className="w-3.5 h-3.5" /> Yes</span>
+                            : <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#FBBF24" }}><Clock3 className="w-3.5 h-3.5" /> Pending</span>
                           }
                         </td>
                         <td className="px-4 py-3 text-xs text-[var(--text-muted)]">{fmt(u.createdAt)}</td>
@@ -520,14 +526,14 @@ export default function OwnerDashboardPage() {
         {tab === "runs" && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp}
             className="glass-card rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#F0EDE6] flex items-center justify-between">
+            <div className="px-6 py-4 border-b" style={{ borderColor: "var(--glass-border)" }} flex items-center justify-between">
               <p className="font-semibold text-[var(--text)]">{runs.length} pipeline runs</p>
               <span className="text-xs text-[var(--text-muted)]">All users · latest 50</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#F0EDE6] bg-[#FAFAF7]">
+                  <tr className="border-b" style={{ borderColor: "var(--glass-border)" }} bg-[#FAFAF7]">
                     <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Query</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Leads</th>
@@ -536,12 +542,12 @@ export default function OwnerDashboardPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">User ID</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F0EDE6]">
+                <tbody className="divide-y" style={{ borderColor: "var(--glass-border)" }}>
                   {runs.length === 0 && (
                     <tr><td colSpan={6} className="px-6 py-10 text-center text-[var(--text-muted)]">No runs yet.</td></tr>
                   )}
                   {runs.map((run) => (
-                    <tr key={run.id} className="hover:bg-[#FAFAF7] transition-colors">
+                    <tr key={run.id} className="transition-colors" onMouseEnter={(e) => (e.currentTarget.style.background = "var(--glass-raised)")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                       <td className="px-6 py-3">
                         <p className="font-medium text-[var(--text)] truncate max-w-[260px]">{run.query}</p>
                         <p className="text-[10px] text-[var(--text-subtle)] font-mono mt-0.5">{run.id.slice(0, 8)}…</p>
@@ -560,6 +566,6 @@ export default function OwnerDashboardPage() {
         )}
 
       </div>
-    </div>
+    </PageShell>
   );
 }
