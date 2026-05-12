@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Users, BarChart2, Zap, Shield, CheckCircle, XCircle, Loader2, RefreshCw, TrendingUp } from "lucide-react";
+import { PageShell } from "../components/page-shell";
 import { supabase } from "../lib/supabase";
 
 const GLASS = {
@@ -128,32 +129,30 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-muted)" }} />
-      </div>
+      <PageShell title="Admin" subtitle="Platform Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-muted)" }} />
+        </div>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
-        <div className="text-center space-y-3">
-          <Shield className="w-10 h-10 mx-auto" style={{ color: "#F87171" }} />
-          <p className="font-semibold" style={{ color: "var(--text)" }}>{error}</p>
-          <button
-            onClick={load}
-            className="text-[13px] underline"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Try again
-          </button>
+      <PageShell title="Admin" subtitle="Platform Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <Shield className="w-10 h-10 mx-auto" style={{ color: "#F87171" }} />
+            <p className="font-semibold" style={{ color: "var(--text)" }}>{error}</p>
+            <button onClick={load} className="text-[13px] underline" style={{ color: "var(--text-muted)" }}>Try again</button>
+          </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-8" style={{ background: "var(--bg)" }}>
+    <PageShell title="Admin" subtitle="Platform Dashboard">
       <div className="max-w-5xl mx-auto space-y-8">
 
         {/* ── Header ─────────────────────────────────────────── */}
@@ -357,6 +356,6 @@ export default function AdminPage() {
         )}
 
       </div>
-    </div>
+    </PageShell>
   );
 }
