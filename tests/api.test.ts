@@ -74,6 +74,7 @@ vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
   requireAuth: vi.fn((_req: any, _res: any, next: any) => next()),
   optionalAuth: vi.fn((_req: any, _res: any, next: any) => next()),
+  requireWorkspace: vi.fn((_req: any, _res: any, next: any) => next()),
 }));
 
 // ── Mock AI Engine ────────────────────────────────────────────────────────────
