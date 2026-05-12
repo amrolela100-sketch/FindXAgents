@@ -153,7 +153,7 @@ export async function requireWorkspace(req: Request, res: Response, next: NextFu
     }
 
     // Attach to request so route handlers can use it without another DB call
-    req.workspace = { id: workspaceId, role: membership.role, ...membership.ws };
+    req.workspace = { ...membership.ws, id: workspaceId, role: membership.role };
     req.user!.activeWorkspaceId = workspaceId;
 
     return next();
