@@ -62,7 +62,7 @@ export function AnalysisPanel({ lead, onLeadUpdated }: { lead: Lead; onLeadUpdat
         <button
           onClick={handleAnalyze}
           disabled={!lead.website || triggering}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="btn btn-primary gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {triggering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
           {triggering ? "Analyzing..." : "Run Analysis"}
@@ -107,13 +107,13 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
   const needBadge = (need: string) => {
     if (need === "high") return <span className="px-2 py-0.5 bg-red-900/60 text-red-300 rounded-full text-xs font-medium">High</span>;
     if (need === "medium") return <span className="px-2 py-0.5 bg-amber-900/60 text-amber-300 rounded-full text-xs font-medium">Medium</span>;
-    return <span className="px-2 py-0.5 bg-slate-800 text-slate-400 rounded-full text-xs font-medium">Low</span>;
+    return <span className="px-2 py-0.5 glass-raised text-slate-400 rounded-full text-xs font-medium">Low</span>;
   };
 
   return (
-    <div className="bg-slate-800/50 rounded-xl p-4 space-y-4">
+    <div className="glass-raised/50 rounded-xl p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-200">
+        <span className="text-sm font-semibold ">
           {analysis.type === "comprehensive" ? "Comprehensive Analysis" : "Analysis Results"}
         </span>
         <span className="text-xs text-slate-500">
@@ -163,9 +163,9 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
           </h4>
           <div className="space-y-2">
             {(serviceGaps as Array<{ service: string; need: string; reasoning: string; estimatedRevenueImpact?: string }>).map((gap, i) => (
-              <div key={i} className="bg-slate-900 rounded-lg p-3 border border-slate-700">
+              <div key={i} className="glass rounded-lg p-3 border glass-border">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-slate-200">{gap.service}</span>
+                  <span className="text-sm font-medium ">{gap.service}</span>
                   {needBadge(gap.need)}
                 </div>
                 <p className="text-xs text-slate-400">
@@ -190,7 +190,7 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
               <div key={i} className="flex items-start gap-2 text-sm">
                 {severityIcon(f.severity)}
                 <div>
-                  <p className="text-slate-200">{f.title}</p>
+                  <p className="">{f.title}</p>
                   {f.description && <p className="text-xs text-slate-500">{f.description}</p>}
                 </div>
               </div>
@@ -206,9 +206,9 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
           </h4>
           <div className="space-y-2">
             {(competitors as Array<{ name: string; website?: string; strengths?: string; weaknesses?: string }>).map((c, i) => (
-              <div key={i} className="bg-slate-900 rounded-lg p-3 border border-slate-700">
+              <div key={i} className="glass rounded-lg p-3 border glass-border">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-slate-200">{c.name}</span>
+                  <span className="text-sm font-medium ">{c.name}</span>
                   {c.website && (
                     <a href={c.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                       <ExternalLink className="w-3 h-3" />
@@ -234,7 +234,7 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
               if (!data) return null;
               const labels: Record<string, string> = { linkedin: "LinkedIn", facebook: "Facebook", instagram: "Instagram", googleBusiness: "Google Business" };
               return (
-                <div key={platform} className="bg-slate-900 rounded-lg p-2 border border-slate-700">
+                <div key={platform} className="glass rounded-lg p-2 border glass-border">
                   <span className="text-xs font-medium text-slate-300">{labels[platform]}</span>
                   {data.rating != null && <span className="ml-2 text-xs text-amber-400">&#9733; {String(data.rating)}</span>}
                   {data.reviewCount != null && <span className="ml-1 text-xs text-slate-500">({String(data.reviewCount)} reviews)</span>}
