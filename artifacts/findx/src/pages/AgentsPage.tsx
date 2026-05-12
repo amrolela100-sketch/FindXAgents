@@ -25,7 +25,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{ background: "var(--brand-subtle)" }}
         >
-          <Icon className="w-4.5 h-4.5" style={{ color: "var(--brand)" }} />
+          <Icon className="w-4.5 h-4.5" strokeWidth={1.5} style={{ color: "var(--brand)" }} />
         </div>
         <span
           className="badge text-[10px]"
@@ -39,7 +39,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           {t.agents.active}
         </span>
       </div>
-      <h3 className="font-semibold text-sm mb-1" style={{ color: "var(--text)" }}>{agent.displayName}</h3>
+      <h3 className="font-semibold text-sm mb-1 tracking-tight" style={{ color: "var(--text)" }}>{agent.displayName}</h3>
       <p className="text-xs leading-relaxed clamp-2" style={{ color: "var(--text-muted)" }}>{agent.description}</p>
       <div
         className="flex items-center justify-between mt-4 pt-3 text-[10px]"

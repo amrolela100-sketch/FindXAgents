@@ -83,7 +83,7 @@ function RunRow({ run, onCancelled }: { run: AgentPipelineRun; onCancelled?: () 
             boxShadow: `0 0 6px ${dotColor}80`,
           }}
         />
-        <span className="font-mono text-xs" style={{ color: "var(--text-subtle)" }}>
+        <span className="font-mono text-xs tabular-nums" style={{ color: "var(--text-subtle)" }}>
           {run.id.slice(0, 8)}
         </span>
         <span className="text-sm truncate" style={{ color: "var(--text)" }}>
