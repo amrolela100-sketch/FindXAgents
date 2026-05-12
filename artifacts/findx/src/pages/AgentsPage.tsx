@@ -234,9 +234,88 @@ export default function AgentsPage() {
   const { data: agentsData } = useRealtimeData(() => getAgents(), ["agents"], 60_000);
   const { data: runsData, refresh } = usePolling(() => getAgentRuns(), 8_000);
 
-  const agents = (agentsData?.agents ?? [])
+  // ── Fallback: show the 3 pipeline agents even if DB hasn't been seeded yet ──
+  const FALLBACK_AGENTS: Agent[] = [
+    {
+      id: "fallback-discovery",
+      name: "discovery",
+      displayName: "Discovery Agent",
+      description: "Scans the web using Tavily to find real businesses matching your ICP.",
+      role: "discovery",
+      icon: "Search",
+      model: "google/gemini-2.5-flash",
+      maxIterations: 15,
+      maxTokens: 4096,
+      temperature: null,
+      identityMd: "",
+      soulMd: "",
+      toolsMd: "",
+      systemPrompt: "",
+      toolNames: ["web_search", "save_lead"],
+      pipelineOrder: 1,
+      isActive: true,
+      skills: [],
+      createdAt: "",
+      updatedAt: "",
+    },
+    {
+      id: "fallback-analysis",
+      name: "analysis",
+      displayName: "Analysis Agent",
+      description: "Visits every lead's website, extracts emails, SSL status, load speed & scores.",
+      role: "analysis",
+      icon: "BarChart3",
+      model: "google/gemini-2.5-flash",
+      maxIterations: 20,
+      maxTokens: 8192,
+      temperature: null,
+      identityMd: "",
+      soulMd: "",
+      toolsMd: "",
+      systemPrompt: "",
+      toolNames: ["scrape_page", "check_ssl", "extract_emails"],
+      pipelineOrder: 2,
+      isActive: true,
+      skills: [],
+      createdAt: "",
+      updatedAt: "",
+    },
+    {
+      id: "fallback-outreach",
+      name: "outreach",
+      displayName: "Outreach Agent",
+      description: "Writes hyper-personalised cold emails referencing verified facts from each site.",
+      role: "outreach",
+      icon: "Mail",
+      model: "google/gemini-2.5-flash",
+      maxIterations: 10,
+      maxTokens: 4096,
+      temperature: null,
+      identityMd: "",
+      soulMd: "",
+      toolsMd: "",
+      systemPrompt: "",
+      toolNames: ["web_search"],
+      pipelineOrder: 3,
+      isActive: true,
+      skills: [],
+      createdAt: "",
+      updatedAt: "",
+    },
+  ];
+
+  const dbAgents = (agentsData?.agents ?? [])
     .filter((a) => a.isActive)
     .sort((a, b) => a.pipelineOrder - b.pipelineOrder);
+
+  // Use DB agents if we have the full pipeline (discovery + analysis + outreach).
+  // Otherwise fall back to the static definitions so the UI is never empty.
+  const hasFullPipeline =
+    dbAgents.some((a) => a.name === "discovery") &&
+    dbAgents.some((a) => a.name === "analysis") &&
+    dbAgents.some((a) => a.name === "outreach");
+
+  const agents = hasFullPipeline ? dbAgents : FALLBACK_AGENTS;
   const runs      = runsData?.runs ?? [];
   const activeRun = runs.find((r) => r.status === "running" || r.status === "queued");
   const totalRuns = runs.length;
