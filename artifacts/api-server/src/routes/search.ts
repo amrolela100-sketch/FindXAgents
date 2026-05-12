@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db, searchConfigs } from "@workspace/db";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
 
@@ -10,17 +10,14 @@ router.use(requireAuth);
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
-/** Workspace key → global fallback → env */
+/** Workspace-scoped key only — no global fallback to prevent cross-user data leakage */
 async function getTavilyApiKey(workspaceId: string): Promise<string | null> {
   try {
     const [ws] = await db.select().from(searchConfigs)
       .where(eq(searchConfigs.workspaceId, workspaceId)).limit(1);
     if (ws?.apiKey) return ws.apiKey;
-    const [global] = await db.select().from(searchConfigs)
-      .where(isNull(searchConfigs.workspaceId)).limit(1);
-    if (global?.apiKey) return global.apiKey;
   } catch { /* fall through */ }
-  return process.env.TAVILY_API_KEY ?? null;
+  return null;
 }
 
 router.post("/search", async (req, res) => {
