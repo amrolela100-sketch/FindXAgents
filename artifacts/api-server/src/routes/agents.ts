@@ -197,11 +197,17 @@ router.get("/agents/logs", async (req, res) => {
     const pageSize = Math.min(500, Math.max(1, parseInt(String(req.query.pageSize ?? "25"), 10)));
     const { agentId, pipelineRunId, phase, level } = req.query as Record<string, string>;
 
+    // Security: validate enum-like query params before using in sql`` to prevent injection.
+    const ALLOWED_PHASES = new Set(["discover-web","analyze","outreach","pipeline","agent"]);
+    const ALLOWED_LEVELS = new Set(["info","warn","error","debug","success"]);
+    const safePhase = phase && ALLOWED_PHASES.has(phase) ? phase : undefined;
+    const safeLevel = level && ALLOWED_LEVELS.has(level) ? level : undefined;
+
     const conditions: ReturnType<typeof eq>[] = [];
     if (agentId) conditions.push(eq(agentLogs.agentId, agentId));
     if (pipelineRunId) conditions.push(eq(agentLogs.pipelineRunId, pipelineRunId));
-    if (phase) conditions.push(sql`${agentLogs.phase} = ${phase}`);
-    if (level) conditions.push(sql`${agentLogs.level} = ${level}`);
+    if (safePhase) conditions.push(eq(agentLogs.phase, safePhase));
+    if (safeLevel) conditions.push(eq(agentLogs.level, safeLevel));
 
     const where = conditions.length > 0 ? and(...(conditions as [ReturnType<typeof eq>, ...ReturnType<typeof eq>[]])) : undefined;
 

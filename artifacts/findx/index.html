@@ -2,17 +2,99 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>FindX - Warm Intelligence</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Inter font (used by the new design system) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+    <!--
+      Content-Security-Policy (meta fallback — real CSP must also be set on the
+      HTTP response via the CDN/server for full enforcement, but this helps for
+      deployed static hosting that doesn't support custom headers).
+    -->
+    <meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src  'self' 'wasm-unsafe-eval';
+        style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src    'self' https://fonts.gstatic.com data:;
+        img-src     'self' data: blob: https:;
+        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fonts.googleapis.com;
+        frame-ancestors 'none';
+        base-uri    'self';
+        form-action 'self';
+        upgrade-insecure-requests;
+      " />
+
+    <!-- Security headers (static hosting fallback) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy"
+      content="geolocation=(), microphone=(), camera=(), payment=(), usb=()" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary SEO -->
+    <title>FindX — AI-Powered B2B Prospecting</title>
+    <meta name="description"
+      content="FindX uses a 3-stage AI pipeline to discover real businesses, analyze their digital gaps, and write hyper-personalized cold emails — automatically." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://find-x-agents-findx.vercel.app/" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://find-x-agents-findx.vercel.app/" />
+    <meta property="og:title"       content="FindX — AI-Powered B2B Prospecting" />
+    <meta property="og:description" content="Discover, analyze, and outreach to high-probability leads with a 3-stage AI pipeline." />
+    <meta property="og:image"       content="/opengraph.jpg" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale"      content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="FindX — AI-Powered B2B Prospecting" />
+    <meta name="twitter:description" content="3-stage AI pipeline: Discover → Analyze → Outreach." />
+    <meta name="twitter:image"       content="/opengraph.jpg" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Performance: preconnect to Google Fonts origins early -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!--
+      Fonts with font-display=swap to prevent FOIT (Flash Of Invisible Text).
+      Subsetting to Latin to reduce payload.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured data (JSON-LD) for rich snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FindX",
+      "applicationCategory": "BusinessApplication",
+      "description": "AI-powered B2B prospecting — Discover, Analyze, Outreach.",
+      "url": "https://find-x-agents-findx.vercel.app/",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "operatingSystem": "Web"
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Skip-to-content link for keyboard / screen-reader users -->
+    <a
+      href="#root"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded focus:shadow-lg"
+    >
+      Skip to main content
+    </a>
+
+    <div id="root" role="main"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

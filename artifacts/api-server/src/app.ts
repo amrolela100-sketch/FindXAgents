@@ -58,7 +58,46 @@ app.use(
   }),
 );
 
-app.use(helmet());
+// ── Security headers via helmet ───────────────────────────────────────────────
+// Overrides the helmet() defaults with a strict, explicit CSP.
+// The API is JSON-only — no inline scripts, frames, or images are served.
+app.use(
+  helmet({
+    // Strict Content-Security-Policy for an API server (no HTML served)
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:     ["'none'"],
+        scriptSrc:      ["'none'"],
+        objectSrc:      ["'none'"],
+        frameAncestors: ["'none'"],
+        formAction:     ["'none'"],
+        baseUri:        ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    // HSTS — force HTTPS for 1 year, include subdomains
+    hsts: {
+      maxAge:            31_536_000,
+      includeSubDomains: true,
+      preload:           true,
+    },
+    // Prevent MIME-type sniffing
+    noSniff: true,
+    // Block embedding in iframes
+    frameguard: { action: "deny" },
+    // XSS filter (legacy browsers)
+    xssFilter: true,
+    // Remove X-Powered-By: Express
+    hidePoweredBy: true,
+    // Referrer policy
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    // Permissions policy — disable unused browser features
+    permittedCrossDomainPolicies: { permittedPolicies: "none" },
+    crossOriginEmbedderPolicy:   false, // API doesn't serve documents
+    crossOriginResourcePolicy:   { policy: "same-site" },
+    crossOriginOpenerPolicy:     { policy: "same-origin" },
+  }),
+);
 app.use(cors(buildCorsOptions()));
 // Limit request body to 1 MB to prevent DoS via oversized JSON payloads
 app.use(express.json({ limit: "1mb" }));

@@ -74,28 +74,43 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
+  // Security: inject CSS vars via a real DOM StyleSheet instead of dangerouslySetInnerHTML.
+  // This prevents CSS-injection XSS in cases where `key` or `id` contains user-controlled text.
+  React.useEffect(() => {
+    const styleId = `chart-style-${id}`
+    let el = document.getElementById(styleId) as HTMLStyleElement | null
+    if (!el) {
+      el = document.createElement("style")
+      el.id = styleId
+      document.head.appendChild(el)
+    }
+
+    const rules = Object.entries(THEMES)
+      .map(([theme, prefix]) => {
+        const selector = prefix ? `${prefix} [data-chart=${CSS.escape(id)}]` : `[data-chart=${CSS.escape(id)}]`
+        const props = colorConfig
+          .map(([key, itemConfig]) => {
+            const color =
+              itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+              itemConfig.color
+            // Sanitize: only allow valid CSS colour values (hex, rgb, hsl, named)
+            if (!color || !/^(#[0-9a-fA-F]{3,8}|rgb[a]?\([\d\s,%.]+\)|hsl[a]?\([\d\s,%.]+\)|[a-zA-Z]+)$/.test(color.trim())) return null
+            // CSS.escape the property name to prevent injection through config keys
+            return `  --color-${CSS.escape(key)}: ${color.trim()};`
+          })
+          .filter(Boolean)
+          .join("\n")
+        return props ? `${selector} {\n${props}\n}` : null
+      })
+      .filter(Boolean)
+      .join("\n")
+
+    el.textContent = rules
+
+    return () => { el?.remove() }
+  }, [id, colorConfig])
+
+  return null
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip

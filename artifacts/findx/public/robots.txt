@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /owner
+Disallow: /admin
+Disallow: /auth/callback
+Disallow: /api/
+
+Sitemap: https://find-x-agents-findx.vercel.app/sitemap.xml
