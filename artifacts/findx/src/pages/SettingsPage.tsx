@@ -470,7 +470,16 @@ export default function SettingsPage() {
   async function handleSaveTelegram() {
     setTelegramSaving(true); setTelegramSaveError(null);
     try {
-      await saveTelegramSettings(telegramForm);
+      if (!telegramSettings?.configured && !telegramForm.botToken) {
+        setTelegramSaveError("Bot Token is required");
+        return;
+      }
+      // If already configured and user left token blank → sentinel tells server to keep existing
+      const payload = {
+        botToken: telegramForm.botToken || "__keep__",
+        chatId: telegramForm.chatId,
+      };
+      await saveTelegramSettings(payload);
       await loadTelegramSettings();
     } catch (err) {
       setTelegramSaveError(err instanceof Error ? err.message : "Failed to save settings");
@@ -478,7 +487,14 @@ export default function SettingsPage() {
   }
   async function handleTestTelegram() {
     setTelegramTesting(true); setTelegramTestResult(null);
-    try { setTelegramTestResult(await testTelegram(telegramForm)); }
+    try {
+      // If no token entered, send __keep__ so server uses stored token
+      const payload = {
+        botToken: telegramForm.botToken || "__keep__",
+        chatId: telegramForm.chatId,
+      };
+      setTelegramTestResult(await testTelegram(payload));
+    }
     catch (err) { setTelegramTestResult({ success: false, error: err instanceof Error ? err.message : "Failed" }); }
     finally { setTelegramTesting(false); }
   }
