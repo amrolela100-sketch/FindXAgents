@@ -7,6 +7,7 @@ import { closeRedis } from "./lib/redis.js";
 const port = Number(env.PORT);
 
 import { runMigrations } from "@workspace/db";
+import { seedAgents } from "./lib/seed-agents.js";
 
 /**
  * Recover "ghost" pipeline runs that were left in "running" or "queued" state
@@ -58,6 +59,9 @@ async function startServer() {
 
     // Recover any runs stuck in "running"/"queued" from a previous crash
     await recoverStuckRuns();
+
+    // Ensure the 3 core pipeline agents exist in DB
+    await seedAgents();
 
     const server = app.listen(port, () => {
       logger.info({ port }, "Server listening");
