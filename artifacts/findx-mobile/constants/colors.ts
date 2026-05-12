@@ -83,6 +83,16 @@ export interface ColorTokens {
   overlay: string;
   shadow: string;
   scrim: string;
+
+  // Legacy aliases (backwards compat — prefer semantic names above)
+  /** @deprecated Use brand */
+  primary: string;
+  /** @deprecated Use glassBorder */
+  border: string;
+  /** @deprecated Use foregroundMuted */
+  mutedForeground: string;
+  /** Use '#FFFFFF' directly for white text on brand */
+  primaryForeground: string;
 }
 
 const light: ColorTokens = {
@@ -163,6 +173,11 @@ const light: ColorTokens = {
   overlay: "rgba(26,24,37,0.45)",
   shadow: "rgba(26,24,37,0.12)",
   scrim: "rgba(240,239,248,0.85)",
+  // Legacy aliases
+  primary: "#F59E0B",
+  border: "rgba(255,255,255,0.75)",
+  mutedForeground: "#6B6580",
+  primaryForeground: "#FFFFFF",
 };
 
 const dark: ColorTokens = {
@@ -243,6 +258,11 @@ const dark: ColorTokens = {
   overlay: "rgba(0,0,0,0.65)",
   shadow: "rgba(0,0,0,0.40)",
   scrim: "rgba(8,8,16,0.90)",
+  // Legacy aliases
+  primary: "#FBBF24",
+  border: "rgba(255,255,255,0.08)",
+  mutedForeground: "#8B87A8",
+  primaryForeground: "#FFFFFF",
 };
 
 export const radius = {
