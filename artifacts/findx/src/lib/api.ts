@@ -215,9 +215,10 @@ export function searchLeads(query: string, maxResults = 20): Promise<{ leads: Le
 
 /**
  * discoverLeads — Bug fix: server requires a `query` body field.
- * Previously this sent an empty POST body causing a 400 response every time.
+ * Previously sent an empty POST body; server rejected with 400 every time.
+ * query defaults to empty string so existing callers (LeadsPage) keep working.
  */
-export function discoverLeads(query: string, maxResults = 10, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en"): Promise<{ message: string; jobs: unknown[] }> {
+export function discoverLeads(query = "", maxResults = 10, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en"): Promise<{ message: string; jobs: unknown[] }> {
   return fetchApi("/leads/discover", {
     method: "POST",
     body: JSON.stringify({ query, maxResults, language }),
