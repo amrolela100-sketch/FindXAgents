@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, isNull, or } from "drizzle-orm";
 import { type ScrapedWebsite, type ScrapyAuditResult, buildExtendedContext, calculateGroundedScore } from "./website-scraper.js";
 
 // ── Prompt Injection Sanitizer ───────────────────────────────────────────────
@@ -85,23 +85,33 @@ function sanitizeLead(lead: {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function getOpenRouterKey(): Promise<string> {
-  try {
-    const [cfg] = await db.select({ apiKey: aiProviders.apiKey, model: aiProviders.model })
-      .from(aiProviders)
-      .where(eq(aiProviders.providerType, "openrouter"))
-      .limit(1);
-    if (cfg?.apiKey) {
-      if (!cfg.apiKey.startsWith("sk-or-")) {
-        throw new Error(
-          `Invalid OpenRouter API key: key starts with "${cfg.apiKey.slice(0, 8)}..." but OpenRouter keys must start with "sk-or-". Please update your AI Provider settings with the correct key from https://openrouter.ai/keys`
-        );
-      }
-      return cfg.apiKey;
+async function getOpenRouterKey(workspaceId?: string | null): Promise<string> {
+  function validateKey(key: string): void {
+    if (!key.startsWith("sk-or-")) {
+      throw new Error(
+        `Invalid OpenRouter API key: key starts with "${key.slice(0, 8)}..." but OpenRouter keys must start with "sk-or-". Please update your AI Provider settings with the correct key from https://openrouter.ai/keys`
+      );
     }
+  }
+  try {
+    // 1. Workspace-specific provider (highest priority)
+    if (workspaceId) {
+      const [wsCfg] = await db.select({ apiKey: aiProviders.apiKey })
+        .from(aiProviders)
+        .where(eq(aiProviders.workspaceId, workspaceId))
+        .limit(1);
+      if (wsCfg?.apiKey) { validateKey(wsCfg.apiKey); return wsCfg.apiKey; }
+    }
+    // 2. Global / owner-level provider (workspaceId IS NULL)
+    const [globalCfg] = await db.select({ apiKey: aiProviders.apiKey })
+      .from(aiProviders)
+      .where(isNull(aiProviders.workspaceId))
+      .limit(1);
+    if (globalCfg?.apiKey) { validateKey(globalCfg.apiKey); return globalCfg.apiKey; }
   } catch (e: any) {
     if (e.message?.includes("Invalid OpenRouter API key")) throw e;
   }
+  // 3. Environment variable fallback
   const envKey = process.env.OPENROUTER_API_KEY;
   if (!envKey) throw new Error("OPENROUTER_API_KEY not set and no DB provider found");
   if (!envKey.startsWith("sk-or-")) {
@@ -112,8 +122,8 @@ async function getOpenRouterKey(): Promise<string> {
   return envKey;
 }
 
-async function getClient() {
-  const apiKey = await getOpenRouterKey();
+async function getClient(workspaceId?: string | null) {
+  const apiKey = await getOpenRouterKey(workspaceId);
   return new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey,
@@ -165,6 +175,7 @@ export async function analyzeLeadWithGemini(
   lead: LeadForAnalysis,
   scrapedData?: ScrapedWebsite | ScrapyAuditResult,
   forceRefresh = false,
+  workspaceId?: string | null,
 ): Promise<AnalysisResult> {
   // ── Cache read ────────────────────────────────────────────────────────────
   if (!forceRefresh && lead.id) {
@@ -172,13 +183,13 @@ export async function analyzeLeadWithGemini(
     const cached = await getCachedAnalysis<AnalysisResult>(lead.id);
     if (cached) return cached;
 
-    const client = await getClient();
+    const client = await getClient(workspaceId);
     const result = await _doAnalyze(client, lead, scrapedData);
     await setCachedAnalysis(lead.id, result);
     return result;
   }
 
-  const client = await getClient();
+  const client = await getClient(workspaceId);
   return _doAnalyze(client, lead, scrapedData);
 }
 
@@ -292,7 +303,7 @@ export async function generateOutreachWithGemini(
     return result;
   }
 
-  const client = await getClient();
+  const client = await getClient(workspaceId);
   return _doOutreach(client, lead, analysis, language, scrapedData);
 }
 
