@@ -1,7 +1,15 @@
 import { Switch, Route, useLocation } from "wouter";
 import { Sidebar } from "./components/sidebar";
-import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { AuthProvider, useAuth } from "./lib/auth-context";
+import { WorkspaceProvider } from "./lib/workspace-context";
+import { LangProvider, useLang } from "./lib/lang-context";
+import { ThemeProvider } from "./lib/theme-context";
+import { CommandPalette } from "./components/command-palette";
+import { ChatWidget } from "./components/chat-widget";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { env, isEnvValid, envErrors } from "./lib/env";
 
 // ── Critical path — always in the main bundle ────────────────────────────────
 import HomePage from "./pages/HomePage";
@@ -30,16 +38,6 @@ function PageSpinner() {
     </div>
   );
 }
-import { AuthProvider, useAuth } from "./lib/auth-context";
-import { WorkspaceProvider } from "./lib/workspace-context";
-import { LangProvider, useLang } from "./lib/lang-context";
-import { ThemeProvider } from "./lib/theme-context";
-import { CommandPalette } from "./components/command-palette";
-import { ChatWidget } from "./components/chat-widget";
-import { Loader2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { env, isEnvValid, envErrors } from "./lib/env";
 
 const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS ?? "")
   .split(",")
