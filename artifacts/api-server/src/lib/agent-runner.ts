@@ -23,15 +23,25 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): 
   throw lastError;
 }
 
-/** Resolve Tavily API key — DB config takes priority over env var */
+/** Resolve Tavily API key — workspace config → global DB config → env var */
 async function getTavilyKey(workspaceId?: string | null): Promise<string | null> {
   try {
-    const [cfg] = await db.select({ apiKey: searchConfigs.apiKey })
+    // 1. Workspace-specific config (highest priority)
+    if (workspaceId) {
+      const [wsCfg] = await db.select({ apiKey: searchConfigs.apiKey })
+        .from(searchConfigs)
+        .where(eq(searchConfigs.workspaceId, workspaceId))
+        .limit(1);
+      if (wsCfg?.apiKey) return wsCfg.apiKey;
+    }
+    // 2. Global / owner-level config (workspaceId IS NULL)
+    const [globalCfg] = await db.select({ apiKey: searchConfigs.apiKey })
       .from(searchConfigs)
       .where(isNull(searchConfigs.workspaceId))
       .limit(1);
-    if (cfg?.apiKey) return cfg.apiKey;
+    if (globalCfg?.apiKey) return globalCfg.apiKey;
   } catch { /* fall through */ }
+  // 3. Environment variable fallback
   return process.env.TAVILY_API_KEY ?? null;
 }
 
@@ -559,7 +569,7 @@ export class AgentRunner {
             const leadForAnalysis = resolvedWebsite !== lead.website
               ? { ...lead, website: resolvedWebsite }
               : lead;
-            const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData), 3, 1_000);
+            const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData, false, this.workspaceId), 3, 1_000);
 
             const deepAudit = scrapedData ? (scrapedData as ScrapyAuditResult) : null;
 
@@ -734,7 +744,7 @@ export class AgentRunner {
           }
 
           const outreach = await withRetry(
-            () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary),
+            () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary, false, this.workspaceId),
             2,
             1_000
           );
