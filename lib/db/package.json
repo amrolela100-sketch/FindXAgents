@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
+    "push": "drizzle-kit push",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
