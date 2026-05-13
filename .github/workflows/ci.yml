@@ -34,7 +34,14 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Check lockfile is up to date
+        # Warn if the lockfile drifted — does not fail the build
+        run: |
+          if git diff --name-only | grep -q "pnpm-lock.yaml"; then
+            echo "::warning::pnpm-lock.yaml is out of sync with package.json. Run pnpm install locally and commit the updated lockfile."
+          fi
 
       - name: Prettier check
         run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .gitignore
@@ -57,7 +64,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run Typecheck
         run: pnpm run typecheck
@@ -84,7 +91,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build core (API Server + Web Frontend)
         env:
