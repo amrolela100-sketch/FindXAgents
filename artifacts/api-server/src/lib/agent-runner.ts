@@ -382,7 +382,11 @@ export class AgentRunner {
     for (const lead of items) {
       if (added >= maxResults) break;
       const domain = getDomain(lead.website);
-      const userFilter = userId ? eq(leads.userId, userId) : sql`${leads.userId} IS NULL`;
+      // Scope deduplication to the current workspace — a lead can legitimately
+      // exist in workspace A and workspace B independently.
+      const wsFilter = workspaceId
+        ? eq(leads.workspaceId, workspaceId)
+        : sql`${leads.workspaceId} IS NULL`;
 
       const conditions = [];
       if (lead.kvkNumber) conditions.push(eq(leads.kvkNumber, lead.kvkNumber));
@@ -391,12 +395,12 @@ export class AgentRunner {
       let exists = false;
       if (conditions.length > 0) {
         const existing = await db.select({ id: leads.id }).from(leads).where(
-          and(userFilter, sql`(${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``})`)
+          and(wsFilter, sql`(${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``})`)
         ).limit(1);
         if (existing.length > 0) exists = true;
       } else {
         const existingByName = await db.select({ id: leads.id }).from(leads).where(
-          and(userFilter, ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))
+          and(wsFilter, ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))
         ).limit(1);
         if (existingByName.length > 0) exists = true;
       }
@@ -404,6 +408,7 @@ export class AgentRunner {
       if (!exists) {
         const [newLead] = await db.insert(leads).values({
           userId,
+          workspaceId,
           ...lead,
           hasWebsite: !!lead.website,
           source: lead.source ?? "web_search",
