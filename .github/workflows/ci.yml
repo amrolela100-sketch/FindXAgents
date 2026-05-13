@@ -16,7 +16,7 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  # ── Lint & Format ─────────────────────────────────────────────────────────────
+  # ── Lint & Format ────────────────────────────────────────────────────────────────────────────────
   lint:
     name: Lint & Format Check
     runs-on: ubuntu-latest
@@ -37,16 +37,15 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Check lockfile is up to date
-        # Warn if the lockfile drifted — does not fail the build
         run: |
           if git diff --name-only | grep -q "pnpm-lock.yaml"; then
-            echo "::warning::pnpm-lock.yaml is out of sync with package.json. Run pnpm install locally and commit the updated lockfile."
+            echo "::warning::pnpm-lock.yaml is out of sync. Run pnpm install locally and commit the lockfile."
           fi
 
       - name: Prettier check
-        run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .gitignore
+        run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .prettierignore
 
-  # ── Typecheck & Tests ─────────────────────────────────────────────────────────
+  # ── Typecheck & Tests ────────────────────────────────────────────────────────────────────────────
   test:
     name: Typecheck & Test
     runs-on: ubuntu-latest
@@ -72,7 +71,7 @@ jobs:
       - name: Run Tests
         run: pnpm test
 
-  # ── Build Verification ────────────────────────────────────────────────────────
+  # ── Build Verification ─────────────────────────────────────────────────────────────────────────────────
   build:
     name: Build Verification (core)
     runs-on: ubuntu-latest
