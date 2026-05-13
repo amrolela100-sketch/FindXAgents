@@ -48,6 +48,22 @@ router.post("/agents/run", async (req, res) => {
 });
 
 router.get("/agents/runs/:id/logs/stream", async (req, res) => {
+  // Workspace isolation: verify the run belongs to the active workspace before opening the stream
+  try {
+    const [run] = await db
+      .select({ workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId })
+      .from(agentPipelineRuns)
+      .where(eq(agentPipelineRuns.id, req.params.id))
+      .limit(1);
+    if (!run) return res.status(404).json({ error: "Pipeline run not found" });
+    const isAdmin = req.user?.role === "admin";
+    if (!isAdmin && run.workspaceId !== req.user!.activeWorkspaceId) {
+      return res.status(404).json({ error: "Pipeline run not found" });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
