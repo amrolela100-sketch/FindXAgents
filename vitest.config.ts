@@ -15,6 +15,11 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
     env: {
+      // Minimum env vars required by env.ts Zod schema at test time.
+      // Routes now import env.ts at module load — these prevent process.exit(1).
+      DATABASE_URL: "postgresql://test:test@localhost:5432/test",
+      SUPABASE_URL: "https://placeholder.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
       OPENROUTER_API_KEY: "test-key",
     },
   },
