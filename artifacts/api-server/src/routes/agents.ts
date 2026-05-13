@@ -47,7 +47,7 @@ router.post("/agents/run", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
+router.get("/agents/runs/:id/logs/stream", async (req, res) => {
   // Workspace isolation: verify the run belongs to the active workspace before opening the stream
   try {
     const [run] = await db
@@ -55,13 +55,13 @@ router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
       .from(agentPipelineRuns)
       .where(eq(agentPipelineRuns.id, req.params.id))
       .limit(1);
-    if (!run) return res.status(404).json({ error: "Pipeline run not found" });
+    if (!run) { res.status(404).json({ error: "Pipeline run not found" }); return; }
     const isAdmin = req.user?.role === "admin";
     if (!isAdmin && run.workspaceId !== req.user!.activeWorkspaceId) {
-      return res.status(404).json({ error: "Pipeline run not found" });
+      res.status(404).json({ error: "Pipeline run not found" }); return;
     }
-  } catch (err) {
-    return res.status(500).json({ error: "Internal server error" });
+  } catch (_err) {
+    res.status(500).json({ error: "Internal server error" }); return;
   }
 
   res.setHeader("Content-Type", "text/event-stream");
