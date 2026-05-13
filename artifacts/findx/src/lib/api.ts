@@ -208,7 +208,7 @@ export function getAgents(): Promise<{ agents: Agent[] }> {
 }
 
 export function getAgent(name: string): Promise<{ agent: Agent }> {
-  return fetchApi(`/agents/${name}`);
+  return fetchApi(`/agents/name/${name}`);
 }
 
 export function runAgentPipeline(data: {
@@ -400,7 +400,7 @@ export function getRunLogs(runId: string): Promise<{ logs: AgentLog[] }> {
 }
 
 export function updateAgent(name: string, data: Partial<Agent>): Promise<{ agent: Agent }> {
-  return fetchApi(`/agents/${name}`, { method: "PATCH", body: JSON.stringify(data) });
+  return fetchApi(`/agents/name/${name}`, { method: "PATCH", body: JSON.stringify(data) });
 }
 
 
