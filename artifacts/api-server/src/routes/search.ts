@@ -94,13 +94,13 @@ router.get("/search/status", async (req, res) => {
   const apiKey = await getTavilyApiKey(wsId);
 
   // Determine actual source for accurate status reporting
-  let source: "workspace" | "global" | "env" | null = null;
+  let source: "db" | "global" | "env" | null = null;
   if (apiKey) {
     const { isNull } = await import("drizzle-orm");
     const [wsCfg] = await db.select({ id: searchConfigs.workspaceId })
       .from(searchConfigs).where(eq(searchConfigs.workspaceId, wsId)).catch(() => []);
     if (wsCfg) {
-      source = "workspace";
+      source = "db";
     } else {
       const [globalCfg] = await db.select({ id: searchConfigs.workspaceId })
         .from(searchConfigs).where(isNull(searchConfigs.workspaceId)).catch(() => []);
@@ -122,7 +122,7 @@ router.get("/search/config", async (req, res) => {
 
     // Workspace-specific config
     const [wsCfg] = await db.select().from(searchConfigs).where(eq(searchConfigs.workspaceId, wsId));
-    if (wsCfg) return res.json({ configured: true, provider: wsCfg.provider, source: "workspace" });
+    if (wsCfg) return res.json({ configured: true, provider: wsCfg.provider, source: "db" });
 
     // Global config
     const [globalCfg] = await db.select().from(searchConfigs).where(isNull(searchConfigs.workspaceId));
