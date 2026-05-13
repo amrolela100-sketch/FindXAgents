@@ -1,28 +1,55 @@
 import { Resend } from "resend";
 import { db, resendConfigs } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 
 let _client: Resend | null = null;
 let _cachedKey: string | null = null;
 
-async function getResendApiKey(): Promise<string | null> {
+/**
+ * Resolve Resend API key — workspace config → global DB config → env var.
+ * Pass workspaceId to get the workspace-specific key.
+ */
+async function getResendApiKey(workspaceId?: string | null): Promise<string | null> {
   try {
-    const [config] = await db.select().from(resendConfigs).where(eq(resendConfigs.id, "default"));
-    if (config?.apiKey) return config.apiKey;
+    // 1. Workspace-specific config
+    if (workspaceId) {
+      const [wsCfg] = await db.select({ apiKey: resendConfigs.apiKey })
+        .from(resendConfigs)
+        .where(eq(resendConfigs.workspaceId, workspaceId))
+        .limit(1);
+      if (wsCfg?.apiKey) return wsCfg.apiKey;
+    }
+    // 2. Global / owner-level config (workspaceId IS NULL)
+    const [globalCfg] = await db.select({ apiKey: resendConfigs.apiKey })
+      .from(resendConfigs)
+      .where(isNull(resendConfigs.workspaceId))
+      .limit(1);
+    if (globalCfg?.apiKey) return globalCfg.apiKey;
   } catch { /* fall through */ }
+  // 3. Environment variable fallback
   return process.env.RESEND_API_KEY ?? null;
 }
 
-async function getResendFromEmail(): Promise<string> {
+async function getResendFromEmail(workspaceId?: string | null): Promise<string> {
   try {
-    const [config] = await db.select().from(resendConfigs).where(eq(resendConfigs.id, "default"));
-    if (config?.fromEmail) return config.fromEmail;
+    if (workspaceId) {
+      const [wsCfg] = await db.select({ fromEmail: resendConfigs.fromEmail })
+        .from(resendConfigs)
+        .where(eq(resendConfigs.workspaceId, workspaceId))
+        .limit(1);
+      if (wsCfg?.fromEmail) return wsCfg.fromEmail;
+    }
+    const [globalCfg] = await db.select({ fromEmail: resendConfigs.fromEmail })
+      .from(resendConfigs)
+      .where(isNull(resendConfigs.workspaceId))
+      .limit(1);
+    if (globalCfg?.fromEmail) return globalCfg.fromEmail;
   } catch { /* fall through */ }
   return process.env.EMAIL_FROM ?? "FindX <onboarding@resend.dev>";
 }
 
-export async function getResendClientAsync(): Promise<Resend> {
-  const key = await getResendApiKey();
+export async function getResendClientAsync(workspaceId?: string | null): Promise<Resend> {
+  const key = await getResendApiKey(workspaceId);
   if (!key) throw new Error("Resend API key is not configured");
   if (!_client || _cachedKey !== key) {
     _client = new Resend(key);
@@ -42,8 +69,8 @@ export function getResendClient(): Resend {
   return _client;
 }
 
-export async function isResendConfiguredAsync(): Promise<boolean> {
-  const key = await getResendApiKey();
+export async function isResendConfiguredAsync(workspaceId?: string | null): Promise<boolean> {
+  const key = await getResendApiKey(workspaceId);
   return !!key;
 }
 
@@ -60,9 +87,9 @@ export interface SendEmailOptions {
   replyTo?: string;
 }
 
-export async function sendViaResend(opts: SendEmailOptions): Promise<{ id: string }> {
-  const client = await getResendClientAsync();
-  const from = opts.from ?? (await getResendFromEmail());
+export async function sendViaResend(opts: SendEmailOptions, workspaceId?: string | null): Promise<{ id: string }> {
+  const client = await getResendClientAsync(workspaceId);
+  const from = opts.from ?? (await getResendFromEmail(workspaceId));
 
   const { data, error } = await client.emails.send({
     from,

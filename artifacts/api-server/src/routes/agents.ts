@@ -629,7 +629,10 @@ const SEED_AGENTS = [
   },
 ];
 
-router.post("/agents/seed", async (_req, res) => {
+router.post("/agents/seed", async (req, res) => {
+  if (!req.user || !isAdmin(req.user.email)) {
+    return res.status(403).json({ error: "Forbidden — admin only" });
+  }
   try {
     let stagesSeeded = 0;
     for (const stage of PIPELINE_STAGES) {
