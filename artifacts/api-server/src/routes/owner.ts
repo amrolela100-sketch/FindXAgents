@@ -1,19 +1,59 @@
 import { Router } from "express";
-import { timingSafeEqual } from "crypto";
+import { timingSafeEqual, createHmac } from "crypto";
 import { requireAuth } from "../middleware/auth";
 import { db, users, agentPipelineRuns, leads } from "@workspace/db";
 import { count, sql, eq, desc } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
-const OWNER_EMAIL = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
+const OWNER_EMAIL    = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
 const OWNER_PASSWORD = process.env.OWNER_PASSWORD ?? "";
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS   = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+
+// Secret used to sign short-lived unlock tokens (falls back to a derived secret)
+const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? `owner-unlock-${process.env.OWNER_PASSWORD ?? "changeme"}`;
+// Unlock tokens are valid for 30 minutes
+const UNLOCK_TTL_MS  = 30 * 60 * 1000;
 
 router.use(requireAuth);
 
 function isOwner(email: string): boolean {
   return OWNER_EMAIL.length > 0 && email.toLowerCase() === OWNER_EMAIL;
+}
+
+/**
+ * Generate a short-lived HMAC token that proves the owner completed step-up auth.
+ * Format: "<timestamp>.<hmac>"
+ */
+function generateUnlockToken(email: string): string {
+  const ts  = Date.now().toString();
+  const mac = createHmac("sha256", UNLOCK_SECRET).update(`${email}:${ts}`).digest("hex");
+  return Buffer.from(`${ts}.${mac}`).toString("base64url");
+}
+
+/**
+ * Verify an unlock token. Returns true only if the token is valid AND not expired.
+ */
+function verifyUnlockToken(email: string, token: string): boolean {
+  try {
+    const decoded  = Buffer.from(token, "base64url").toString();
+    const dotIndex = decoded.indexOf(".");
+    if (dotIndex === -1) return false;
+    const ts  = decoded.slice(0, dotIndex);
+    const mac = decoded.slice(dotIndex + 1);
+    const expectedMac = createHmac("sha256", UNLOCK_SECRET).update(`${email}:${ts}`).digest("hex");
+    // Timing-safe MAC comparison
+    const macBuf      = Buffer.from(mac);
+    const expectedBuf = Buffer.from(expectedMac);
+    if (macBuf.length !== expectedBuf.length) return false;
+    if (!timingSafeEqual(macBuf, expectedBuf)) return false;
+    // Check expiry
+    const issuedAt = parseInt(ts, 10);
+    if (isNaN(issuedAt) || Date.now() - issuedAt > UNLOCK_TTL_MS) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ─── Unlock ───────────────────────────────────────────────────────────────────
@@ -28,13 +68,30 @@ router.post("/owner/unlock", async (req, res) => {
     password.length === OWNER_PASSWORD.length &&
     timingSafeEqual(Buffer.from(password), Buffer.from(OWNER_PASSWORD));
   if (!passwordMatch) return res.status(401).json({ error: "Incorrect password" });
-  return res.json({ unlocked: true });
+
+  // Issue a short-lived unlock token — owner dashboard routes will verify this
+  const token = generateUnlockToken(email);
+  return res.json({ unlocked: true, token });
 });
+
+// ─── Middleware: require a valid unlock token ─────────────────────────────────
+
+function requireOwnerUnlock(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
+  if (!isOwner(req.user!.email)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  // Accept token from Authorization header ("Bearer <token>") or X-Owner-Token header
+  const authHeader = req.headers["x-owner-token"] as string | undefined;
+  const token = authHeader ?? (req.headers.authorization?.startsWith("OwnerToken ") ? req.headers.authorization.slice(11) : undefined);
+  if (!token || !verifyUnlockToken(req.user!.email.toLowerCase(), token)) {
+    return res.status(401).json({ error: "Owner step-up authentication required. Call /owner/unlock first." });
+  }
+  return next();
+}
 
 // ─── Owner Dashboard ──────────────────────────────────────────────────────────
 
-router.get("/owner/dashboard", async (req, res) => {
-  if (!isOwner(req.user!.email)) return res.status(403).json({ error: "Forbidden" });
+router.get("/owner/dashboard", requireOwnerUnlock, async (req, res) => {
   try {
     const [
       totalLeadsResult,
@@ -99,8 +156,7 @@ router.get("/owner/dashboard", async (req, res) => {
 
 // ─── Owner: All Users (detailed) ──────────────────────────────────────────────
 
-router.get("/owner/users", async (req, res) => {
-  if (!isOwner(req.user!.email)) return res.status(403).json({ error: "Forbidden" });
+router.get("/owner/users", requireOwnerUnlock, async (req, res) => {
   try {
     const allUsers = await db
       .select({
@@ -155,8 +211,7 @@ router.get("/owner/users", async (req, res) => {
 
 // ─── Owner: All Runs (across all users) ───────────────────────────────────────
 
-router.get("/owner/runs", async (req, res) => {
-  if (!isOwner(req.user!.email)) return res.status(403).json({ error: "Forbidden" });
+router.get("/owner/runs", requireOwnerUnlock, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(String(req.query.pageSize ?? "25"), 10)));

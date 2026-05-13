@@ -173,14 +173,28 @@ export function getLeadOutreaches(id: string): Promise<{ outreaches: Outreach[] 
   return fetchApi(`/leads/${id}/outreaches`);
 }
 
-export function exportLeads(params: Omit<LeadListParams, "page" | "pageSize"> = {}): Promise<Blob> {
+/**
+ * exportLeads — Bug fix: fetchApi() always calls res.json() which breaks binary/CSV
+ * downloads. Use a dedicated blob fetch instead.
+ */
+export async function exportLeads(params: Omit<LeadListParams, "page" | "pageSize"> = {}): Promise<Blob> {
   const q = new URLSearchParams();
   if (params.city) q.set("city", params.city);
   if (params.industry) q.set("industry", params.industry);
   if (params.status) q.set("status", params.status);
   if (params.hasWebsite !== undefined) q.set("hasWebsite", String(params.hasWebsite));
   if (params.search) q.set("search", params.search);
-  return fetchApi(`/leads/export?${q.toString()}`);
+
+  const headers: Record<string, string> = {};
+  const token = await getAuthToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE}/leads/export?${q.toString()}`, { headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error((err as { error?: string }).error || `Export failed: ${res.status}`);
+  }
+  return res.blob();
 }
 
 export function importLeads(csv: string, skipDuplicates = true): Promise<{ created: number; skipped: number; errors: unknown[] }> {
@@ -199,8 +213,15 @@ export function searchLeads(query: string, maxResults = 20): Promise<{ leads: Le
   return fetchApi("/search", { method: "POST", body: JSON.stringify({ query, maxResults }) });
 }
 
-export function discoverLeads(): Promise<{ message: string; jobs: unknown[] }> {
-  return fetchApi("/leads/discover", { method: "POST" });
+/**
+ * discoverLeads — Bug fix: server requires a `query` body field.
+ * Previously this sent an empty POST body causing a 400 response every time.
+ */
+export function discoverLeads(query: string, maxResults = 10, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en"): Promise<{ message: string; jobs: unknown[] }> {
+  return fetchApi("/leads/discover", {
+    method: "POST",
+    body: JSON.stringify({ query, maxResults, language }),
+  });
 }
 
 export function getAgents(): Promise<{ agents: Agent[] }> {

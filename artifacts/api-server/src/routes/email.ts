@@ -228,12 +228,15 @@ router.post("/email/send", async (req, res) => {
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
 
-  const configured = await isResendConfiguredAsync();
+  // Bug fix: pass workspaceId so sendViaResend uses the workspace-specific API key/sender
+  // instead of a global config or env fallback.
+  const wsId = req.user!.activeWorkspaceId;
+  const configured = await isResendConfiguredAsync(wsId);
   if (!configured)
     return res.status(503).json({ error: "No email provider configured." });
 
   try {
-    const result = await sendViaResend(parsed.data);
+    const result = await sendViaResend(parsed.data, wsId);
     return res.json({ success: true, id: result.id });
   } catch (err) {
     return safeError(res, err, "Internal server error");

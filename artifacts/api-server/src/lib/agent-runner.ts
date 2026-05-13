@@ -173,13 +173,17 @@ export class AgentRunner {
         const found    = finalRun?.leadsFound    ?? discoveredLeadIds.length;
         const analyzed = finalRun?.leadsAnalyzed ?? 0;
         const emailed  = finalRun?.emailsDrafted ?? 0;
-        await db.insert(notifications).values({
-          userId,
-          type:  "pipeline_complete",
-          title: "✅ Agent run completed",
-          body:  `"${query}" — ${found} leads found, ${analyzed} analyzed, ${emailed} emails drafted`,
-          meta:  { runId: this.runId, query, leadsFound: found, leadsAnalyzed: analyzed, emailsDrafted: emailed },
-        }).catch(() => {});
+        // Bug fix: Drizzle builder is not a plain Promise; .catch() is not guaranteed.
+        // Use try/catch instead to avoid "TypeError: .catch is not a function".
+        try {
+          await db.insert(notifications).values({
+            userId,
+            type:  "pipeline_complete",
+            title: "✅ Agent run completed",
+            body:  `"${query}" — ${found} leads found, ${analyzed} analyzed, ${emailed} emails drafted`,
+            meta:  { runId: this.runId, query, leadsFound: found, leadsAnalyzed: analyzed, emailsDrafted: emailed },
+          });
+        } catch { /* notification failure should not break the pipeline */ }
       }
 
     } catch (err: any) {
@@ -197,13 +201,15 @@ export class AgentRunner {
 
       // ── In-app notification on failure ───────────────────────────────────
       if (userId) {
-        await db.insert(notifications).values({
-          userId,
-          type:  "pipeline_failed",
-          title: "❌ Agent run failed",
-          body:  `"${query}" — ${err.message ?? "Unknown error"}`,
-          meta:  { runId: this.runId, query, error: err.message },
-        }).catch(() => {});
+        try {
+          await db.insert(notifications).values({
+            userId,
+            type:  "pipeline_failed",
+            title: "❌ Agent run failed",
+            body:  `"${query}" — ${err.message ?? "Unknown error"}`,
+            meta:  { runId: this.runId, query, error: err.message },
+          });
+        } catch { /* notification failure should not mask the original error */ }
       }
     }
   }

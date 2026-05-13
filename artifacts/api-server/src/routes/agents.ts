@@ -11,13 +11,23 @@ const router = Router();
 router.use(requireAuth);
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-function isAdmin(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+
+/**
+ * Unified admin check: user qualifies as admin if their DB role = "admin"
+ * OR their email is in the ADMIN_EMAILS env list.
+ * Using both sources avoids the inconsistency where some routes checked role
+ * and others checked email, leading to contradictory access decisions.
+ */
+function isAdmin(req: Request): boolean {
+  if (!req.user) return false;
+  if (req.user.role === "admin") return true;
+  if (ADMIN_EMAILS.includes(req.user.email.toLowerCase())) return true;
+  return false;
 }
 
 /** Middleware: blocks non-admin users with 403. */
 function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (!req.user || !isAdmin(req.user.email)) {
+  if (!isAdmin(req)) {
     res.status(403).json({ error: "Forbidden — admin only" });
     return;
   }
@@ -58,12 +68,30 @@ router.post("/agents/run", async (req, res) => {
 });
 
 router.get("/agents/runs/:id/logs/stream", async (req, res) => {
+  // Security fix: verify run ownership BEFORE opening the SSE stream.
+  // Without this check any authenticated user who knows a runId can watch live logs.
+  const runId = req.params["id"] as string;
+  try {
+    const [run] = await db
+      .select({ workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId })
+      .from(agentPipelineRuns)
+      .where(eq(agentPipelineRuns.id, runId));
+
+    if (!run) {
+      return res.status(404).json({ error: "Pipeline run not found" });
+    }
+    if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) {
+      return;
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  const runId = req.params["id"] as string;
   const sentLogIds = new Set<string>();
 
   const interval = setInterval(async () => {
@@ -122,9 +150,8 @@ router.get("/agents/runs", async (req, res) => {
  * Returns false and writes a 404 response when access is denied.
  */
 function checkRunOwnership(run: { workspaceId: string | null; userId: string | null }, req: Request, res: Response): boolean {
+  if (isAdmin(req)) return true;
   const reqWs = req.user?.activeWorkspaceId ?? null;
-  const isAdmin = req.user?.role === "admin";
-  if (isAdmin) return true;
   if (!reqWs || run.workspaceId !== reqWs) {
     res.status(404).json({ error: "Pipeline run not found" });
     return false;
@@ -634,7 +661,7 @@ const SEED_AGENTS = [
 ];
 
 router.post("/agents/seed", async (req, res) => {
-  if (!req.user || !isAdmin(req.user.email)) {
+  if (!isAdmin(req)) {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {

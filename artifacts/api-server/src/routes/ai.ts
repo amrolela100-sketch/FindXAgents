@@ -231,7 +231,50 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
       together:   "https://api.together.xyz/v1",
     };
 
-    const baseURL = provider.baseUrl || PROVIDER_BASE_URLS[provider.providerType] || "https://api.openai.com/v1";
+    // ── SSRF guard ────────────────────────────────────────────────────────────
+    // Block requests to localhost, private IP ranges, link-local and metadata endpoints.
+    // Only the "custom" provider type is allowed to use a user-supplied baseUrl;
+    // all known provider types are forced to use the hardcoded allowlist above.
+    function isSsrfUrl(rawUrl: string): boolean {
+      try {
+        const u = new URL(rawUrl);
+        const hostname = u.hostname.toLowerCase();
+        // Block non-HTTP(S) schemes
+        if (!["http:", "https:"].includes(u.protocol)) return true;
+        // Localhost variants
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return true;
+        // Private RFC-1918 ranges: 10.x, 172.16-31.x, 192.168.x
+        if (/^10\./.test(hostname)) return true;
+        if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) return true;
+        if (/^192\.168\./.test(hostname)) return true;
+        // Link-local 169.254.x (AWS/GCP metadata)
+        if (/^169\.254\./.test(hostname)) return true;
+        // IPv6 private / link-local
+        if (/^(fc|fd|fe80)/i.test(hostname)) return true;
+        // Common metadata endpoints
+        if (hostname === "metadata.google.internal" || hostname === "169.254.169.254") return true;
+        // 0.0.0.0
+        if (hostname === "0.0.0.0") return true;
+        return false;
+      } catch {
+        return true; // unparseable URL → block
+      }
+    }
+
+    // For known provider types use the hardcoded base URL to prevent SSRF.
+    // "custom" and "ollama" are allowed to use the stored baseUrl (with SSRF check).
+    let resolvedBaseURL: string;
+    if (provider.providerType !== "custom" && provider.providerType !== "ollama") {
+      resolvedBaseURL = PROVIDER_BASE_URLS[provider.providerType] ?? "https://api.openai.com/v1";
+    } else {
+      const candidateUrl = provider.baseUrl || PROVIDER_BASE_URLS[provider.providerType] || "https://api.openai.com/v1";
+      if (isSsrfUrl(candidateUrl)) {
+        return res.json({ ok: false, error: "The configured base URL resolves to a blocked/private address" });
+      }
+      resolvedBaseURL = candidateUrl;
+    }
+
+    const baseURL = resolvedBaseURL;
     const apiKey  = provider.apiKey || "ollama";
     const headers: Record<string, string> = {
       "Content-Type":  "application/json",
