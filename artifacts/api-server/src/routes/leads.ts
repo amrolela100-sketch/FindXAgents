@@ -229,7 +229,7 @@ function getDomain(url?: string): string | null {
   }
 }
 
-async function runDiscoveryJob(runId: string, query: string, maxResults: number, userId: string | null) {
+async function runDiscoveryJob(runId: string, query: string, maxResults: number, userId: string | null, workspaceId: string | null = null) {
   const agent = await getOrCreateDiscoveryAgent();
   let leadsFound = 0;
 
@@ -330,6 +330,7 @@ async function runDiscoveryJob(runId: string, query: string, maxResults: number,
       if (!exists) {
         const [newLead] = await db.insert(leads).values({
           userId,
+          workspaceId,
           businessName: lead.businessName,
           city: lead.city,
           kvkNumber: lead.kvkNumber,
@@ -338,7 +339,7 @@ async function runDiscoveryJob(runId: string, query: string, maxResults: number,
           hasWebsite: !!lead.website,
           industry: lead.industry,
           source: kvkKey ? "kvk_api" : "google_places",
-          status: "discovered"
+          status: "discovered",
         }).returning();
         leadsFound++;
         
@@ -392,12 +393,13 @@ router.post("/leads/discover", discoveryLimiter, async (req, res) => {
 
   try {
     const [run] = await db.insert(agentPipelineRuns).values({
-      userId: req.user?.sub ?? null,
+      userId:      req.user?.sub ?? null,
+      workspaceId: req.user?.activeWorkspaceId ?? null,
       query,
-      status: "running"
+      status: "running",
     }).returning();
 
-    runDiscoveryJob(run.id, query, maxResults, req.user?.sub ?? null).catch((err) => logger.error({ err }, "Discovery job failed"));
+    runDiscoveryJob(run.id, query, maxResults, req.user?.sub ?? null, req.user?.activeWorkspaceId ?? null).catch((err) => logger.error({ err }, "Discovery job failed"));
 
     return res.status(202).json({
       message: "Discovery queued.",
