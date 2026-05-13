@@ -1,0 +1,5 @@
+.migration-backup/
+.claude/
+node_modules/
+dist/
+.next/
