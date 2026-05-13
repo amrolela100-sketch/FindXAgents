@@ -12,11 +12,33 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PNPM_VERSION: "10"
   NODE_VERSION: "22"
 
 jobs:
+  # ── Lint & Format ─────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prettier check
+        run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .gitignore
+
   # ── Typecheck & Tests ─────────────────────────────────────────────────────────
   test:
     name: Typecheck & Test
@@ -35,7 +57,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run Typecheck
         run: pnpm run typecheck
@@ -62,7 +84,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core (API Server + Web Frontend)
         env:
