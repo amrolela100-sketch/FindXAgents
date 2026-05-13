@@ -7,15 +7,15 @@ import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError, extractErrorMessage } from "../lib/safe-error.js";
 import { logger } from "../lib/logger.js";
+import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
 
 // All AI provider endpoints require authentication
 router.use(requireAuth);
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 function isAdmin(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+  return isAdminEmail(email);
 }
 
 const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?: string }> = {

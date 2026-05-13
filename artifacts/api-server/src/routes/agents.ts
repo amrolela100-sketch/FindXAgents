@@ -5,12 +5,11 @@ import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { ALLOWED_PHASES, ALLOWED_LEVELS } from "../lib/constants.js";
 import { requireAuth } from "../middleware/auth";
+import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
 
 router.use(requireAuth);
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
 /**
  * Unified admin check: user qualifies as admin if their DB role = "admin"
@@ -21,7 +20,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.tr
 function isAdmin(req: Request): boolean {
   if (!req.user) return false;
   if (req.user.role === "admin") return true;
-  if (ADMIN_EMAILS.includes(req.user.email.toLowerCase())) return true;
+  if (isAdminEmail(req.user.email)) return true;
   return false;
 }
 

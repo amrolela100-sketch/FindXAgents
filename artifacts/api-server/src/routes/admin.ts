@@ -3,13 +3,12 @@ import { requireAuth } from "../middleware/auth";
 import { db, users, leads, agentPipelineRuns } from "@workspace/db";
 import { count, sql, eq } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
+import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-
 function isAdmin(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+  return isAdminEmail(email);
 }
 
 router.use(requireAuth);

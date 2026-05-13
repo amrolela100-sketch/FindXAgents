@@ -4,21 +4,19 @@ import { requireAuth } from "../middleware/auth";
 import { db, users, agentPipelineRuns, leads } from "@workspace/db";
 import { count, sql, eq, desc } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
+import { env, isAdminEmail, isOwnerEmail, ownerEmail } from "../lib/env.js";
 
 const router = Router();
-const OWNER_EMAIL    = (process.env.OWNER_EMAIL ?? "").trim().toLowerCase();
-const OWNER_PASSWORD = process.env.OWNER_PASSWORD ?? "";
-const ADMIN_EMAILS   = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
 // Secret used to sign short-lived unlock tokens (falls back to a derived secret)
-const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? `owner-unlock-${process.env.OWNER_PASSWORD ?? "changeme"}`;
+const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? `owner-unlock-${env.OWNER_PASSWORD ?? "changeme"}`;
 // Unlock tokens are valid for 30 minutes
 const UNLOCK_TTL_MS  = 30 * 60 * 1000;
 
 router.use(requireAuth);
 
 function isOwner(email: string): boolean {
-  return OWNER_EMAIL.length > 0 && email.toLowerCase() === OWNER_EMAIL;
+  return isOwnerEmail(email);
 }
 
 /**
@@ -61,12 +59,12 @@ function verifyUnlockToken(email: string, token: string): boolean {
 router.post("/owner/unlock", async (req, res) => {
   const email = req.user!.email.toLowerCase();
   if (!isOwner(email)) return res.status(403).json({ error: "Forbidden" });
-  if (!OWNER_PASSWORD) return res.status(503).json({ error: "Owner password not configured" });
+  if (!env.OWNER_PASSWORD) return res.status(503).json({ error: "Owner password not configured" });
   const password = String(req.body?.password ?? "");
   // Use timing-safe comparison to prevent timing attacks
   const passwordMatch =
-    password.length === OWNER_PASSWORD.length &&
-    timingSafeEqual(Buffer.from(password), Buffer.from(OWNER_PASSWORD));
+    password.length === env.OWNER_PASSWORD.length &&
+    timingSafeEqual(Buffer.from(password), Buffer.from(env.OWNER_PASSWORD));
   if (!passwordMatch) return res.status(401).json({ error: "Incorrect password" });
 
   // Issue a short-lived unlock token — owner dashboard routes will verify this
@@ -194,8 +192,8 @@ router.get("/owner/users", requireOwnerUnlock, async (req, res) => {
       id: u.id,
       email: u.email,
       role: u.role,
-      isAdmin: ADMIN_EMAILS.includes(u.email.toLowerCase()),
-      isOwner: u.email.toLowerCase() === OWNER_EMAIL,
+      isAdmin: isAdminEmail(u.email),
+      isOwner: isOwnerEmail(u.email),
       onboardingCompleted: u.onboardingCompleted,
       leadCount: leadCountMap[u.id] ?? 0,
       runCount: runCountMap[u.id] ?? 0,

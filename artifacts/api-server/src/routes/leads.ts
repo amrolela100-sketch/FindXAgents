@@ -9,6 +9,7 @@ import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 import { safeError } from "../lib/safe-error.js";
+import { isAdminEmail } from "../lib/env.js";
 
 /** Check if OpenRouter API key is available (DB takes priority over env) */
 async function hasOpenRouterKey(): Promise<boolean> {
@@ -847,11 +848,8 @@ router.post("/leads/:id/outreach/send", async (req, res) => {
 
 // ─── Delete endpoints ─────────────────────────────────────────────────────────
 
-const ADMIN_EMAILS_LIST = (process.env.ADMIN_EMAILS ?? "")
-  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-
 function isAdminUser(email: string): boolean {
-  return ADMIN_EMAILS_LIST.includes(email.toLowerCase());
+  return isAdminEmail(email);
 }
 
 /**
