@@ -290,6 +290,7 @@ export async function generateOutreachWithGemini(
   language: SupportedLanguage = "en",
   scrapedData?: ScrapedWebsite | ScrapyAuditResult,
   forceRefresh = false,
+  workspaceId?: string | null,
 ): Promise<OutreachResult> {
   // ── Cache read ────────────────────────────────────────────────────────────
   if (!forceRefresh && lead.id) {
@@ -297,7 +298,7 @@ export async function generateOutreachWithGemini(
     const cached = await getCachedOutreach<OutreachResult>(lead.id, language);
     if (cached) return cached;
 
-    const client = await getClient();
+    const client = await getClient(workspaceId);
     const result = await _doOutreach(client, lead, analysis, language, scrapedData);
     await setCachedOutreach(lead.id, language, result);
     return result;
