@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { emailProviderTokens, smtpConfigs, emailSettings, resendConfigs } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
 import { requireAuth } from "../middleware/auth.js";
@@ -28,6 +28,24 @@ async function getEmailSettings(wsId: string) {
   return ws ?? null;
 }
 
+/**
+ * Security: Gmail tokens are now workspace-scoped.
+ * Falls back to global token (workspaceId IS NULL) for backward compatibility
+ * with existing deployments that haven't migrated yet.
+ */
+async function getGmailToken(wsId: string) {
+  const [wsToken] = await db.select().from(emailProviderTokens)
+    .where(and(eq(emailProviderTokens.provider, "gmail"), eq(emailProviderTokens.workspaceId, wsId)))
+    .limit(1);
+  if (wsToken) return wsToken;
+
+  // Backward-compat: legacy global token (no workspaceId)
+  const [globalToken] = await db.select().from(emailProviderTokens)
+    .where(and(eq(emailProviderTokens.provider, "gmail"), isNull(emailProviderTokens.workspaceId)))
+    .limit(1);
+  return globalToken ?? null;
+}
+
 // ─── routes ──────────────────────────────────────────────────────────────────
 
 router.get("/email/provider/status", async (req, res) => {
@@ -35,7 +53,7 @@ router.get("/email/provider/status", async (req, res) => {
     const wsId = req.user!.activeWorkspaceId;
     const hasGmailCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
     const hasResendKey = await isResendConfiguredAsync();
-    const [gmailToken]  = await db.select().from(emailProviderTokens).where(eq(emailProviderTokens.provider, "gmail"));
+    const gmailToken    = await getGmailToken(req.user!.activeWorkspaceId);
     const smtpConfig    = await getSmtpConfig(wsId);
     const resendConfig  = await getResendConfig(wsId);
     const setting       = await getEmailSettings(wsId);
@@ -73,9 +91,13 @@ router.get("/email/gmail/connect", async (_req, res) => {
   return res.status(501).json({ error: "Gmail OAuth flow not implemented in this deployment" });
 });
 
-router.post("/email/gmail/disconnect", async (_req, res) => {
+router.post("/email/gmail/disconnect", async (req, res) => {
   try {
-    await db.delete(emailProviderTokens).where(eq(emailProviderTokens.provider, "gmail"));
+    const wsId = req.user!.activeWorkspaceId;
+    // Security: only delete THIS workspace's Gmail token, not the global one
+    await db.delete(emailProviderTokens).where(
+      and(eq(emailProviderTokens.provider, "gmail"), eq(emailProviderTokens.workspaceId, wsId))
+    );
     return res.json({ disconnected: true });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -89,7 +111,7 @@ router.get("/email/settings", async (req, res) => {
     const smtpConfig   = await getSmtpConfig(wsId);
     const resendConfig = await getResendConfig(wsId);
     const hasResendKey = await isResendConfiguredAsync();
-    const [gmailToken] = await db.select().from(emailProviderTokens).where(eq(emailProviderTokens.provider, "gmail"));
+    const gmailToken   = await getGmailToken(req.user!.activeWorkspaceId);
 
     return res.json({
       defaultProvider: setting?.defaultProvider ?? null,
