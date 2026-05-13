@@ -156,7 +156,10 @@ GEMINI_API_KEY=AIza...
 ```env
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
+# Local dev: point directly to the API server
 VITE_API_URL=http://localhost:3000/api
+# Production (Vercel): always use /api — Vercel proxies it to Render (see vercel.json)
+# VITE_API_URL=/api
 VITE_ADMIN_EMAILS=admin@yourdomain.com
 ```
 
