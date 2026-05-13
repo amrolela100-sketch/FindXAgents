@@ -354,7 +354,9 @@ export const aiProviders = pgTable(
 
 export const emailProviderTokens = pgTable("email_provider_tokens", {
   id:           text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  provider:     text("provider").notNull().unique(),
+  // workspaceId scopes Gmail tokens per workspace — previously global (security fix)
+  workspaceId:  text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+  provider:     text("provider").notNull(),
   accessToken:  text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
   scope:        text("scope").notNull(),

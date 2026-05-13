@@ -73,6 +73,14 @@ router.get("/outreaches", async (req, res) => {
 router.get("/outreaches/export", async (req, res) => {
   try {
     const { status } = req.query as Record<string, string>;
+    const wsId = req.user!.activeWorkspaceId;
+
+    // Security: scope export to caller's workspace — prevent cross-tenant data leak
+    const wsCondition = sql`EXISTS (SELECT 1 FROM leads l WHERE l.id = ${outreaches.leadId} AND l.workspace_id = ${wsId})`;
+    const where = status
+      ? and(sql`${outreaches.status} = ${status}` as unknown as ReturnType<typeof eq>, wsCondition as unknown as ReturnType<typeof eq>)
+      : (wsCondition as unknown as ReturnType<typeof eq>);
+
     const rows = await db
       .select({
         id: outreaches.id,
@@ -85,7 +93,7 @@ router.get("/outreaches/export", async (req, res) => {
         createdAt: outreaches.createdAt,
       })
       .from(outreaches)
-      .where(status ? sql`${outreaches.status} = ${status}` : undefined)
+      .where(where)
       .orderBy(desc(outreaches.createdAt))
       .limit(5000);
 

@@ -382,3 +382,43 @@ describe("Agent pipeline run — workspace discovery scoping", () => {
     expect(resB.body).toHaveProperty("runs");
   });
 });
+
+// =============================================================================
+// Security regression tests — IDOR & data-leak fixes
+// =============================================================================
+
+describe("GET /api/analyses/:id — workspace ownership enforced", () => {
+  beforeEach(() => asUser("ws-aaa"));
+
+  it("returns 404 for analysis belonging to a different workspace", async () => {
+    // Mock: analysis exists but lead belongs to ws-bbb, not ws-aaa
+    mockState.agentRow = {
+      analysis: { id: "anal-1", leadId: "lead-x", score: 80 },
+      leadWorkspaceId: "ws-bbb",  // different workspace
+    };
+    const res = await request(app).get("/api/analyses/anal-1");
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    asUnauthenticated();
+    const res = await request(app).get("/api/analyses/anal-1");
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("GET /api/outreaches/export — workspace scoped", () => {
+  beforeEach(() => asUser("ws-aaa"));
+
+  it("returns CSV (200) for authenticated user", async () => {
+    const res = await request(app).get("/api/outreaches/export");
+    // 200 with csv content-type, or empty 200 — either is fine; key is NOT 401/500
+    expect([200]).toContain(res.status);
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    asUnauthenticated();
+    const res = await request(app).get("/api/outreaches/export");
+    expect(res.status).toBe(401);
+  });
+});
