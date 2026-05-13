@@ -97,10 +97,24 @@ router.get("/outreaches/export", async (req, res) => {
       .orderBy(desc(outreaches.createdAt))
       .limit(5000);
 
+    /**
+     * CSV formula-injection sanitization.
+     * Cells starting with =, +, -, @ can be interpreted as formulas by
+     * Excel / LibreOffice. Prefix them with a tab character to neutralise.
+     */
+    function sanitizeCsvCell(value: unknown): string {
+      const str = value == null ? "" : String(value);
+      const dangerous = /^[=+\-@\t\r]/;
+      const sanitized = dangerous.test(str) ? `\t${str}` : str;
+      return `"${sanitized.replace(/"/g, '""')}"`;
+    }
+
     const headers = ["id", "subject", "status", "leadId", "sentAt", "openedAt", "repliedAt", "createdAt"];
     const csv = [
       headers.join(","),
-      ...rows.map((o: Record<string, unknown>) => headers.map((h) => JSON.stringify(o[h] ?? "")).join(",")),
+      ...rows.map((o: Record<string, unknown>) =>
+        headers.map((h) => sanitizeCsvCell(o[h])).join(",")
+      ),
     ].join("\n");
 
     res.header("Content-Type", "text/csv; charset=utf-8");

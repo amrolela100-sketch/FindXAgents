@@ -59,6 +59,12 @@ router.post("/workspaces", async (req, res) => {
       role:        "owner",
     });
 
+    // Bug fix: actually persist the new workspace as the active workspace on the user row
+    // Previously the response claimed activeId but never wrote it to the DB.
+    await db.update(users)
+      .set({ activeWorkspaceId: ws.id, updatedAt: new Date() })
+      .where(eq(users.id, req.user!.userId));
+
     return res.status(201).json({ workspace: ws, activeId: ws.id });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -68,6 +74,12 @@ router.post("/workspaces", async (req, res) => {
 // ─── Update workspace ─────────────────────────────────────────────────────────
 
 router.put("/workspaces/:id", requireWorkspace, async (req, res) => {
+  // Security fix: explicitly verify that the URL :id matches the resolved workspace.
+  // requireWorkspace uses activeWorkspaceId which could differ from req.params.id.
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch — you may only update your active workspace" });
+  }
+
   const ws = req.workspace!;
   if (ws.role !== "owner" && ws.role !== "admin") {
     return res.status(403).json({ error: "Only workspace owner/admin can update workspace" });
@@ -119,6 +131,11 @@ router.post("/workspaces/:id/switch", async (req, res) => {
 // ─── Delete workspace ─────────────────────────────────────────────────────────
 
 router.delete("/workspaces/:id", requireWorkspace, async (req, res) => {
+  // Security fix: explicitly verify that the URL :id matches the resolved workspace.
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch — you may only delete your active workspace" });
+  }
+
   const ws = req.workspace!;
   if (ws.role !== "owner") {
     return res.status(403).json({ error: "Only workspace owner can delete workspace" });
