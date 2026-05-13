@@ -47,7 +47,7 @@ router.post("/agents/run", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/logs/stream", async (req, res) => {
+router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
   // Workspace isolation: verify the run belongs to the active workspace before opening the stream
   try {
     const [run] = await db
