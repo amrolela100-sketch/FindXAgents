@@ -67,7 +67,7 @@ router.post("/agents/run", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/logs/stream", async (req, res) => {
+router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
   // Security fix: verify run ownership BEFORE opening the SSE stream.
   // Without this check any authenticated user who knows a runId can watch live logs.
   const runId = req.params["id"] as string;
@@ -78,13 +78,15 @@ router.get("/agents/runs/:id/logs/stream", async (req, res) => {
       .where(eq(agentPipelineRuns.id, runId));
 
     if (!run) {
-      return res.status(404).json({ error: "Pipeline run not found" });
+      res.status(404).json({ error: "Pipeline run not found" });
+      return;
     }
     if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) {
       return;
     }
   } catch (err) {
-    return res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
+    return;
   }
 
   res.setHeader("Content-Type", "text/event-stream");
