@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { leads, analyses, outreaches, aiProviders } from "@workspace/db";
 import { eq, and, ilike, sql, desc, count, isNotNull, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { languageSchema } from "../lib/constants.js";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "../lib/ai-engine";
 import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
@@ -745,7 +746,12 @@ router.get("/leads/:id/analyses", async (req, res) => {
 });
 
 router.post("/leads/:id/outreach/generate", async (req, res) => {
-  const { language = "nl" } = req.body as { language?: "nl" | "en" };
+  const bodySchema = z.object({ language: languageSchema });
+  const bodyParsed = bodySchema.safeParse(req.body);
+  if (!bodyParsed.success) {
+    return res.status(400).json({ error: "Validation failed", details: bodyParsed.error.flatten() });
+  }
+  const { language } = bodyParsed.data;
   try {
     const [lead] = await db.select().from(leads).where(eq(leads.id, req.params.id));
     if (!lead) return res.status(404).json({ error: "Lead not found" });

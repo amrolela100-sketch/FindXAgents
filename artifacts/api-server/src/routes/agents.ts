@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { agents, agentSkills, agentLogs, agentPipelineRuns, pipelineStages, leads } from "@workspace/db";
 import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { ALLOWED_PHASES, ALLOWED_LEVELS } from "../lib/constants.js";
 import { requireAuth } from "../middleware/auth";
 
 const router = Router();
@@ -200,8 +201,7 @@ router.get("/agents/logs", async (req, res) => {
     const { agentId, pipelineRunId, phase, level } = req.query as Record<string, string>;
 
     // Security: validate enum-like query params before using in sql`` to prevent injection.
-    const ALLOWED_PHASES = new Set(["discover-web","analyze","outreach","pipeline","agent"]);
-    const ALLOWED_LEVELS = new Set(["info","warn","error","debug","success"]);
+    // ALLOWED_PHASES and ALLOWED_LEVELS are imported from lib/constants — single source of truth.
     const safePhase = phase && ALLOWED_PHASES.has(phase) ? phase : undefined;
     const safeLevel = level && ALLOWED_LEVELS.has(level) ? level : undefined;
 
