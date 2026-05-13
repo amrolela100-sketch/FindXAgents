@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { db } from "@workspace/db";
 import { agents, agentSkills, agentLogs, agentPipelineRuns, pipelineStages, leads } from "@workspace/db";
 import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
@@ -13,6 +13,15 @@ router.use(requireAuth);
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 function isAdmin(email: string): boolean {
   return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+/** Middleware: blocks non-admin users with 403. */
+function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || !isAdmin(req.user.email)) {
+    res.status(403).json({ error: "Forbidden — admin only" });
+    return;
+  }
+  next();
 }
 
 // ─── Pipeline Runs ────────────────────────────────────────────────────────────
@@ -54,7 +63,7 @@ router.get("/agents/runs/:id/logs/stream", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  const runId = req.params.id;
+  const runId = req.params["id"] as string;
   const sentLogIds = new Set<string>();
 
   const interval = setInterval(async () => {
@@ -125,7 +134,7 @@ function checkRunOwnership(run: { workspaceId: string | null; userId: string | n
 
 router.get("/agents/runs/:id", async (req, res) => {
   try {
-    const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.json({ run: null });
     if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     return res.json({ run });
@@ -136,7 +145,7 @@ router.get("/agents/runs/:id", async (req, res) => {
 
 router.get("/agents/runs/:id/emails", async (req, res) => {
   try {
-    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run || !checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     return res.json({ emails: [] });
   } catch (err) {
@@ -146,7 +155,7 @@ router.get("/agents/runs/:id/emails", async (req, res) => {
 
 router.get("/agents/runs/:id/logs", async (req, res) => {
   try {
-    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
     if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
 
@@ -166,7 +175,7 @@ router.get("/agents/runs/:id/logs", async (req, res) => {
       agent: { id: agents.id, name: agents.name, displayName: agents.displayName },
     }).from(agentLogs)
       .leftJoin(agents, eq(agentLogs.agentId, agents.id))
-      .where(eq(agentLogs.pipelineRunId, req.params.id))
+      .where(eq(agentLogs.pipelineRunId, req.params["id"] as string))
       .orderBy(asc(agentLogs.createdAt));
     return res.json({ logs: rows });
   } catch (err) {
@@ -176,7 +185,7 @@ router.get("/agents/runs/:id/logs", async (req, res) => {
 
 router.post("/agents/runs/:id/cancel", async (req, res) => {
   try {
-    const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params.id));
+    const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
     if (!checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
     if (run.status !== "running" && run.status !== "queued") {
@@ -184,7 +193,7 @@ router.post("/agents/runs/:id/cancel", async (req, res) => {
     }
     const [updated] = await db.update(agentPipelineRuns)
       .set({ status: "cancelled", completedAt: new Date() })
-      .where(eq(agentPipelineRuns.id, req.params.id))
+      .where(eq(agentPipelineRuns.id, req.params["id"] as string))
       .returning();
     return res.json({ run: updated });
   } catch (err) {
@@ -277,7 +286,7 @@ router.get("/agents/logs/:logId", async (req, res) => {
     }).from(agentLogs)
       .leftJoin(agents, eq(agentLogs.agentId, agents.id))
       .leftJoin(agentPipelineRuns, eq(agentLogs.pipelineRunId, agentPipelineRuns.id))
-      .where(eq(agentLogs.id, req.params.logId));
+      .where(eq(agentLogs.id, req.params["logId"] as string));
     if (!row) return res.status(404).json({ error: "Log not found" });
     // Enforce workspace isolation
     if (req.user?.role !== "admin" && row.runWorkspaceId !== req.user!.activeWorkspaceId) {
@@ -346,7 +355,7 @@ router.get("/agents", async (req, res) => {
 
 router.get("/agents/name/:name", async (req, res) => {
   try {
-    const [agent] = await db.select().from(agents).where(eq(agents.name, req.params.name));
+    const [agent] = await db.select().from(agents).where(eq(agents.name, req.params["name"] as string));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
     const [skills, logCount] = await Promise.all([
@@ -360,7 +369,7 @@ router.get("/agents/name/:name", async (req, res) => {
   }
 });
 
-router.patch("/agents/name/:name", async (req, res) => {
+router.patch("/agents/name/:name", requireAdmin, async (req, res) => {
   try {
     const updateSchema = z.object({
       displayName: z.string().min(1).max(200).optional(),
@@ -385,7 +394,8 @@ router.patch("/agents/name/:name", async (req, res) => {
     const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
     if (updateData.temperature !== undefined) updateData.temperature = updateData.temperature === null ? null : String(updateData.temperature);
 
-    const [agent] = await db.update(agents).set(updateData as Partial<typeof agents.$inferInsert>).where(eq(agents.name, req.params.name)).returning();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [agent] = await db.update(agents).set(updateData as any).where(eq(agents.name, req.params["name"] as string)).returning();
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {
@@ -395,7 +405,7 @@ router.patch("/agents/name/:name", async (req, res) => {
 
 router.get("/agents/:id", async (req, res) => {
   try {
-    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params.id));
+    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params["id"] as string));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
     const [skills, logCount] = await Promise.all([
@@ -409,7 +419,7 @@ router.get("/agents/:id", async (req, res) => {
   }
 });
 
-router.post("/agents", async (req, res) => {
+router.post("/agents", requireAdmin, async (req, res) => {
   const schema = z.object({
     name: z.string().min(1).max(100),
     displayName: z.string().min(1).max(200),
@@ -442,7 +452,7 @@ router.post("/agents", async (req, res) => {
   }
 });
 
-router.patch("/agents/:id", async (req, res) => {
+router.patch("/agents/:id", requireAdmin, async (req, res) => {
   const schema = z.object({
     displayName: z.string().min(1).max(200).optional(),
     description: z.string().optional(),
@@ -467,7 +477,8 @@ router.patch("/agents/:id", async (req, res) => {
   if (data.temperature !== undefined) data.temperature = data.temperature === null ? null : String(data.temperature);
 
   try {
-    const [agent] = await db.update(agents).set(data as Partial<typeof agents.$inferInsert>).where(eq(agents.id, req.params.id)).returning();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [agent] = await db.update(agents).set(data as any).where(eq(agents.id, req.params["id"] as string)).returning();
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {
@@ -475,13 +486,9 @@ router.patch("/agents/:id", async (req, res) => {
   }
 });
 
-router.delete("/agents/:id", async (req, res) => {
-  // Security: only admins can delete agents (prevents IDOR / unauthorized deletion)
-  if (!req.user || !isAdmin(req.user.email)) {
-    return res.status(403).json({ error: "Forbidden — admin only" });
-  }
+router.delete("/agents/:id", requireAdmin, async (req, res) => {
   try {
-    const result = await db.delete(agents).where(eq(agents.id, req.params.id)).returning();
+    const result = await db.delete(agents).where(eq(agents.id, req.params["id"] as string)).returning();
     if (!result.length) return res.status(404).json({ error: "Agent not found" });
     return res.json({ deleted: true });
   } catch (err) {
@@ -489,14 +496,11 @@ router.delete("/agents/:id", async (req, res) => {
   }
 });
 
-router.patch("/agents/:id/toggle", async (req, res) => {
-  if (!req.user || !isAdmin(req.user.email)) {
-    return res.status(403).json({ error: "Forbidden — admin only" });
-  }
+router.patch("/agents/:id/toggle", requireAdmin, async (req, res) => {
   try {
-    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params.id));
+    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params["id"] as string));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
-    const [updated] = await db.update(agents).set({ isActive: !agent.isActive, updatedAt: new Date() }).where(eq(agents.id, req.params.id)).returning();
+    const [updated] = await db.update(agents).set({ isActive: !agent.isActive, updatedAt: new Date() }).where(eq(agents.id, req.params["id"] as string)).returning();
     return res.json({ agent: updated });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -507,16 +511,16 @@ router.patch("/agents/:id/toggle", async (req, res) => {
 
 router.get("/agents/:id/skills", async (req, res) => {
   try {
-    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params.id));
+    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params["id"] as string));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
-    const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, req.params.id)).orderBy(asc(agentSkills.sortOrder));
+    const skills = await db.select().from(agentSkills).where(eq(agentSkills.agentId, req.params["id"] as string)).orderBy(asc(agentSkills.sortOrder));
     return res.json({ skills });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
 });
 
-router.post("/agents/:id/skills", async (req, res) => {
+router.post("/agents/:id/skills", requireAdmin, async (req, res) => {
   const schema = z.object({
     name: z.string().min(1).max(100),
     description: z.string().min(1),
@@ -529,10 +533,10 @@ router.post("/agents/:id/skills", async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
 
   try {
-    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params.id));
+    const [agent] = await db.select().from(agents).where(eq(agents.id, req.params["id"] as string));
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
-    const [skill] = await db.insert(agentSkills).values({ ...parsed.data, agentId: req.params.id }).returning();
+    const [skill] = await db.insert(agentSkills).values({ ...parsed.data, agentId: req.params["id"] as string }).returning();
     return res.status(201).json({ skill });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
@@ -541,7 +545,7 @@ router.post("/agents/:id/skills", async (req, res) => {
   }
 });
 
-router.patch("/agents/:agentId/skills/:skillId", async (req, res) => {
+router.patch("/agents/:agentId/skills/:skillId", requireAdmin, async (req, res) => {
   const updateSkillSchema = z.object({
     name: z.string().min(1).max(100).optional(),
     description: z.string().min(1).optional(),
@@ -556,7 +560,7 @@ router.patch("/agents/:agentId/skills/:skillId", async (req, res) => {
   try {
     const [skill] = await db.update(agentSkills)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(agentSkills.id, req.params.skillId), eq(agentSkills.agentId, req.params.agentId)))
+      .where(and(eq(agentSkills.id, req.params["skillId"] as string), eq(agentSkills.agentId, req.params["agentId"] as string)))
       .returning();
     if (!skill) return res.status(404).json({ error: "Skill not found" });
     return res.json({ skill });
@@ -565,10 +569,10 @@ router.patch("/agents/:agentId/skills/:skillId", async (req, res) => {
   }
 });
 
-router.delete("/agents/:agentId/skills/:skillId", async (req, res) => {
+router.delete("/agents/:agentId/skills/:skillId", requireAdmin, async (req, res) => {
   try {
     const result = await db.delete(agentSkills)
-      .where(and(eq(agentSkills.id, req.params.skillId), eq(agentSkills.agentId, req.params.agentId)))
+      .where(and(eq(agentSkills.id, req.params["skillId"] as string), eq(agentSkills.agentId, req.params["agentId"] as string)))
       .returning();
     if (!result.length) return res.status(404).json({ error: "Skill not found" });
     return res.json({ deleted: true });
