@@ -1,20 +1,35 @@
 import { Switch, Route, useLocation } from "wouter";
 import { Sidebar } from "./components/sidebar";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// ── Critical path — always in the main bundle ────────────────────────────────
 import HomePage from "./pages/HomePage";
 import AgentsPage from "./pages/AgentsPage";
-import AgentDetailPage from "./pages/AgentDetailPage";
 import PipelinePage from "./pages/PipelinePage";
-import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
-import WorkspacePage from "./pages/WorkspacePage";
-import AdminPage from "./pages/AdminPage";
-import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import LeadsPage from "./pages/LeadsPage";
-import ClientsPage from "./pages/ClientsPage";
-import TermsPage from "./pages/TermsPage";
-import PrivacyPage from "./pages/PrivacyPage";
+
+// ── Lazy-loaded — split into separate chunks ─────────────────────────────────
+// These pages are heavy or admin-only; defer until first navigation.
+const AgentDetailPage    = lazy(() => import("./pages/AgentDetailPage"));
+const AdminPage          = lazy(() => import("./pages/AdminPage"));
+const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
+const WorkspacePage      = lazy(() => import("./pages/WorkspacePage"));
+const SettingsPage       = lazy(() => import("./pages/SettingsPage"));
+const ClientsPage        = lazy(() => import("./pages/ClientsPage"));
+const TermsPage          = lazy(() => import("./pages/TermsPage"));
+const PrivacyPage        = lazy(() => import("./pages/PrivacyPage"));
+
+function PageSpinner() {
+  return (
+    <div className="min-h-[100dvh] flex items-center justify-center">
+      <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--text-muted)" }} />
+    </div>
+  );
+}
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { LangProvider, useLang } from "./lib/lang-context";
@@ -80,27 +95,29 @@ function AuthGuard() {
             : (sidebarCollapsed ? "md:ml-16" : "md:ml-60")
         } style={{ transition: "margin 0.3s ease" }}>
           <ErrorBoundary key={location}>
-            <Switch>
-              <Route path="/"            component={HomePage} />
-              <Route path="/login"       component={HomePage} />
-              <Route path="/agents/:name" component={AgentDetailPage} />
-              <Route path="/agents"      component={AgentsPage} />
-              <Route path="/pipeline"    component={PipelinePage} />
-              <Route path="/leads"       component={LeadsPage} />
-              <Route path="/clients"     component={ClientsPage} />
-              <Route path="/workspaces"  component={WorkspacePage} />
-              <Route path="/owner"       component={OwnerDashboardPage} />
-              <Route path="/settings"    component={SettingsPage} />
-              {isAdmin && <Route path="/admin" component={AdminPage} />}
-              <Route>
-                <div
-                  className="min-h-[100dvh] flex flex-col items-center justify-center gap-2"
-                >
-                  <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>
-                  <p style={{ color: "var(--text-muted)" }}>Page not found</p>
-                </div>
-              </Route>
-            </Switch>
+            <Suspense fallback={<PageSpinner />}>
+              <Switch>
+                <Route path="/"            component={HomePage} />
+                <Route path="/login"       component={HomePage} />
+                <Route path="/agents/:name" component={AgentDetailPage} />
+                <Route path="/agents"      component={AgentsPage} />
+                <Route path="/pipeline"    component={PipelinePage} />
+                <Route path="/leads"       component={LeadsPage} />
+                <Route path="/clients"     component={ClientsPage} />
+                <Route path="/workspaces"  component={WorkspacePage} />
+                <Route path="/owner"       component={OwnerDashboardPage} />
+                <Route path="/settings"    component={SettingsPage} />
+                {isAdmin && <Route path="/admin" component={AdminPage} />}
+                <Route>
+                  <div
+                    className="min-h-[100dvh] flex flex-col items-center justify-center gap-2"
+                  >
+                    <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>
+                    <p style={{ color: "var(--text-muted)" }}>Page not found</p>
+                  </div>
+                </Route>
+              </Switch>
+            </Suspense>
           </ErrorBoundary>
         </div>
       </div>
@@ -137,7 +154,9 @@ export default function App() {
     return (
       <ThemeProvider>
         <LangProvider>
-          <TermsPage />
+          <Suspense fallback={<PageSpinner />}>
+            <TermsPage />
+          </Suspense>
         </LangProvider>
       </ThemeProvider>
     );
@@ -147,7 +166,9 @@ export default function App() {
     return (
       <ThemeProvider>
         <LangProvider>
-          <PrivacyPage />
+          <Suspense fallback={<PageSpinner />}>
+            <PrivacyPage />
+          </Suspense>
         </LangProvider>
       </ThemeProvider>
     );

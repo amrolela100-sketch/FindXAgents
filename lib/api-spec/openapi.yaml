@@ -2,35 +2,587 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: FindX — AI-Powered B2B Prospecting API
 servers:
   - url: /api
     description: Base API path
+
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: leads
+    description: Lead management
+  - name: analyses
+    description: Lead analysis results
+  - name: outreaches
+    description: Outreach email management
+  - name: agents
+    description: AI agent pipeline
+  - name: dashboard
+    description: Dashboard stats
+  - name: pipeline
+    description: Pipeline / kanban stages
+  - name: search
+    description: Lead search & discovery
+  - name: workspaces
+    description: Workspace management
+  - name: notifications
+    description: In-app notifications
+
+# ─── Security scheme ───────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ── Shared primitives ──────────────────────────────────────────────────────
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    Language:
+      type: string
+      enum: [ar, en, nl, fr, es, de]
+      default: en
+
+    AgentPhase:
+      type: string
+      enum: [discover-web, qualify-ai, generate-outreach, stage-pipeline]
+
+    LogLevel:
+      type: string
+      enum: [info, warn, error, debug, success]
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:   { type: integer }
+        page:    { type: integer }
+        pageSize:{ type: integer }
+
+    # ── Lead ──────────────────────────────────────────────────────────────────
+    Lead:
+      type: object
+      required: [id, businessName]
+      properties:
+        id:           { type: string, format: uuid }
+        businessName: { type: string }
+        website:      { type: string, nullable: true }
+        email:        { type: string, nullable: true }
+        phone:        { type: string, nullable: true }
+        city:         { type: string, nullable: true }
+        country:      { type: string, nullable: true }
+        industry:     { type: string, nullable: true }
+        leadScore:    { type: integer, minimum: 0, maximum: 100, nullable: true }
+        status:       { type: string, nullable: true }
+        createdAt:    { type: string, format: date-time }
+
+    LeadList:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/PaginationMeta"
+      properties:
+        leads:
+          type: array
+          items: { $ref: "#/components/schemas/Lead" }
+
+    # ── Analysis ──────────────────────────────────────────────────────────────
+    Analysis:
+      type: object
+      required: [id, leadId]
+      properties:
+        id:          { type: string, format: uuid }
+        leadId:      { type: string, format: uuid }
+        score:       { type: integer, nullable: true }
+        summary:     { type: string, nullable: true }
+        opportunities:
+          type: array
+          items: { type: string }
+          nullable: true
+        weaknesses:
+          type: array
+          items: { type: string }
+          nullable: true
+        analyzedAt:  { type: string, format: date-time, nullable: true }
+
+    # ── Outreach ──────────────────────────────────────────────────────────────
+    Outreach:
+      type: object
+      required: [id, leadId]
+      properties:
+        id:       { type: string, format: uuid }
+        leadId:   { type: string, format: uuid }
+        subject:  { type: string, nullable: true }
+        body:     { type: string, nullable: true }
+        status:   { type: string, nullable: true }
+        language: { $ref: "#/components/schemas/Language" }
+        sentAt:   { type: string, format: date-time, nullable: true }
+        createdAt:{ type: string, format: date-time }
+
+    # ── Agent Pipeline Run ────────────────────────────────────────────────────
+    PipelineRun:
+      type: object
+      required: [id, query, status]
+      properties:
+        id:            { type: string, format: uuid }
+        query:         { type: string }
+        status:        { type: string, enum: [queued, running, completed, failed, cancelled] }
+        leadsFound:    { type: integer, nullable: true }
+        leadsAnalyzed: { type: integer, nullable: true }
+        emailsDrafted: { type: integer, nullable: true }
+        createdAt:     { type: string, format: date-time }
+        completedAt:   { type: string, format: date-time, nullable: true }
+
+    AgentLog:
+      type: object
+      required: [id, phase, level, message]
+      properties:
+        id:           { type: string, format: uuid }
+        pipelineRunId:{ type: string, format: uuid, nullable: true }
+        phase:        { $ref: "#/components/schemas/AgentPhase" }
+        level:        { $ref: "#/components/schemas/LogLevel" }
+        message:      { type: string }
+        createdAt:    { type: string, format: date-time }
+
+    # ── Notification ──────────────────────────────────────────────────────────
+    Notification:
+      type: object
+      required: [id, message]
+      properties:
+        id:        { type: string, format: uuid }
+        message:   { type: string }
+        isRead:    { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # ── Generic error ─────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:   { type: string }
+        details: {}
+
+# Default security — all protected endpoints require JWT
+security:
+  - bearerAuth: []
+
 paths:
+  # ── Health ────────────────────────────────────────────────────────────────
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
+      security: []          # public
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
-components:
-  schemas:
-    HealthStatus:
-      type: object
-      properties:
-        status:
-          type: string
-      required:
-        - status
+              schema: { $ref: "#/components/schemas/HealthStatus" }
 
+  # ── Leads ─────────────────────────────────────────────────────────────────
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List leads
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 25, maximum: 200 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: Paginated leads
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeadList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /leads/{id}:
+    get:
+      operationId: getLead
+      tags: [leads]
+      summary: Get a single lead
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Lead detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    patch:
+      operationId: updateLead
+      tags: [leads]
+      summary: Update a lead
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:       { type: string }
+                notes:        { type: string }
+                pipelineStage:{ type: string }
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+
+    delete:
+      operationId: deleteLead
+      tags: [leads]
+      summary: Delete a lead
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /leads/{id}/outreach/generate:
+    post:
+      operationId: generateLeadOutreach
+      tags: [leads, outreaches]
+      summary: Generate a personalised outreach email for a lead
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                language: { $ref: "#/components/schemas/Language" }
+      responses:
+        "200":
+          description: Generated outreach
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Outreach" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  # ── Analyses ──────────────────────────────────────────────────────────────
+  /analyses:
+    get:
+      operationId: listAnalyses
+      tags: [analyses]
+      summary: List analyses
+      parameters:
+        - in: query
+          name: leadId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+      responses:
+        "200":
+          description: Paginated analyses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analyses:
+                    type: array
+                    items: { $ref: "#/components/schemas/Analysis" }
+                  total: { type: integer }
+
+  # ── Outreaches ────────────────────────────────────────────────────────────
+  /outreaches:
+    get:
+      operationId: listOutreaches
+      tags: [outreaches]
+      summary: List outreach emails
+      parameters:
+        - in: query
+          name: leadId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of outreaches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Outreach" }
+
+  /outreaches/{id}/send:
+    post:
+      operationId: sendOutreach
+      tags: [outreaches]
+      summary: Send an outreach email
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Email sent }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  # ── Agents / Pipeline ─────────────────────────────────────────────────────
+  /agents/run:
+    post:
+      operationId: startAgentRun
+      tags: [agents]
+      summary: Start a new AI pipeline run (Discover → Analyze → Outreach)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  minLength: 2
+                  maxLength: 500
+                language: { $ref: "#/components/schemas/Language" }
+                maxResults:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+                  default: 10
+                sync:
+                  type: boolean
+                  default: false
+      responses:
+        "202":
+          description: Pipeline queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runId:  { type: string, format: uuid }
+                  status: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /agents/runs:
+    get:
+      operationId: listAgentRuns
+      tags: [agents]
+      summary: List pipeline runs for the current workspace
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Paginated pipeline runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items: { $ref: "#/components/schemas/PipelineRun" }
+                  total: { type: integer }
+
+  /agents/runs/{id}:
+    get:
+      operationId: getAgentRun
+      tags: [agents]
+      summary: Get a single pipeline run
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Pipeline run detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PipelineRun" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /agents/logs:
+    get:
+      operationId: listAgentLogs
+      tags: [agents]
+      summary: List agent logs (filtered by run / phase / level)
+      parameters:
+        - in: query
+          name: pipelineRunId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: phase
+          schema: { $ref: "#/components/schemas/AgentPhase" }
+        - in: query
+          name: level
+          schema: { $ref: "#/components/schemas/LogLevel" }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 25, maximum: 500 }
+      responses:
+        "200":
+          description: Paginated logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items: { $ref: "#/components/schemas/AgentLog" }
+                  total: { type: integer }
+
+  # ── Dashboard ─────────────────────────────────────────────────────────────
+  /dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard KPIs and recent activity
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalLeads:       { type: integer }
+                  qualifiedLeads:   { type: integer }
+                  emailsSent:       { type: integer }
+                  avgScore:         { type: number }
+
+  # ── Search ────────────────────────────────────────────────────────────────
+  /search:
+    get:
+      operationId: searchLeads
+      tags: [search]
+      summary: Full-text search across leads
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Lead" }
+
+  # ── Notifications ─────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for the current user
+      parameters:
+        - in: query
+          name: unreadOnly
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Notification" }
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "204": { description: Done }
+
+  # ── Workspaces ────────────────────────────────────────────────────────────
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      tags: [workspaces]
+      summary: List workspaces the current user belongs to
+      responses:
+        "200":
+          description: Workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:   { type: string, format: uuid }
+                    name: { type: string }
+
+# ── Reusable responses ─────────────────────────────────────────────────────────
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ServiceUnavailable:
+      description: Upstream service (AI / email) unavailable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }

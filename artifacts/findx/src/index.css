@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap");
+/* Google Fonts are loaded via <link> in index.html — no @import needed here.
+   Duplicate @import removed to fix CSS build warning and double-request. */
 
 /* ═══════════════════════════════════════════════════════════
    FINDX — Liquid Glass Design System
