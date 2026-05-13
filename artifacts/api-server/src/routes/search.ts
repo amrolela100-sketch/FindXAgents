@@ -10,14 +10,31 @@ router.use(requireAuth);
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
-/** Workspace-scoped key only — no global fallback to prevent cross-user data leakage */
+/**
+ * Resolve Tavily API key with three-level priority:
+ * 1. Workspace-specific config (DB)
+ * 2. Global / owner-level config (workspaceId IS NULL in DB)
+ * 3. TAVILY_API_KEY environment variable
+ *
+ * Matches the same resolution order used in agent-runner.ts so that
+ * /search and the pipeline runner behave consistently.
+ */
 async function getTavilyApiKey(workspaceId: string): Promise<string | null> {
   try {
+    // 1. Workspace-specific config
     const [ws] = await db.select().from(searchConfigs)
       .where(eq(searchConfigs.workspaceId, workspaceId)).limit(1);
     if (ws?.apiKey) return ws.apiKey;
+
+    // 2. Global / owner-level config (workspaceId IS NULL)
+    const { isNull } = await import("drizzle-orm");
+    const [global] = await db.select().from(searchConfigs)
+      .where(isNull(searchConfigs.workspaceId)).limit(1);
+    if (global?.apiKey) return global.apiKey;
   } catch { /* fall through */ }
-  return null;
+
+  // 3. Environment variable fallback
+  return process.env.TAVILY_API_KEY ?? null;
 }
 
 router.post("/search", async (req, res) => {
@@ -75,23 +92,46 @@ router.post("/search", async (req, res) => {
 router.get("/search/status", async (req, res) => {
   const wsId = req.user!.activeWorkspaceId;
   const apiKey = await getTavilyApiKey(wsId);
-  const [config] = await db.select().from(searchConfigs)
-    .where(eq(searchConfigs.workspaceId, wsId)).catch(() => [null]);
+
+  // Determine actual source for accurate status reporting
+  let source: "workspace" | "global" | "env" | null = null;
+  if (apiKey) {
+    const { isNull } = await import("drizzle-orm");
+    const [wsCfg] = await db.select({ id: searchConfigs.workspaceId })
+      .from(searchConfigs).where(eq(searchConfigs.workspaceId, wsId)).catch(() => []);
+    if (wsCfg) {
+      source = "workspace";
+    } else {
+      const [globalCfg] = await db.select({ id: searchConfigs.workspaceId })
+        .from(searchConfigs).where(isNull(searchConfigs.workspaceId)).catch(() => []);
+      source = globalCfg ? "global" : "env";
+    }
+  }
+
   return res.json({
     configured: !!apiKey,
     provider:   "tavily",
-    source:     config ? "db" : (process.env.TAVILY_API_KEY ? "env" : null),
+    source,
   });
 });
 
 router.get("/search/config", async (req, res) => {
   try {
     const wsId = req.user!.activeWorkspaceId;
-    const [config] = await db.select().from(searchConfigs)
-      .where(eq(searchConfigs.workspaceId, wsId));
-    if (config) return res.json({ configured: true, provider: config.provider, source: "db" });
+    const { isNull } = await import("drizzle-orm");
+
+    // Workspace-specific config
+    const [wsCfg] = await db.select().from(searchConfigs).where(eq(searchConfigs.workspaceId, wsId));
+    if (wsCfg) return res.json({ configured: true, provider: wsCfg.provider, source: "workspace" });
+
+    // Global config
+    const [globalCfg] = await db.select().from(searchConfigs).where(isNull(searchConfigs.workspaceId));
+    if (globalCfg) return res.json({ configured: true, provider: globalCfg.provider, source: "global" });
+
+    // Env fallback
     if (process.env.TAVILY_API_KEY) return res.json({ configured: true, provider: "tavily", source: "env" });
-    return res.json({ configured: false, provider: "tavily" });
+
+    return res.json({ configured: false, provider: "tavily", source: null });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

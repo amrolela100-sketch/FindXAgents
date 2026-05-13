@@ -1,424 +1,415 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams } from "wouter";
-import { Link } from "wouter";
-import {
-  Bot, ArrowLeft, Loader2, Cpu, Wrench, Zap, Save,
-  FileText, Eye, Search, Mail, ChevronRight, Settings,
-  MessageSquare, Info, ToggleLeft, ToggleRight,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
+import { motion } from "framer-motion";
+import { PageShell } from "../components/page-shell";
+import { useLang } from "../lib/lang-context";
 import { getAgent, updateAgent } from "../lib/api";
-import type { Agent, AgentSkill } from "../lib/types";
+import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import type { Agent } from "../lib/types";
+import {
+  Bot, Search, BarChart3, Mail, ChevronLeft, Save, Loader2,
+  Hash, Cpu, Thermometer, Layers, Code2, FileText, Wrench,
+  CheckCircle2, XCircle, Activity, Zap, Edit3, AlertTriangle,
+} from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Badge } from "../components/ui/badge";
+import { Switch } from "../components/ui/switch";
+import { Label } from "../components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
 
-const ROLE_ICONS: Record<string, React.ElementType> = {
-  research: Search,
-  analysis: Eye,
-  outreach: Mail,
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const SPRING = { type: "spring" as const, stiffness: 120, damping: 22 };
+const FADE_UP = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { ...SPRING, delay: i * 0.06 } }),
 };
 
-const ROLE_COLORS: Record<string, { bg: string; text: string; gradient: string }> = {
-  research: { bg: "bg-emerald-900/30", text: "text-emerald-400", gradient: "from-emerald-500 to-teal-600" },
-  analysis: { bg: "bg-indigo-900/30", text: "text-indigo-400", gradient: "from-indigo-500 to-purple-600" },
-  outreach: { bg: "bg-amber-900/30", text: "text-amber-400", gradient: "from-amber-500 to-orange-600" },
+const AGENT_META: Record<string, { icon: typeof Bot; accent: string; gradient: string }> = {
+  discovery: {
+    icon: Search,
+    accent: "#60A5FA",
+    gradient: "linear-gradient(135deg, #60A5FA22, #3B82F608)",
+  },
+  analysis: {
+    icon: BarChart3,
+    accent: "#FBBF24",
+    gradient: "linear-gradient(135deg, #FBBF2422, #F59E0B08)",
+  },
+  outreach: {
+    icon: Mail,
+    accent: "#34D399",
+    gradient: "linear-gradient(135deg, #34D39922, #10B98108)",
+  },
 };
 
-type SettingsTab = "general" | "prompts" | "info";
+// ─── Stat Card ───────────────────────────────────────────────────────────────
 
-export default function AgentDetailPage() {
-  const params = useParams<{ name: string }>();
-  const agentName = params.name as string;
+function StatCard({ label, value, icon: Icon, accent }: {
+  label: string; value: string | number; icon: typeof Bot; accent: string;
+}) {
+  return (
+    <div
+      className="rounded-xl p-4 flex items-center gap-3 border"
+      style={{ background: `${accent}10`, borderColor: `${accent}25` }}
+    >
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{ background: `${accent}20` }}>
+        <Icon className="w-4 h-4" style={{ color: accent }} />
+      </div>
+      <div>
+        <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</div>
+        <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{value}</div>
+      </div>
+    </div>
+  );
+}
 
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [loading, setLoading] = useState(true);
+// ─── Edit Form ───────────────────────────────────────────────────────────────
+
+function EditForm({ agent, onSaved }: { agent: Agent; onSaved: (a: Agent) => void }) {
+  const [form, setForm] = useState({
+    displayName: agent.displayName,
+    description: agent.description,
+    model: agent.model,
+    maxIterations: agent.maxIterations,
+    maxTokens: agent.maxTokens,
+    temperature: agent.temperature ?? "",
+    systemPrompt: agent.systemPrompt,
+    identityMd: agent.identityMd,
+    soulMd: agent.soulMd,
+    toolsMd: agent.toolsMd,
+    isActive: agent.isActive,
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
-
-  const [displayName, setDisplayName] = useState("");
-  const [description, setDescription] = useState("");
-  const [model, setModel] = useState("");
-  const [maxIterations, setMaxIterations] = useState(15);
-  const [maxTokens, setMaxTokens] = useState(4096);
-  const [temperature, setTemperature] = useState<number | null>(null);
-  const [isActive, setIsActive] = useState(true);
-  const [identityMd, setIdentityMd] = useState("");
-  const [soulMd, setSoulMd] = useState("");
-  const [toolsMd, setToolsMd] = useState("");
-
-  const loadAgent = useCallback(async () => {
-    try {
-      const result = await getAgent(agentName);
-      if (result.agent) {
-        const a = result.agent;
-        setAgent(a);
-        setDisplayName(a.displayName);
-        setDescription(a.description);
-        setModel(a.model);
-        setMaxIterations(a.maxIterations);
-        setMaxTokens(a.maxTokens);
-        setTemperature(a.temperature);
-        setIsActive(a.isActive);
-        setIdentityMd(a.identityMd);
-        setSoulMd(a.soulMd);
-        setToolsMd(a.toolsMd);
-      }
-    } catch {
-      setError("Failed to load agent");
-    } finally {
-      setLoading(false);
-    }
-  }, [agentName]);
-
-  useEffect(() => {
-    loadAgent();
-  }, [loadAgent]);
+  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
-    if (!agent) return;
     setSaving(true);
     setError(null);
-    setSuccessMessage(null);
+    setSaved(false);
     try {
-      await updateAgent(agent.name, {
-        displayName, description, model, maxIterations, maxTokens, temperature, isActive, identityMd, soulMd, toolsMd,
-      });
-      await loadAgent();
-      setSuccessMessage("Agent updated successfully");
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update agent");
+      const payload: Partial<Agent> = {
+        ...form,
+        temperature: form.temperature === "" ? null : Number(form.temperature),
+        maxIterations: Number(form.maxIterations),
+        maxTokens: Number(form.maxTokens),
+      };
+      const { agent: updated } = await updateAgent(agent.name, payload);
+      onSaved(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to save");
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
-        <span className="ml-2 text-sm text-slate-400">Loading agent...</span>
-      </div>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <div className="p-8 space-y-6">
-        <Link href="/agents" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Agents
-        </Link>
-        <div className="bg-slate-900 rounded-2xl border border-slate-700 px-6 py-16 text-center shadow-sm">
-          <Bot className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-400">Agent &quot;{agentName}&quot; not found</p>
-        </div>
-      </div>
-    );
-  }
-
-  const Icon = ROLE_ICONS[agent.role] ?? Bot;
-  const colors = ROLE_COLORS[agent.role] ?? { bg: "bg-blue-900/30", text: "text-blue-400", gradient: "from-blue-500 to-indigo-600" };
-  const toolCount = (agent.toolNames as string[]).length;
-  const skillCount = agent.skills?.length ?? 0;
-
-  const tabs: { key: SettingsTab; label: string; icon: React.ElementType }[] = [
-    { key: "general", label: "General", icon: Settings },
-    { key: "prompts", label: "Prompts", icon: MessageSquare },
-    { key: "info", label: "Info", icon: Info },
-  ];
+  const field = (label: string, key: keyof typeof form, type: "input" | "textarea" | "number" = "input", rows = 4) => (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</Label>
+      {type === "textarea" ? (
+        <Textarea
+          rows={rows}
+          value={String(form[key])}
+          onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
+          className="font-mono text-xs resize-y"
+          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+        />
+      ) : (
+        <Input
+          type={type === "number" ? "number" : "text"}
+          value={String(form[key])}
+          onChange={(e) => setForm(f => ({ ...f, [key]: type === "number" ? Number(e.target.value) : e.target.value }))}
+          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+        />
+      )}
+    </div>
+  );
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/agents" className="hover:text-slate-300 transition-colors">Agents</Link>
-        <ChevronRight className="w-3 h-3" />
-        <span className="text-slate-300 font-medium">{agent.displayName}</span>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors.gradient} flex items-center justify-center shadow-lg shadow-slate-900/30`}>
-            <Icon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl font-bold text-slate-100">{agent.displayName}</h1>
-              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ring-1 ring-inset ${
-                agent.isActive
-                  ? "bg-emerald-900/30 text-emerald-400 ring-emerald-700"
-                  : "bg-slate-800 text-slate-500 ring-slate-600"
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${agent.isActive ? "bg-emerald-400" : "bg-slate-500"}`} />
-                {agent.isActive ? "Active" : "Inactive"}
-              </span>
-            </div>
-            <p className="text-sm text-slate-400 capitalize">{agent.role} agent &middot; <span className="font-mono text-xs">{agent.name}</span></p>
+    <div className="space-y-6">
+      {/* Active toggle */}
+      <div className="flex items-center justify-between p-4 rounded-xl border"
+        style={{ background: "var(--surface-1)", borderColor: "var(--border)" }}>
+        <div>
+          <div className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>Active</div>
+          <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            Inactive agents are skipped by the pipeline runner
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-150 shadow-sm shadow-blue-500/20"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+        <Switch
+          checked={form.isActive}
+          onCheckedChange={(v) => setForm(f => ({ ...f, isActive: v }))}
+        />
       </div>
 
-      {successMessage && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-900/30 text-emerald-400 rounded-xl text-sm ring-1 ring-inset ring-emerald-700">
-          <Eye className="w-4 h-4 shrink-0" />
-          {successMessage}
-        </div>
-      )}
+      <Tabs defaultValue="general">
+        <TabsList className="mb-4">
+          <TabsTrigger value="general"><Edit3 className="w-3.5 h-3.5 me-1.5" />General</TabsTrigger>
+          <TabsTrigger value="model"><Cpu className="w-3.5 h-3.5 me-1.5" />Model</TabsTrigger>
+          <TabsTrigger value="prompts"><FileText className="w-3.5 h-3.5 me-1.5" />Prompts</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="space-y-4">
+          {field("Display Name", "displayName")}
+          {field("Description", "description", "textarea", 3)}
+        </TabsContent>
+
+        <TabsContent value="model" className="space-y-4">
+          {field("Model", "model")}
+          <div className="grid grid-cols-2 gap-4">
+            {field("Max Iterations", "maxIterations", "number")}
+            {field("Max Tokens", "maxTokens", "number")}
+          </div>
+          {field("Temperature (0–2, blank = default)", "temperature", "number")}
+        </TabsContent>
+
+        <TabsContent value="prompts" className="space-y-4">
+          {field("System Prompt", "systemPrompt", "textarea", 6)}
+          {field("Identity (IDENTITY.md)", "identityMd", "textarea", 5)}
+          {field("Soul (SOUL.md)", "soulMd", "textarea", 5)}
+          {field("Tools (TOOLS.md)", "toolsMd", "textarea", 5)}
+        </TabsContent>
+      </Tabs>
+
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-900/30 text-red-400 rounded-xl text-sm ring-1 ring-inset ring-red-700">
+        <div className="flex items-center gap-2 p-3 rounded-lg text-sm"
+          style={{ background: "#EF444415", color: "#EF4444", border: "1px solid #EF444425" }}>
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="flex items-center bg-slate-800 rounded-lg p-1 w-fit">
-        {tabs.map((t) => {
-          const TabIcon = t.icon;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                activeTab === t.key
-                  ? "bg-slate-700 text-slate-100 shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <TabIcon className="w-3.5 h-3.5" />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeTab === "general" && (
-        <div className="space-y-6">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 space-y-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <Bot className="w-4 h-4 text-slate-500" />
-              Basic Information
-            </h2>
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Display Name</label>
-                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Model</label>
-                <input type="text" value={model} onChange={(e) => setModel(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                <p className="text-[10px] text-slate-500 mt-1">The LLM model used by this agent</p>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-400 mb-1.5 block">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-                className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder:text-slate-600"
-                placeholder="Describe what this agent does..." />
-            </div>
-          </div>
-
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 space-y-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <Settings className="w-4 h-4 text-slate-500" />
-              Performance Settings
-            </h2>
-            <div className="grid grid-cols-3 gap-5">
-              <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Max Iterations</label>
-                <input type="number" value={maxIterations} onChange={(e) => setMaxIterations(parseInt(e.target.value, 10) || 15)} min={1} max={50}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                <p className="text-[10px] text-slate-500 mt-1">Max tool-use loops per run</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Max Tokens</label>
-                <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 4096)} min={256} max={16384} step={256}
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                <p className="text-[10px] text-slate-500 mt-1">Response token limit</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Temperature</label>
-                <input type="number" value={temperature ?? ""} onChange={(e) => setTemperature(e.target.value ? parseFloat(e.target.value) : null)} min={0} max={2} step={0.1} placeholder="default"
-                  className="w-full px-3 py-2.5 border border-slate-700 rounded-xl text-sm bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-slate-600" />
-                <p className="text-[10px] text-slate-500 mt-1">Creativity (0 = focused, 2 = creative)</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-slate-700">
-              <div>
-                <label className="text-xs font-medium text-slate-400 block">Active Status</label>
-                <p className="text-[10px] text-slate-500 mt-0.5">Inactive agents are skipped in the pipeline</p>
-              </div>
-              <button onClick={() => setIsActive(!isActive)} className="flex items-center gap-2 text-sm">
-                {isActive ? (
-                  <>
-                    <ToggleRight className="w-8 h-5 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium text-xs">Active</span>
-                  </>
-                ) : (
-                  <>
-                    <ToggleLeft className="w-8 h-5 text-slate-500" />
-                    <span className="text-slate-500 font-medium text-xs">Inactive</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "prompts" && (
-        <div className="space-y-5">
-          <PromptEditor title="Identity" icon={Bot} description="Defines who the agent is and its core purpose" value={identityMd} onChange={setIdentityMd} placeholder="# Agent Identity..." />
-          <PromptEditor title="Soul / Personality" icon={MessageSquare} description="The agent's personality, tone, and behavioral guidelines" value={soulMd} onChange={setSoulMd} placeholder="# Agent Personality..." />
-          <PromptEditor title="Tools Documentation" icon={Wrench} description="Documentation for the tools available to this agent" value={toolsMd} onChange={setToolsMd} placeholder="# Available Tools..." />
-        </div>
-      )}
-
-      {activeTab === "info" && (
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2 mb-4">
-                <FileText className="w-4 h-4 text-slate-500" />
-                System Prompt
-              </h2>
-              <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono bg-slate-800 rounded-xl p-4 max-h-96 overflow-y-auto leading-relaxed">
-                {agent.systemPrompt || "No system prompt generated yet"}
-              </pre>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 space-y-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-200">Agent Info</h2>
-              <dl className="space-y-3">
-                {[
-                  { label: "Internal Name", value: agent.name, mono: true },
-                  { label: "Role", value: agent.role, capitalize: true },
-                  { label: "Pipeline Order", value: `#${agent.pipelineOrder}` },
-                  { label: "Created", value: new Date(agent.createdAt).toLocaleDateString() },
-                  { label: "Last Updated", value: new Date(agent.updatedAt).toLocaleDateString() },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <dt className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{item.label}</dt>
-                    <dd className={`text-sm text-slate-300 mt-0.5 ${item.mono ? "font-mono text-xs" : ""} ${item.capitalize ? "capitalize" : ""}`}>{item.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 space-y-3 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-slate-500" />
-                Tools
-                <span className="text-[10px] font-medium text-slate-500 ml-auto">{toolCount}</span>
-              </h2>
-              {toolCount === 0 ? (
-                <p className="text-xs text-slate-500">No tools configured</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {(agent.toolNames as string[]).map((tool) => (
-                    <span key={tool} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg bg-slate-800 text-slate-400 ring-1 ring-inset ring-slate-700">
-                      <Cpu className="w-3 h-3 text-slate-500" />
-                      {tool}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6 space-y-3 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-slate-500" />
-                Skills
-                <span className="text-[10px] font-medium text-slate-500 ml-auto">{skillCount}</span>
-              </h2>
-              {skillCount === 0 ? (
-                <p className="text-xs text-slate-500">No skills configured</p>
-              ) : (
-                <ul className="space-y-3">
-                  {agent.skills!.map((skill: AgentSkill) => (
-                    <li key={skill.id} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-300">{skill.name}</span>
-                        <span className={`w-1.5 h-1.5 rounded-full ${skill.isActive ? "bg-emerald-400" : "bg-slate-600"}`} />
-                      </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-2">{skill.description}</p>
-                      {(skill.toolNames as string[]).length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {(skill.toolNames as string[]).map((t: string) => (
-                            <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">{t}</span>
-                          ))}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <Button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full"
+        style={{ background: saved ? "#22C55E" : "var(--primary)", color: "#fff" }}
+      >
+        {saving ? (
+          <><Loader2 className="w-4 h-4 me-2 animate-spin" />Saving…</>
+        ) : saved ? (
+          <><CheckCircle2 className="w-4 h-4 me-2" />Saved!</>
+        ) : (
+          <><Save className="w-4 h-4 me-2" />Save Changes</>
+        )}
+      </Button>
     </div>
   );
 }
 
-function PromptEditor({
-  title,
-  icon: Icon,
-  description,
-  value,
-  onChange,
-  placeholder,
-}: {
-  title: string;
-  icon: React.ElementType;
-  description: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const lines = value.split("\n").length;
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+export default function AgentDetailPage() {
+  const { name } = useParams<{ name: string }>();
+  const [, navigate] = useLocation();
+  const { isRtl } = useLang();
+
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useRealtimeData<{ agent: Agent }>(
+    () => getAgent(name!),
+    ["agents"],
+  );
+
+  const [localAgent, setLocalAgent] = useState<Agent | null>(null);
+
+  useEffect(() => {
+    if (data?.agent) setLocalAgent(data.agent);
+  }, [data]);
+
+  const agent = localAgent ?? data?.agent ?? null;
+  const meta = agent ? (AGENT_META[agent.name] ?? { icon: Bot, accent: "#C084FC", gradient: "linear-gradient(135deg,#C084FC22,#A855F708)" }) : null;
+  const Icon = meta?.icon ?? Bot;
+
+  if (loading) {
+    return (
+      <PageShell title="Agent">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--text-muted)" }} />
+        </div>
+      </PageShell>
+    );
+  }
+
+  if (error || !agent) {
+    return (
+      <PageShell title="Agent">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <XCircle className="w-8 h-8" style={{ color: "#EF4444" }} />
+          <p style={{ color: "var(--text-muted)" }}>Agent "{name}" not found</p>
+          <Button variant="outline" onClick={() => navigate("/agents")}>
+            <ChevronLeft className="w-4 h-4 me-1.5" />Back to Agents
+          </Button>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-sm overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-slate-800">
-            <Icon className="w-4 h-4 text-slate-400" />
+    <PageShell title={agent.displayName}>
+      <div className="max-w-4xl mx-auto space-y-6 pb-12">
+
+        {/* Header */}
+        <motion.div initial="hidden" animate="visible" variants={FADE_UP} className="flex items-center gap-3 mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/agents")}
+            className="gap-1.5 -ms-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Agents
+          </Button>
+        </motion.div>
+
+        {/* Agent identity card */}
+        <motion.div initial="hidden" animate="visible" custom={0} variants={FADE_UP}>
+          <div
+            className="rounded-2xl p-6 border flex items-start gap-5"
+            style={{ background: meta!.gradient, borderColor: `${meta!.accent}30` }}
+          >
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+              style={{ background: `${meta!.accent}20`, border: `1.5px solid ${meta!.accent}40` }}
+            >
+              <Icon className="w-7 h-7" style={{ color: meta!.accent }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+                  {agent.displayName}
+                </h1>
+                <Badge
+                  variant="secondary"
+                  className="text-[11px] font-semibold"
+                  style={{ background: agent.isActive ? "#22C55E20" : "#EF444420", color: agent.isActive ? "#22C55E" : "#EF4444" }}
+                >
+                  {agent.isActive ? "Active" : "Inactive"}
+                </Badge>
+                <Badge variant="outline" className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  <Hash className="w-3 h-3 me-1" />{agent.name}
+                </Badge>
+              </div>
+              <p className="mt-1.5 text-sm" style={{ color: "var(--text-muted)" }}>
+                {agent.description}
+              </p>
+              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                <span className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
+                  <Cpu className="w-3.5 h-3.5" />{agent.model}
+                </span>
+                <span className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
+                  <Zap className="w-3.5 h-3.5" />Max {agent.maxIterations} iterations
+                </span>
+                <span className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
+                  <Layers className="w-3.5 h-3.5" />Max {agent.maxTokens?.toLocaleString()} tokens
+                </span>
+                {agent.temperature !== null && (
+                  <span className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
+                    <Thermometer className="w-3.5 h-3.5" />temp {agent.temperature}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="text-left">
-            <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-            <p className="text-[11px] text-slate-500">{description}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-medium text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">{lines} lines</span>
-          <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`} />
-        </div>
-      </button>
-      {expanded && (
-        <div className="px-6 pb-6">
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            rows={12}
-            className="w-full px-4 py-3 border border-slate-700 rounded-xl text-sm font-mono bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y leading-relaxed placeholder:text-slate-600"
-            placeholder={placeholder}
-          />
-        </div>
-      )}
-    </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div initial="hidden" animate="visible" custom={1} variants={FADE_UP}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Pipeline Order" value={`#${agent.pipelineOrder}`} icon={Activity} accent={meta!.accent} />
+          <StatCard label="Skills" value={agent._count?.skills ?? agent.skills?.length ?? 0} icon={Wrench} accent={meta!.accent} />
+          <StatCard label="Total Logs" value={(agent._count?.logs ?? 0).toLocaleString()} icon={Code2} accent={meta!.accent} />
+          <StatCard label="Role" value={agent.role} icon={Bot} accent={meta!.accent} />
+        </motion.div>
+
+        <Separator />
+
+        {/* Main content — Edit form */}
+        <motion.div initial="hidden" animate="visible" custom={2} variants={FADE_UP}>
+          <Card style={{ background: "var(--surface-0)", borderColor: "var(--border)" }}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Edit3 className="w-4 h-4" style={{ color: "var(--primary)" }} />
+                Edit Agent
+              </CardTitle>
+              <CardDescription style={{ color: "var(--text-muted)" }}>
+                Changes apply to the next pipeline run. Admin access required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EditForm
+                agent={agent}
+                onSaved={(updated) => setLocalAgent(updated)}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Skills list (read-only for now) */}
+        {agent.skills && agent.skills.length > 0 && (
+          <motion.div initial="hidden" animate="visible" custom={3} variants={FADE_UP}>
+            <Card style={{ background: "var(--surface-0)", borderColor: "var(--border)" }}>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wrench className="w-4 h-4" style={{ color: "var(--primary)" }} />
+                  Skills ({agent.skills.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {agent.skills.map((skill) => (
+                  <div
+                    key={skill.id}
+                    className="flex items-start justify-between gap-3 p-3 rounded-lg border"
+                    style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
+                          {skill.name}
+                        </span>
+                        {!skill.isActive && (
+                          <Badge variant="secondary" className="text-[10px]" style={{ color: "#EF4444" }}>
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{skill.description}</p>
+                      {skill.toolNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {skill.toolNames.map((t) => (
+                            <Badge key={t} variant="outline" className="text-[10px]" style={{ color: "var(--text-subtle)" }}>
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 mt-0.5">
+                      {skill.isActive
+                        ? <CheckCircle2 className="w-4 h-4" style={{ color: "#22C55E" }} />
+                        : <XCircle className="w-4 h-4" style={{ color: "#EF4444" }} />
+                      }
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+      </div>
+    </PageShell>
   );
 }
