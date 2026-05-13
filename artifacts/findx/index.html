@@ -66,8 +66,13 @@
       Fonts with font-display=swap to prevent FOIT (Flash Of Invisible Text).
       Subsetting to Latin to reduce payload.
     -->
+    <!--
+      Single font load — CSS @import removed from index.css to avoid duplicate
+      requests and the "CSS @import must precede other rules" build warning.
+      Added JetBrains Mono here so the CSS @font-mono variable resolves correctly.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
