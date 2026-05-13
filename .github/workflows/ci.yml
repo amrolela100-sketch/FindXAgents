@@ -12,11 +12,43 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PNPM_VERSION: "10"
   NODE_VERSION: "22"
 
 jobs:
+  # ── Lint & Format ─────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Check lockfile is up to date
+        run: |
+          if git diff --name-only | grep -q "pnpm-lock.yaml"; then
+            echo "::warning::pnpm-lock.yaml is out of sync. Run pnpm install locally and commit the lockfile."
+          fi
+
+      - name: Prettier check
+        # continue-on-error: the codebase has not been formatted yet.
+        # This step reports which files need formatting but does not block CI.
+        # Remove this flag after running: pnpm exec prettier --write "**/*.{ts,tsx,json,css,md}"
+        continue-on-error: true
+        run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .prettierignore
+
   # ── Typecheck & Tests ─────────────────────────────────────────────────────────
   test:
     name: Typecheck & Test
