@@ -229,7 +229,7 @@ function getDomain(url?: string): string | null {
   }
 }
 
-async function runDiscoveryJob(runId: string, query: string, maxResults: number, userId: string | null) {
+async function runDiscoveryJob(runId: string, query: string, maxResults: number, userId: string | null, workspaceId: string | null = null) {
   const agent = await getOrCreateDiscoveryAgent();
   let leadsFound = 0;
 
@@ -318,18 +318,29 @@ async function runDiscoveryJob(runId: string, query: string, maxResults: number,
       if (lead.kvkNumber) conditions.push(eq(leads.kvkNumber, lead.kvkNumber));
       if (domain) conditions.push(ilike(leads.website, `%${domain}%`));
       
+      // Always scope deduplication to the current workspace so the same lead
+      // can exist independently in different workspaces.
+      const wsFilter = workspaceId
+        ? eq(leads.workspaceId, workspaceId)
+        : sql`${leads.workspaceId} IS NULL`;
+
       let exists = false;
       if (conditions.length > 0) {
-        const existing = await db.select({ id: leads.id }).from(leads).where(sql`${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``}`).limit(1);
+        const existing = await db.select({ id: leads.id }).from(leads).where(
+          and(wsFilter, sql`(${conditions[0]} ${conditions[1] ? sql`OR ${conditions[1]}` : sql``})`)
+        ).limit(1);
         if (existing.length > 0) exists = true;
       } else {
-        const existingByName = await db.select({ id: leads.id }).from(leads).where(and(ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))).limit(1);
+        const existingByName = await db.select({ id: leads.id }).from(leads).where(
+          and(wsFilter, ilike(leads.businessName, lead.businessName), ilike(leads.city, lead.city))
+        ).limit(1);
         if (existingByName.length > 0) exists = true;
       }
 
       if (!exists) {
         const [newLead] = await db.insert(leads).values({
           userId,
+          workspaceId,
           businessName: lead.businessName,
           city: lead.city,
           kvkNumber: lead.kvkNumber,
@@ -392,12 +403,13 @@ router.post("/leads/discover", discoveryLimiter, async (req, res) => {
 
   try {
     const [run] = await db.insert(agentPipelineRuns).values({
-      userId: req.user?.sub ?? null,
+      userId:      req.user?.sub ?? null,
+      workspaceId: req.user?.activeWorkspaceId ?? null,
       query,
       status: "running"
     }).returning();
 
-    runDiscoveryJob(run.id, query, maxResults, req.user?.sub ?? null).catch((err) => logger.error({ err }, "Discovery job failed"));
+    runDiscoveryJob(run.id, query, maxResults, req.user?.sub ?? null, req.user?.activeWorkspaceId ?? null).catch((err) => logger.error({ err }, "Discovery job failed"));
 
     return res.status(202).json({
       message: "Discovery queued.",
