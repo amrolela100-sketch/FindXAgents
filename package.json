@@ -21,6 +21,7 @@
     "prettier": "^3.8.1",
     "supertest": "^7.2.2",
     "typescript": "~5.9.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "jsdom": "^25.0.0"
   }
 }
