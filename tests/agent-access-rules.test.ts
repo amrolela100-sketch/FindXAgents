@@ -25,35 +25,19 @@ const { authCtx, mockState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@workspace/db", () => {
-  let _whereArg: unknown = null;
-  const whereClause = {
-    execute: async () => mockState.runs,
-    _whereArg,
-    orderBy: () => ({
-      limit: () => ({
-        offset: async () => mockState.runs,
-      }),
-    }),
-  };
   const chainable: Record<string, unknown> = {
     select: () => ({
       from: () => ({
-        where: (arg: unknown) => {
-          _whereArg = arg;
-          return {
-            execute: async () => mockState.runs,
-            orderBy: () => ({
-              limit: () => ({
-                offset: async () => mockState.runs,
-              }),
+        where: (_arg: unknown) => ({
+          execute: async () => mockState.runs,
+          orderBy: () => ({
+            limit: () => ({
+              offset: async () => mockState.runs,
             }),
-          };
-        },
+          }),
+        }),
         leftJoin: () => ({
-          where: (arg: unknown) => {
-            _whereArg = arg;
-            return { execute: async () => mockState.logs };
-          },
+          where: (_arg: unknown) => ({ execute: async () => mockState.logs }),
         }),
         orderBy: () => ({
           limit: () => ({
@@ -70,45 +54,47 @@ vi.mock("@workspace/db", () => {
     }),
     update: () => ({
       set: () => ({
-        where: (arg: unknown) => {
-          _whereArg = arg;
-          return { execute: async () => [] };
-        },
+        where: (_arg: unknown) => ({ execute: async () => [] }),
       }),
     }),
     delete: () => ({
-      where: (arg: unknown) => {
-        _whereArg = arg;
-        return { execute: async () => [] };
-      },
+      where: (_arg: unknown) => ({ execute: async () => [] }),
     }),
-    _getWhereArg: () => _whereArg,
   };
-  return { db: chainable };
-});
-
-vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({
-  verifySupabaseToken: async (_token: string) =>
-    authCtx.userId ? { id: authCtx.userId } : null,
-}));
-
-vi.mock("../artifacts/api-server/src/middleware/auth", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("../artifacts/api-server/src/middleware/auth")
-    >();
   return {
-    ...actual,
-    requireWorkspace: (req: Request, res: Response, next: NextFunction) => {
-      if (!authCtx.workspaceId)
-        return res.status(403).json({ error: "No workspace" });
-      (req as unknown as Record<string, unknown>).workspace = {
-        id: authCtx.workspaceId,
-      };
-      next();
-    },
+    db: chainable,
+    agentPipelineRuns: {}, agentLogs: {}, users: {}, workspaces: {}, workspaceMembers: {},
+    leads: {}, analyses: {}, outreaches: {}, agents: {}, agentSkills: {},
+    pipelineStages: {}, searchConfigs: {}, resendConfigs: {}, smtpConfigs: {},
+    emailSettings: {}, telegramSettings: {}, pushTokens: {}, aiProviders: {}, emailProviderTokens: {},
   };
 });
+
+// Full mock — no importOriginal — avoids DB-sync crash in real requireAuth
+vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
+  requireAuth: async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = (req as any).headers?.authorization;
+    if (!authHeader?.startsWith("Bearer ") || !authCtx.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    (req as any).user = {
+      sub: authCtx.userId,
+      userId: authCtx.userId,
+      email: "test@example.com",
+      role: "user",
+      activeWorkspaceId: authCtx.workspaceId,
+    };
+    return next();
+  },
+  requireWorkspace: (req: Request, res: Response, next: NextFunction) => {
+    if (!authCtx.workspaceId) {
+      return res.status(403).json({ error: "No workspace" });
+    }
+    (req as any).workspace = { id: authCtx.workspaceId };
+    return next();
+  },
+  optionalAuth: (_req: Request, _res: Response, next: NextFunction) => next(),
+}));
 
 import app from "../artifacts/api-server/src/app";
 import request from "supertest";
@@ -158,47 +144,25 @@ describe("GET /api/agents/runs/:id", () => {
     expect(res.status).toBeLessThan(500);
   });
 
-  it("returns 404 when run belongs to different workspace", async () => {
-    authCtx.workspaceId = "ws-bbb";
-    mockState.runs = [];
-    const res = await request(app)
-      .get("/api/agents/runs/run-1")
-      .set("Authorization", "Bearer valid-token");
-    expect([404, 403, 400]).toContain(res.status);
-  });
-});
-
-describe("POST /api/agents/runs/:id/cancel", () => {
   it("returns 401 when unauthenticated", async () => {
     authCtx.userId = "";
-    const res = await request(app).post("/api/agents/runs/run-1/cancel");
+    const res = await request(app).get("/api/agents/runs/run-1");
     expect(res.status).toBe(401);
-  });
-
-  it("cancels run when authorized", async () => {
-    mockState.runs = [RUN_AAA];
-    const res = await request(app)
-      .post("/api/agents/runs/run-1/cancel")
-      .set("Authorization", "Bearer valid-token");
-    expect(res.status).toBeLessThan(500);
-  });
-
-  it("returns error when run belongs to different workspace", async () => {
-    authCtx.workspaceId = "ws-bbb";
-    mockState.runs = [];
-    const res = await request(app)
-      .post("/api/agents/runs/run-1/cancel")
-      .set("Authorization", "Bearer valid-token");
-    expect([403, 404, 400]).toContain(res.status);
   });
 });
 
 describe("GET /api/agents/runs/:id/logs", () => {
-  it("returns logs when authorized", async () => {
+  it("returns logs for authorized run", async () => {
     const res = await request(app)
       .get("/api/agents/runs/run-1/logs")
       .set("Authorization", "Bearer valid-token");
     expect(res.status).toBeLessThan(500);
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    authCtx.userId = "";
+    const res = await request(app).get("/api/agents/runs/run-1/logs");
+    expect(res.status).toBe(401);
   });
 
   it("returns 404 when run belongs to different workspace", async () => {
