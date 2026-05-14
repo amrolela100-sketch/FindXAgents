@@ -1,6 +1,6 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# Environment files — NEVER commit secrets
+# ── Secrets — NEVER commit ───────────────────────────────────────────────────
 .env
 .env.local
 .env.production
@@ -8,54 +8,50 @@
 **/.env.local
 **/.env.production
 
-# compiled output
-dist
-tmp
-out-tsc
+# ── Build output ─────────────────────────────────────────────────────────────
+dist/
+tmp/
+out-tsc/
 *.tsbuildinfo
-.expo
-.expo-shared
+.expo/
+.expo-shared/
 
-# dependencies
-node_modules
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# ── Large binary / archive files ─────────────────────────────────────────────
+# If you need to store binaries, use GitHub Release Assets instead.
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+# Catch any filename-only archive (no extension pattern like ziO9p1g1)
+# Rule: files > 50MB should NEVER be committed to git.
 
-# IDE - VSCode
+# ── Test coverage ────────────────────────────────────────────────────────────
+coverage/
+
+# ── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.sublime-workspace
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# ── Replit ───────────────────────────────────────────────────────────────────
 .cache/
 .local/
 
-# Large backup archives (excluded from git)
-backup.zip
-my_project_backup.zip
+# ── Misc ─────────────────────────────────────────────────────────────────────
+/.sass-cache
+npm-debug.log
+yarn-error.log
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
