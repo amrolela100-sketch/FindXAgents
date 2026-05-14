@@ -14,9 +14,8 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
-    // setupFiles runs before any test module is imported — required so that
-    // env.ts (imported transitively by route files) sees DATABASE_URL etc.
-    // before the Zod schema validation fires.
-    setupFiles: ["./tests/setup.ts"],
+    // globalSetup runs in the main process before workers fork, so env vars
+    // are inherited by every worker before any module (including env.ts) loads.
+    globalSetup: ["./tests/global-setup.ts"],
   },
 });
