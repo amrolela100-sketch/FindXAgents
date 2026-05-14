@@ -4,7 +4,19 @@ import request from "supertest";
 const TEST_USER_ID = "test-user-id";
 const TEST_WORKSPACE_ID = "test-workspace-id";
 
-const mockLeadRow = { id: "test-lead-id", businessName: "Integration Test BV", city: "Rotterdam", source: "test", status: "discovered", hasWebsite: false, leadScore: null, createdAt: new Date(), updatedAt: new Date() };
+const { mockLeadRow } = vi.hoisted(() => ({
+  mockLeadRow: {
+    id: "test-lead-id",
+    businessName: "Integration Test BV",
+    city: "Rotterdam",
+    source: "test",
+    status: "discovered",
+    hasWebsite: false,
+    leadScore: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+}));
 
 vi.mock("drizzle-orm", () => ({
   eq: () => ({}), and: (...a) => ({}), or: (...a) => ({}), not: () => ({}),
@@ -23,10 +35,10 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 // AgentRunner fires real HTTP, AI, DB. Mock it to a no-op.
-vi.mock("../artifacts/api-server/src/lib/agent-runner", () => ({
-  AgentRunner: vi.fn().mockImplementation(() => ({
-    run: vi.fn().mockResolvedValue(undefined),
-  })),
+vi.mock("../artifacts/api-server/src/lib/agent-runner.js", () => ({
+  AgentRunner: vi.fn(class MockAgentRunner {
+    run = vi.fn().mockResolvedValue(undefined);
+  }),
 }));
 vi.mock("../artifacts/api-server/src/lib/website-scraper", () => ({
   smartScrape: vi.fn().mockResolvedValue({}),

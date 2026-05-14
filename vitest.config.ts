@@ -1,19 +1,24 @@
 import { defineConfig } from "vitest/config";
+import path from "path";
+
 export default defineConfig({
   resolve: {
     alias: [
       {
         find: "@workspace/db/src/schema",
-        replacement: "lib/db/src/schema/index.ts",
+        replacement: path.resolve(__dirname, "lib/db/src/schema/index.ts"),
       },
-      { find: "@workspace/db", replacement: "lib/db/src/index.ts" },
+      {
+        find: "@workspace/db",
+        replacement: path.resolve(__dirname, "lib/db/src/index.ts"),
+      },
       {
         find: /^drizzle-orm\/pg-core$/,
-        replacement: "lib/db/node_modules/drizzle-orm/pg-core/index.js",
+        replacement: path.resolve(__dirname, "lib/db/node_modules/drizzle-orm/pg-core"),
       },
       {
         find: /^drizzle-orm$/,
-        replacement: "lib/db/node_modules/drizzle-orm/index.js",
+        replacement: path.resolve(__dirname, "lib/db/node_modules/drizzle-orm"),
       },
     ],
   },
@@ -21,9 +26,7 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
-    environmentMatchGlobs: [
-      ["tests/frontend-api-client.test.ts", "jsdom"],
-    ],
+    environmentMatchGlobs: [["tests/frontend-api-client.test.ts", "jsdom"]],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
