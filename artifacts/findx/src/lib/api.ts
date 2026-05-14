@@ -25,9 +25,21 @@ import { toast } from "../hooks/use-toast";
 // and "http://localhost:3000/api" in local dev. Never hardcode "/api".
 const BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
 
+// Lazy supabase ref — evaluated at most once per session.
+// Using a module-level variable avoids repeated dynamic imports inside hot loops
+// and suppresses the Vite "dynamic import in production" warning.
+let _supabasePromise: Promise<typeof import("./supabase")> | null = null;
+function getSupabase() {
+  if (!_supabasePromise) {
+    // /* @vite-ignore */ tells Vite this dynamic import is intentionally runtime-only
+    _supabasePromise = import(/* @vite-ignore */ "./supabase");
+  }
+  return _supabasePromise;
+}
+
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { supabase } = await import("./supabase");
+    const { supabase } = await getSupabase();
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
   } catch {
@@ -58,7 +70,7 @@ async function fetchApi<T>(path: string, init?: RequestInit & { skipAuthRedirect
     if (res.status === 401) {
       // Only redirect to login if not explicitly suppressed and not already there
       if (!skipAuthRedirect) {
-        const { supabase } = await import("./supabase");
+        const { supabase } = await getSupabase();
         await supabase.auth.signOut();
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
@@ -90,6 +102,8 @@ async function fetchApi<T>(path: string, init?: RequestInit & { skipAuthRedirect
   }
   return res.json();
 }
+
+
 
 
 export function getDashboardStats(opts?: { skipAuthRedirect?: boolean }): Promise<{ stats: DashboardStats }> {

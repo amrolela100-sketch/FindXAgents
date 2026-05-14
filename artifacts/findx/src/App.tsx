@@ -6,30 +6,40 @@ import { AuthProvider, useAuth } from "./lib/auth-context";
 import { WorkspaceProvider } from "./lib/workspace-context";
 import { LangProvider, useLang } from "./lib/lang-context";
 import { ThemeProvider } from "./lib/theme-context";
-import { CommandPalette } from "./components/command-palette";
-import { ChatWidget } from "./components/chat-widget";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { env, isEnvValid, envErrors } from "./lib/env";
 
-// ── Critical path — always in the main bundle ────────────────────────────────
-import HomePage from "./pages/HomePage";
-import AgentsPage from "./pages/AgentsPage";
-import PipelinePage from "./pages/PipelinePage";
+// ── Critical path — absolute minimum in main bundle ──────────────────────────
+// Only components needed before auth resolves (< 100 ms render).
 import LoginPage from "./pages/LoginPage";
-import LandingPage from "./pages/LandingPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
-import LeadsPage from "./pages/LeadsPage";
 
-// ── Lazy-loaded — split into separate chunks ─────────────────────────────────
-// These pages are heavy or admin-only; defer until first navigation.
+// ── Lazy-loaded pages — split into separate async chunks ─────────────────────
+// Every page that isn't needed until the user navigates goes here.
+const LandingPage        = lazy(() => import("./pages/LandingPage"));
+const HomePage           = lazy(() => import("./pages/HomePage"));
+const AgentsPage         = lazy(() => import("./pages/AgentsPage"));
+const PipelinePage       = lazy(() => import("./pages/PipelinePage"));
+const LeadsPage          = lazy(() => import("./pages/LeadsPage"));
 const AgentDetailPage    = lazy(() => import("./pages/AgentDetailPage"));
 const AdminPage          = lazy(() => import("./pages/AdminPage"));
 const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
 const WorkspacePage      = lazy(() => import("./pages/WorkspacePage"));
 const SettingsPage       = lazy(() => import("./pages/SettingsPage"));
 const ClientsPage        = lazy(() => import("./pages/ClientsPage"));
+const OnboardingPage     = lazy(() => import("./pages/OnboardingPage"));
 const TermsPage          = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage        = lazy(() => import("./pages/PrivacyPage"));
+
+// ── Lazy-loaded global widgets — heavy, only rendered after auth ──────────────
+// CommandPalette pulls in cmdk + framer-motion variants.
+// ChatWidget is 624 lines of chat logic — not needed at paint time.
+const CommandPalette = lazy(() =>
+  import("./components/command-palette").then(m => ({ default: m.CommandPalette }))
+);
+const ChatWidget = lazy(() =>
+  import("./components/chat-widget").then(m => ({ default: m.ChatWidget }))
+);
 
 function PageSpinner() {
   return (
@@ -37,6 +47,11 @@ function PageSpinner() {
       <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--text-muted)" }} />
     </div>
   );
+}
+
+// Null fallback for widgets that render outside the main viewport
+function NullFallback() {
+  return null;
 }
 
 const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS ?? "")
@@ -67,7 +82,11 @@ function AuthGuard() {
 
   if (!user) {
     if (location === "/login") return <LoginPage />;
-    return <LandingPage />;
+    return (
+      <Suspense fallback={<PageSpinner />}>
+        <LandingPage />
+      </Suspense>
+    );
   }
 
   const isAdmin =
@@ -105,6 +124,7 @@ function AuthGuard() {
                 <Route path="/workspaces"  component={WorkspacePage} />
                 <Route path="/owner"       component={OwnerDashboardPage} />
                 <Route path="/settings"    component={SettingsPage} />
+                <Route path="/onboarding">{() => <OnboardingPage />}</Route>
                 {isAdmin && <Route path="/admin" component={AdminPage} />}
                 <Route>
                   <div
@@ -120,11 +140,15 @@ function AuthGuard() {
         </div>
       </div>
 
-      {/* Global Command Palette */}
-      <CommandPalette />
+      {/* Global Command Palette — lazy, renders after layout paint */}
+      <Suspense fallback={<NullFallback />}>
+        <CommandPalette />
+      </Suspense>
 
-      {/* AI Customer Support Chat Widget */}
-      <ChatWidget />
+      {/* AI Customer Support Chat Widget — lazy, renders after layout paint */}
+      <Suspense fallback={<NullFallback />}>
+        <ChatWidget />
+      </Suspense>
     </WorkspaceProvider>
   );
 }
