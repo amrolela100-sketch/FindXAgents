@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import request from "supertest";
 
-const mockLeadData = {
+const TEST_USER_ID = "test-user-id";
+const TEST_WORKSPACE_ID = "test-workspace-id";
+
+const mockLeadRow = {
   id: "test-lead-id",
   businessName: "Integration Test BV",
   city: "Rotterdam",
@@ -15,46 +18,28 @@ const mockLeadData = {
 
 // ── Mock DB ────────────────────────────────────────────────────────────────────
 vi.mock("@workspace/db", () => {
-  const returning = vi.fn().mockResolvedValue([{
-    id: "test-lead-id",
-    businessName: "Integration Test BV",
-    city: "Rotterdam",
-    source: "test",
-    status: "discovered",
-    hasWebsite: false,
-    leadScore: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }]);
+  // insert chain: insert().values().returning() → [mockLeadRow]
+  const returning = vi.fn().mockResolvedValue([mockLeadRow]);
   const values = vi.fn().mockReturnValue({ returning });
   const insertFn = vi.fn().mockReturnValue({ values });
 
-  // Build a fully chainable select mock
-  const resolveEmpty = vi.fn().mockResolvedValue([]);
-  const chain: any = {};
-  const chainMethods = ["from", "where", "orderBy", "limit", "groupBy", "offset"];
-  chainMethods.forEach((m) => {
-    chain[m] = vi.fn().mockReturnValue(chain);
-  });
-  chain.then = resolveEmpty.bind(null); // make it thenable → resolves to []
-  // Override to be a proper promise
-  Object.assign(chain, Promise.resolve([]));
-  const selectFn = vi.fn().mockImplementation(() => {
-    const c: any = {};
-    chainMethods.forEach((m) => { c[m] = vi.fn().mockReturnValue(c); });
-    // Make it a thenable that resolves to []
-    c[Symbol.toStringTag] = "Promise";
-    c.then = (res: any, rej: any) => Promise.resolve([]).then(res, rej);
-    c.catch = (rej: any) => Promise.resolve([]).catch(rej);
-    c.finally = (fn: any) => Promise.resolve([]).finally(fn);
-    return c;
-  });
+  // select chain: select().from().where()...  → []
+  const makeSelect = () => {
+    const chain: any = {};
+    const methods = ["from", "where", "orderBy", "limit", "groupBy", "offset", "leftJoin", "innerJoin"];
+    methods.forEach((m) => { chain[m] = vi.fn().mockReturnValue(chain); });
+    // Make thenable so await works
+    chain.then = (res: any, rej: any) => Promise.resolve([]).then(res, rej);
+    chain.catch = (fn: any) => Promise.resolve([]).catch(fn);
+    chain.finally = (fn: any) => Promise.resolve([]).finally(fn);
+    return chain;
+  };
+  const selectFn = vi.fn().mockImplementation(makeSelect);
 
-  const updateWhere = vi.fn().mockResolvedValue([]);
-  const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
-  const updateFn = vi.fn().mockReturnValue({ set: updateSet });
-  const deleteWhere = vi.fn().mockResolvedValue([]);
-  const deleteFn = vi.fn().mockReturnValue({ where: deleteWhere });
+  const updateFn = vi.fn().mockReturnValue({
+    set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
+  });
+  const deleteFn = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
 
   return {
     db: { insert: insertFn, select: selectFn, update: updateFn, delete: deleteFn },
@@ -62,18 +47,16 @@ vi.mock("@workspace/db", () => {
     agentSkills: {}, agentLogs: {}, agentPipelineRuns: {}, pipelineStages: {},
     searchConfigs: {}, resendConfigs: {}, smtpConfigs: {}, emailSettings: {},
     telegramSettings: {}, pushTokens: {}, aiProviders: {}, emailProviderTokens: {},
+    workspaces: {}, workspaceMembers: {},
   };
 });
 
-// ── Mock Supabase (disable auth for tests) ────────────────────────────────────
+// ── Mock Supabase ─────────────────────────────────────────────────────────────
 vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({
   verifySupabaseToken: vi.fn().mockResolvedValue(null),
 }));
 
-// ── Mock auth middleware to bypass requireAuth ────────────────────────────────
-const TEST_WORKSPACE_ID = "test-workspace-id";
-const TEST_USER_ID = "test-user-id";
-
+// ── Mock auth middleware — bypass requireAuth for all integration tests ────────
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
   requireAuth: vi.fn((req: any, _res: any, next: any) => {
     req.user = {
@@ -96,7 +79,8 @@ vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
     next();
   }),
   requireWorkspace: vi.fn((req: any, _res: any, next: any) => {
-    // Workspace already set by requireAuth mock — just pass through
+    if (!req.user) req.user = {} as any;
+    req.workspace = { id: TEST_WORKSPACE_ID, role: "owner" };
     next();
   }),
 }));
@@ -130,6 +114,7 @@ describe("API Integration Tests", () => {
   it("POST /api/leads should create a new lead", async () => {
     const res = await request(app)
       .post("/api/leads")
+      .set("Authorization", "Bearer test-token")
       .send({ businessName: "Integration Test BV", city: "Rotterdam", source: "test" });
 
     expect(res.status).toBe(201);
@@ -138,12 +123,16 @@ describe("API Integration Tests", () => {
   });
 
   it("GET /api/dashboard/stats should not crash", async () => {
-    const res = await request(app).get("/api/dashboard/stats");
+    const res = await request(app)
+      .get("/api/dashboard/stats")
+      .set("Authorization", "Bearer test-token");
     expect(res.status).toBeLessThan(500);
   });
 
   it("GET /api/agents should not crash", async () => {
-    const res = await request(app).get("/api/agents");
+    const res = await request(app)
+      .get("/api/agents")
+      .set("Authorization", "Bearer test-token");
     expect(res.status).toBeLessThanOrEqual(500);
   });
 });
