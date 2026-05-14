@@ -6,14 +6,41 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-findx.vercel.app-orange?style=for-the-badge&logo=vercel)](https://find-x-agents-findx.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 
 <h3>🔥 AI-Powered B2B Prospecting — Discover · Analyze · Outreach</h3>
 
-<p>FindX uses a 3-stage AI pipeline to find real businesses, visit their websites, score their digital gaps, and write personalized cold emails — all automatically.</p>
+<p>FindX uses a 3-stage AI pipeline to find real businesses, visit their websites,
+score their digital gaps, and write personalized cold emails — automatically.</p>
 
 </div>
+
+---
+
+## 📦 What's In This Repo
+
+This is a **pnpm monorepo**. The repo is organized into two tiers:
+
+### 🟢 Core Product (built + deployed)
+
+| Package | Path | Description |
+|---|---|---|
+| `@workspace/findx` | `artifacts/findx/` | Web App — Vite · React 19 · TailwindCSS |
+| `@workspace/api-server` | `artifacts/api-server/` | REST API — Express 5 · Drizzle ORM |
+| `@workspace/db` | `lib/db/` | Shared DB schema · Drizzle · Migrations |
+
+> `pnpm run build` only builds these three. Everything else is opt-in.
+
+### 🟡 Optional Artifacts
+
+| Package | Path | Description |
+|---|---|---|
+| `@workspace/findx-mobile` | `artifacts/findx-mobile/` | Mobile App — Expo · React Native |
+| `@workspace/findx-pitch-deck` | `artifacts/findx-pitch-deck/` | Pitch Deck — Vite slides |
+| `@workspace/findx-promo` | `artifacts/findx-promo/` | Promo Video — React scenes |
+
+> Build with: `pnpm run build:mobile` or `pnpm run build:marketing`
 
 ---
 
@@ -21,93 +48,51 @@
 
 | Feature | Description |
 |---|---|
-| 🔍 **Real Website Scraping** | Visits every lead's website — extracts emails, phones, SSL status, load speed, social links |
+| 🔍 **Real Website Scraping** | Visits every lead's website — extracts emails, phones, SSL, load speed, social links |
 | 🧠 **Grounded AI Scoring** | Score is calculated from real metrics, not AI guesses. No hallucination. |
-| 🚫 **Directory Filtering** | Automatically rejects Clutch, Sortlist, DesignRush, blog posts, and 40+ aggregator domains |
+| 🚫 **Directory Filtering** | Rejects Clutch, Sortlist, DesignRush, blog posts, and 40+ aggregator domains |
 | ✉️ **Hyper-Personalized Outreach** | Each email references a specific verified fact from the scraped site |
 | 📊 **Kanban Pipeline** | Visual drag-and-drop board: New → Qualified → Won |
-| 📱 **Mobile App** | Full iOS/Android app with real-time notifications |
-| 🌍 **Global + Multi-Language** | Supports Arabic, English, Dutch, French, Spanish, German |
-
----
-
-## 🖥️ Screenshots
-
-<div align="center">
-
-| Landing Page | Dashboard | Pipeline |
-|:---:|:---:|:---:|
-| ![Landing](./screenshot_landing.png) | ![Dashboard](./screenshot_landing_full.png) | ![Login](./screenshot_login.png) |
-
-</div>
+| 📱 **Mobile App** | iOS/Android app with real-time notifications |
+| 🌍 **Multi-Language** | Arabic, English, Dutch, French, Spanish, German |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        AI Pipeline                          │
-│                                                             │
-│  ┌──────────────┐   ┌──────────────┐   ┌────────────────┐  │
-│  │   Discover   │──▶│   Analyze    │──▶│    Outreach    │  │
-│  │              │   │              │   │                │  │
-│  │ Tavily Search│   │ Scrape Site  │   │ Generate Email │  │
-│  │ Filter Dirs  │   │ Real Metrics │   │ Grounded Facts │  │
-│  │ Extract Cos  │   │ Score 0–100  │   │ Personalized   │  │
-│  └──────────────┘   └──────────────┘   └────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-         │                   │                    │
-         ▼                   ▼                    ▼
-   PostgreSQL           Gemini 2.5           Resend API
-   (Supabase)           Flash AI             (Email Send)
-```
-
----
-
-## 📦 Monorepo Structure
-
-```
-findx/
-├── artifacts/
-│   ├── findx/               # 🌐 Web App (Vite + React + TailwindCSS)
-│   │   └── src/
-│   │       ├── pages/       # Route pages
-│   │       ├── components/  # UI components
-│   │       └── lib/         # API client, auth, i18n
-│   ├── api-server/          # ⚙️  REST API (Express 5 + TypeScript)
-│   │   └── src/
-│   │       ├── routes/      # All endpoints
-│   │       ├── lib/         # AI engine, scraper, agents
-│   │       └── middleware/  # Auth, rate-limit
-│   ├── findx-mobile/        # 📱 Mobile App (Expo + React Native)
-│   ├── findx-pitch-deck/    # 📊 Pitch Deck
-│   └── findx-promo/         # 🎬 Promo Video
-└── lib/
-    └── db/                  # 🗄️  Shared Drizzle Schema + Migrations
+┌──────────────────────────────────────────────────────┐
+│                    AI Pipeline                       │
+│                                                      │
+│  ┌────────────┐   ┌────────────┐   ┌──────────────┐ │
+│  │  Discover  │──▶│  Analyze   │──▶│   Outreach   │ │
+│  │            │   │            │   │              │ │
+│  │ Tavily     │   │ Scrape     │   │ Generate     │ │
+│  │ Filter     │   │ Real Score │   │ Personalized │ │
+│  │ Extract    │   │ 0–100      │   │ Cold Email   │ │
+│  └────────────┘   └────────────┘   └──────────────┘ │
+└──────────────────────────────────────────────────────┘
+        │                  │                 │
+        ▼                  ▼                 ▼
+  PostgreSQL          Gemini 2.5         Resend API
+  (Supabase)          Flash AI           (Email Send)
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-<div align="center">
-
 | Layer | Technology |
-|:---:|:---|
-| **Frontend** | Vite · React 18 · TypeScript · TailwindCSS |
+|---|---|
+| **Frontend** | Vite · React 19 · TypeScript · TailwindCSS v4 |
 | **Backend** | Express 5 · TypeScript · Drizzle ORM |
 | **Database** | PostgreSQL via Supabase |
 | **Auth** | Supabase Auth · Google OAuth |
 | **AI** | OpenRouter · Gemini 2.5 Flash |
-| **Scraping** | Native fetch · Custom parser |
 | **Search** | Tavily API |
 | **Email** | Resend API |
-| **Mobile** | Expo · React Native · expo-router |
 | **Package Manager** | pnpm (monorepo) |
 | **Deployment** | Vercel (frontend) · Render (API) |
-
-</div>
 
 ---
 
@@ -128,16 +113,14 @@ cd FindXAgents
 pnpm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Environment Variables
 
 ```bash
 cp artifacts/api-server/.env.example artifacts/api-server/.env
-cp artifacts/findx/.env.example artifacts/findx/.env
-cp artifacts/findx-mobile/.env.example artifacts/findx-mobile/.env
+cp artifacts/findx/.env.example       artifacts/findx/.env
 ```
 
-#### API Server (`artifacts/api-server/.env`)
-
+**API Server** (`artifacts/api-server/.env`):
 ```env
 DATABASE_URL=postgresql://...
 SUPABASE_URL=https://xxx.supabase.co
@@ -147,68 +130,49 @@ OWNER_PASSWORD=your-secure-password
 ADMIN_EMAILS=admin@yourdomain.com
 TAVILY_API_KEY=tvly-...
 RESEND_API_KEY=re_...
-OPENROUTER_API_KEY=sk-or-...
 GEMINI_API_KEY=AIza...
 ```
 
-#### Web App (`artifacts/findx/.env`)
-
+**Web App** (`artifacts/findx/.env`):
 ```env
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
-# Local dev: point directly to the API server
 VITE_API_URL=http://localhost:3000/api
-# Production (Vercel): always use /api — Vercel proxies it to Render (see vercel.json)
-# VITE_API_URL=/api
 VITE_ADMIN_EMAILS=admin@yourdomain.com
 ```
 
-### 3. Apply Database Schema
-
-**Production / staging** — run the migration runner (safe, incremental, idempotent):
+### 3. Database Setup
 
 ```bash
+# Apply migrations (safe, incremental)
 pnpm --filter @workspace/db run migrate
-```
 
-**Local development only** — push schema directly without generating migration files:
-
-```bash
+# Or push schema directly (local dev only)
 pnpm --filter @workspace/db run push
-```
-
-> `push` is for rapid iteration on a local DB. Never run it against a shared or production database — use `migrate` instead.
-
-**Check for drift** (compares schema file against live DB, no changes applied):
-
-```bash
-pnpm --filter @workspace/db run check
 ```
 
 ### 4. Run in Development
 
 ```bash
-# API server  (port 3000)
+# Terminal 1 — API (port 3000)
 pnpm --filter @workspace/api-server run dev
 
-# Web app     (port 5173) — open a second terminal
+# Terminal 2 — Web App (port 5173)
 pnpm --filter @workspace/findx run dev
-
-# Mobile app  — open a third terminal
-pnpm --filter @workspace/findx-mobile run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## ☁️ Supabase Setup
+## ☁️ Deployment
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Enable **Google OAuth** → Auth → Providers → Google
-3. Add redirect URLs in Auth → URL Configuration:
-   - `http://localhost:5173/` (local)
-   - `https://yourdomain.com/` (production)
-   - `findx-mobile://auth/callback` (mobile)
-4. Copy **Project URL** and **anon / service role keys** to your `.env` files
+See [`DEPLOY.md`](./DEPLOY.md) for full instructions.
+
+**Summary:**
+- **Frontend** → Vercel (auto-deploy on push to `main`)
+- **API** → Render (Docker, `render.yaml` included)
+- **Database** → Supabase (managed PostgreSQL)
 
 ---
 
@@ -216,35 +180,44 @@ pnpm --filter @workspace/findx-mobile run dev
 
 | Role | Access |
 |---|---|
-| **User** | Full access to own leads, pipeline, outreach |
-| **Admin** | Everything + manage all users' leads |
+| **User** | Own leads, pipeline, outreach |
+| **Admin** | All users' leads + admin panel |
 | **Owner** | Everything + operator panel at `/owner` |
 
-> Set `ADMIN_EMAILS` in your API `.env` to grant admin access.  
-> Set `OWNER_EMAIL` + `OWNER_PASSWORD` to enable the `/owner` panel.
+Set `ADMIN_EMAILS` in your API `.env` to grant admin.
+Set `OWNER_EMAIL` + `OWNER_PASSWORD` to enable the owner panel.
 
 ---
 
-## 🏭 Production Build
+## 📂 Repo Structure
 
-```bash
-# Build all packages
-pnpm run build
-
-# Or individually
-pnpm --filter @workspace/api-server run build
-pnpm --filter @workspace/findx run build
+```
+FindXAgents/
+├── artifacts/
+│   ├── findx/              🌐 Web App (core)
+│   ├── api-server/         ⚙️  REST API (core)
+│   ├── findx-mobile/       📱 Mobile App (optional)
+│   ├── findx-pitch-deck/   📊 Pitch Deck (optional)
+│   └── findx-promo/        🎬 Promo Video (optional)
+├── lib/
+│   └── db/                 🗄️  Shared Drizzle Schema + Migrations
+├── tests/                  🧪 Integration tests (vitest)
+├── .github/workflows/      🤖 CI — lint, typecheck, test, build
+├── DEPLOY.md               ☁️  Deployment guide
+└── package.json            📦 Root workspace scripts
 ```
 
-Deploy frontend to **Vercel**, API to **Render** — see [`DEPLOY.md`](./DEPLOY.md) for full instructions.
+---
+
+## 🤝 Contributing
+
+1. Fork → create a feature branch (`phase/N-description`)
+2. Make changes → open a PR targeting `main`
+3. CI must pass (lint, typecheck, tests)
+4. Merge → Vercel auto-deploys
 
 ---
 
-## 🤝 Support
-
-For setup assistance, reach out to the development team.
-
 <div align="center">
-<br/>
 <sub>Built with ⚡ by the FindX team</sub>
 </div>
