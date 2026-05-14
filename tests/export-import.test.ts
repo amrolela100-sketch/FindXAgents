@@ -1,16 +1,10 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
-type Lead = { id: string; workspaceId: string; businessName: string; city: string; status: string; score: number | null; email: string | null; phone: string | null; website: string | null };
-
 const { authCtx, mockState } = vi.hoisted(() => ({
-  authCtx: { userId: "user-aaa", workspaceId: "ws-aaa" } as Record<string, string>,
-  mockState: { leads: [] as Lead[], insertedLead: null as Lead | null },
+  authCtx: { userId: "user-aaa", workspaceId: "ws-aaa" },
+  mockState: { leads: [], insertedLead: null },
 }));
 
-// ── Mock drizzle-orm operators ────────────────────────────────────────────────
-// Routes import eq/and/ilike/count etc directly from drizzle-orm.
-// Real drizzle checks for internal column symbols and throws on mock objects.
-// Replace all operators with safe stubs that accept anything and return {}.
 vi.mock("drizzle-orm", () => ({
   eq: () => ({}), and: () => ({}), or: () => ({}), not: () => ({}),
   ne: () => ({}), gt: () => ({}), gte: () => ({}), lt: () => ({}), lte: () => ({}),
@@ -18,84 +12,87 @@ vi.mock("drizzle-orm", () => ({
   isNull: () => ({}), isNotNull: () => ({}),
   inArray: () => ({}), notInArray: () => ({}),
   between: () => ({}), notBetween: () => ({}),
-  desc: (c: unknown) => c, asc: (c: unknown) => c,
+  desc: (c) => c, asc: (c) => c,
   count: () => ({ __count: true }),
   countDistinct: () => ({ __count: true }),
   sum: () => ({ __agg: true }), avg: () => ({ __agg: true }),
   max: () => ({ __agg: true }), min: () => ({ __agg: true }),
-  sql: () => ({}),
+  sql: Object.assign(() => ({}), { raw: () => ({}) }),
   getTableColumns: () => ({}),
   getTableName: () => "mock_table",
+  placeholder: () => ({}),
 }));
 
-// Proxy-based table stubs — any column access returns a plain object.
 const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
 
-vi.mock("@workspace/db", () => ({
-  db: {
-    select: () => {
-      const c: any = {};
-      ["from","where","orderBy","limit","offset","leftJoin","innerJoin","groupBy"].forEach(m => { c[m] = () => c; });
-      c.then = (r: any, j: any) => Promise.resolve(mockState.leads).then(r, j);
-      c.catch = (f: any) => Promise.resolve(mockState.leads).catch(f);
-      c.finally = (f: any) => Promise.resolve(mockState.leads).finally(f);
-      return c;
+vi.mock("@workspace/db", () => {
+  const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
+
+  return {
+    db: {
+      select: () => {
+        const c = {};
+        ["from","where","orderBy","limit","offset","leftJoin","innerJoin","groupBy"].forEach(m => { c[m] = () => c; });
+        c.then = (r, j) => Promise.resolve(mockState.leads).then(r, j);
+        c.catch = f => Promise.resolve(mockState.leads).catch(f);
+        c.finally = f => Promise.resolve(mockState.leads).finally(f);
+        return c;
+      },
+      insert: () => ({ values: () => ({ returning: async () => mockState.insertedLead ? [mockState.insertedLead] : [], onConflictDoNothing: () => ({ returning: async () => mockState.insertedLead ? [mockState.insertedLead] : [] }) }) }),
+      update: () => ({ set: () => ({ where: () => ({ execute: async () => [] }) }) }),
+      delete: () => ({ where: () => ({ execute: async () => [] }) }),
     },
-    insert: () => ({ values: () => ({ returning: async () => mockState.insertedLead ? [mockState.insertedLead] : [], onConflictDoNothing: () => ({ returning: async () => mockState.insertedLead ? [mockState.insertedLead] : [] }) }) }),
-    update: () => ({ set: () => ({ where: () => ({ execute: async () => [] }) }) }),
-    delete: () => ({ where: () => ({ execute: async () => [] }) }),
-  },
   leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
   agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
   pipelineStages: makeTable(), searchConfigs: makeTable(), resendConfigs: makeTable(),
   smtpConfigs: makeTable(), emailSettings: makeTable(), telegramSettings: makeTable(),
   pushTokens: makeTable(), aiProviders: makeTable(), emailProviderTokens: makeTable(),
   workspaces: makeTable(), workspaceMembers: makeTable(), notifications: makeTable(),
-}));
-
+  };
+});
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
-  requireAuth: async (req: any, res: any, next: any) => {
+  requireAuth: async (req, res, next) => {
     const h = req.headers?.authorization;
     if (!h?.startsWith("Bearer ") || !authCtx.userId) return res.status(401).json({ error: "Unauthorized" });
     req.user = { sub: authCtx.userId, userId: authCtx.userId, email: "test@example.com", role: "user", activeWorkspaceId: authCtx.workspaceId };
     return next();
   },
-  requireWorkspace: (req: any, res: any, next: any) => {
+  requireWorkspace: (req, res, next) => {
     if (!authCtx.workspaceId) return res.status(403).json({ error: "No workspace" });
     req.workspace = { id: authCtx.workspaceId };
     return next();
   },
-  optionalAuth: (_req: any, _res: any, next: any) => next(),
+  optionalAuth: (_req, _res, next) => next(),
 }));
 
 import app from "../artifacts/api-server/src/app";
 import request from "supertest";
 
-const SAMPLE: Lead[] = [
+const SAMPLE = [
   { id: "lead-1", workspaceId: "ws-aaa", businessName: "Acme Corp", city: "Amsterdam", status: "new", score: 80, email: "acme@example.com", phone: "+31612345678", website: "https://acme.nl" },
   { id: "lead-2", workspaceId: "ws-aaa", businessName: "Beta BV", city: "Rotterdam", status: "analyzed", score: 60, email: null, phone: null, website: null },
 ];
 
 beforeEach(() => { authCtx.userId = "user-aaa"; authCtx.workspaceId = "ws-aaa"; mockState.leads = [...SAMPLE]; mockState.insertedLead = null; });
 
-describe("GET /api/leads/export (CSV export)", () => {
-  it("returns non-401 non-500 for authenticated user", async () => {
+describe("GET /api/leads/export", () => {
+  it("non-401 non-500 for authenticated user", async () => {
     const res = await request(app).get("/api/leads/export").set("Authorization", "Bearer valid-token");
     expect(res.status).not.toBe(401);
     expect(res.status).toBeLessThan(500);
   });
-  it("returns 401 when unauthenticated", async () => {
+  it("401 when unauthenticated", async () => {
     authCtx.userId = "";
     expect((await request(app).get("/api/leads/export")).status).toBe(401);
   });
 });
 
-describe("POST /api/leads/import (CSV import)", () => {
-  it("returns 401 when unauthenticated", async () => {
+describe("POST /api/leads/import", () => {
+  it("401 when unauthenticated", async () => {
     authCtx.userId = "";
     expect((await request(app).post("/api/leads/import").send({})).status).toBe(401);
   });
-  it("returns 400 when no file provided", async () => {
+  it("400 when no file", async () => {
     expect([400, 422]).toContain((await request(app).post("/api/leads/import").set("Authorization", "Bearer valid-token").send({})).status);
   });
 });
