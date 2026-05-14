@@ -102,9 +102,13 @@ RESEND_API_KEY            = re_...
 ```
 VITE_SUPABASE_URL        = https://xxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY   = eyJ...
-VITE_API_URL             = https://findx-api.onrender.com/api
+VITE_API_URL             = /api
 VITE_ADMIN_EMAILS        = your@email.com
 ```
+
+> ⚠️ **`VITE_API_URL` must be `/api` on Vercel**, not the full Render URL.
+> Vercel rewrites `/api/*` → `https://findx-api.onrender.com/api/*` via `vercel.json`.
+> Setting the full Render URL here bypasses the proxy and **breaks CORS**.
 
 4. Click **Deploy** — done in ~1 min ✅
 
@@ -199,7 +203,7 @@ Services:
 |----------|----------|-------------|
 | `VITE_SUPABASE_URL` | ✅ | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | ✅ | Supabase anon/public key |
-| `VITE_API_URL` | ✅ | Your Render API URL + `/api` |
+| `VITE_API_URL` | ✅ | Always `/api` on Vercel — proxy handles routing to Render |
 | `VITE_ADMIN_EMAILS` | ✅ | Shows admin nav item in sidebar |
 
 ---

@@ -14,8 +14,5 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
-    env: {
-      OPENROUTER_API_KEY: "test-key",
-    },
   },
 });
