@@ -74,7 +74,7 @@ export function KanbanBoard({
       await updateLead(leadId, { status: newStatus });
       onLeadMoved();
     } catch (err) {
-      console.error("Failed to move lead:", err);
+      toastError(err, "Failed to update lead status");
     }
   }
 
