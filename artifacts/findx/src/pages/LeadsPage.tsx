@@ -58,6 +58,14 @@ export default function LeadsPage() {
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toastError(null, "File too large (max 5 MB)");
+      return;
+    }
+    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+      toastError(null, "Please upload a CSV file");
+      return;
+    }
     const text = await file.text();
     try {
       await importLeads(text);
