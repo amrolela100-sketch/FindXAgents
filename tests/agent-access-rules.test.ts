@@ -6,7 +6,7 @@ const { authCtx, mockState } = vi.hoisted(() => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: () => ({}), and: () => ({}), or: () => ({}), not: () => ({}),
+  eq: () => ({}), and: (...a) => ({}), or: (...a) => ({}), not: () => ({}),
   ne: () => ({}), gt: () => ({}), gte: () => ({}), lt: () => ({}), lte: () => ({}),
   ilike: () => ({}), like: () => ({}), notIlike: () => ({}), notLike: () => ({}),
   isNull: () => ({}), isNotNull: () => ({}),
@@ -18,16 +18,40 @@ vi.mock("drizzle-orm", () => ({
   sum: () => ({ __agg: true }), avg: () => ({ __agg: true }),
   max: () => ({ __agg: true }), min: () => ({ __agg: true }),
   sql: Object.assign(() => ({}), { raw: () => ({}) }),
-  getTableColumns: () => ({}),
-  getTableName: () => "mock_table",
-  placeholder: () => ({}),
+  getTableColumns: () => ({}), getTableName: () => "mock_table", placeholder: () => ({}),
 }));
+
+// AgentRunner fires real HTTP, AI, DB. Mock it to a no-op.
+vi.mock("../artifacts/api-server/src/lib/agent-runner", () => ({
+  AgentRunner: vi.fn().mockImplementation(() => ({
+    run: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+vi.mock("../artifacts/api-server/src/lib/website-scraper", () => ({
+  smartScrape: vi.fn().mockResolvedValue({}),
+  isDirectoryUrl: vi.fn().mockReturnValue(false),
+  buildExtendedContext: vi.fn().mockReturnValue(""),
+}));
+vi.mock("../artifacts/api-server/src/lib/telegram", () => ({
+  notifyPipelineComplete: vi.fn().mockResolvedValue(undefined),
+  notifyPipelineFailed: vi.fn().mockResolvedValue(undefined),
+  sendTelegramMessage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../artifacts/api-server/src/lib/push", () => ({
+  sendPushNotification: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../artifacts/api-server/src/lib/resend", () => ({
+  sendEmail: vi.fn().mockResolvedValue({ id: "mock-email-id" }),
+}));
+vi.mock("../artifacts/api-server/src/lib/gemini", () => ({
+  generateWithGemini: vi.fn().mockResolvedValue("mock response"),
+}));
+vi.mock("p-limit", () => ({ default: () => (fn) => fn() }));
 
 const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
 
 vi.mock("@workspace/db", () => {
   const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
-
   return {
     db: {
       select: () => {
@@ -42,19 +66,19 @@ vi.mock("@workspace/db", () => {
       update: () => ({ set: () => ({ where: () => ({ execute: async () => [] }) }) }),
       delete: () => ({ where: () => ({ execute: async () => [] }) }),
     },
-  leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
-  agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
-  pipelineStages: makeTable(), searchConfigs: makeTable(), resendConfigs: makeTable(),
-  smtpConfigs: makeTable(), emailSettings: makeTable(), telegramSettings: makeTable(),
-  pushTokens: makeTable(), aiProviders: makeTable(), emailProviderTokens: makeTable(),
-  workspaces: makeTable(), workspaceMembers: makeTable(), notifications: makeTable(),
+    leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
+    agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
+    pipelineStages: makeTable(), searchConfigs: makeTable(), resendConfigs: makeTable(),
+    smtpConfigs: makeTable(), emailSettings: makeTable(), telegramSettings: makeTable(),
+    pushTokens: makeTable(), aiProviders: makeTable(), emailProviderTokens: makeTable(),
+    workspaces: makeTable(), workspaceMembers: makeTable(), notifications: makeTable(),
   };
 });
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
   requireAuth: async (req, res, next) => {
     const h = req.headers?.authorization;
     if (!h?.startsWith("Bearer ") || !authCtx.userId) return res.status(401).json({ error: "Unauthorized" });
-    req.user = { sub: authCtx.userId, userId: authCtx.userId, email: "test@example.com", role: "user", activeWorkspaceId: authCtx.workspaceId };
+    req.user = { sub: authCtx.userId, userId: authCtx.userId, email: "test@example.com", role: authCtx.isAdmin ? "admin" : "user", activeWorkspaceId: authCtx.workspaceId };
     return next();
   },
   requireWorkspace: (req, res, next) => {
@@ -71,7 +95,10 @@ import request from "supertest";
 const RUN_AAA = { id: "run-1", workspaceId: "ws-aaa", status: "running", query: "test query" };
 const LOG_AAA = { id: "log-1", runId: "run-1", workspaceId: "ws-aaa", message: "Processing..." };
 
-beforeEach(() => { authCtx.userId = "user-aaa"; authCtx.workspaceId = "ws-aaa"; authCtx.isAdmin = false; mockState.runs = [RUN_AAA]; mockState.logs = [LOG_AAA]; mockState.insertedRun = null; });
+beforeEach(() => {
+  authCtx.userId = "user-aaa"; authCtx.workspaceId = "ws-aaa"; authCtx.isAdmin = false;
+  mockState.runs = [RUN_AAA]; mockState.logs = [LOG_AAA]; mockState.insertedRun = null;
+});
 
 describe("GET /api/agents/runs", () => {
   it("runs list for workspace", async () => {
