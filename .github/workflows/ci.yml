@@ -36,9 +36,9 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - name: Run Typecheck
         run: |
-          pnpm --filter "./lib/**" run build --if-present
+          pnpm --filter "./lib/**" run build
           pnpm exec tsc --build
-          pnpm -r --filter "./artifacts/**" run typecheck --if-present
+          pnpm -r --filter "./artifacts/**" run typecheck
       - name: Run Tests with Coverage
         run: pnpm test -- --coverage
       - name: Upload coverage artifact
