@@ -4,8 +4,10 @@ import request from "supertest";
 const TEST_USER_ID = "test-user-id";
 const TEST_WORKSPACE_ID = "test-workspace-id";
 
+const mockLeadRow = { id: "test-lead-id", businessName: "Integration Test BV", city: "Rotterdam", source: "test", status: "discovered", hasWebsite: false, leadScore: null, createdAt: new Date(), updatedAt: new Date() };
+
 vi.mock("drizzle-orm", () => ({
-  eq: () => ({}), and: () => ({}), or: () => ({}), not: () => ({}),
+  eq: () => ({}), and: (...a) => ({}), or: (...a) => ({}), not: () => ({}),
   ne: () => ({}), gt: () => ({}), gte: () => ({}), lt: () => ({}), lte: () => ({}),
   ilike: () => ({}), like: () => ({}), notIlike: () => ({}), notLike: () => ({}),
   isNull: () => ({}), isNotNull: () => ({}),
@@ -17,18 +19,40 @@ vi.mock("drizzle-orm", () => ({
   sum: () => ({ __agg: true }), avg: () => ({ __agg: true }),
   max: () => ({ __agg: true }), min: () => ({ __agg: true }),
   sql: Object.assign(() => ({}), { raw: () => ({}) }),
-  getTableColumns: () => ({}),
-  getTableName: () => "mock_table",
-  placeholder: () => ({}),
+  getTableColumns: () => ({}), getTableName: () => "mock_table", placeholder: () => ({}),
 }));
+
+// AgentRunner fires real HTTP, AI, DB. Mock it to a no-op.
+vi.mock("../artifacts/api-server/src/lib/agent-runner", () => ({
+  AgentRunner: vi.fn().mockImplementation(() => ({
+    run: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+vi.mock("../artifacts/api-server/src/lib/website-scraper", () => ({
+  smartScrape: vi.fn().mockResolvedValue({}),
+  isDirectoryUrl: vi.fn().mockReturnValue(false),
+  buildExtendedContext: vi.fn().mockReturnValue(""),
+}));
+vi.mock("../artifacts/api-server/src/lib/telegram", () => ({
+  notifyPipelineComplete: vi.fn().mockResolvedValue(undefined),
+  notifyPipelineFailed: vi.fn().mockResolvedValue(undefined),
+  sendTelegramMessage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../artifacts/api-server/src/lib/push", () => ({
+  sendPushNotification: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../artifacts/api-server/src/lib/resend", () => ({
+  sendEmail: vi.fn().mockResolvedValue({ id: "mock-email-id" }),
+}));
+vi.mock("../artifacts/api-server/src/lib/gemini", () => ({
+  generateWithGemini: vi.fn().mockResolvedValue("mock response"),
+}));
+vi.mock("p-limit", () => ({ default: () => (fn) => fn() }));
 
 const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
 
-const mockLeadRow = { id: "test-lead-id", businessName: "Integration Test BV", city: "Rotterdam", source: "test", status: "discovered", hasWebsite: false, leadScore: null, createdAt: new Date(), updatedAt: new Date() };
-
 vi.mock("@workspace/db", () => {
   const makeTable = () => new Proxy({}, { get: (_t, p) => ({ col: String(p) }) });
-
   const returning = vi.fn().mockResolvedValue([mockLeadRow]);
   const insertFn = vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning }) });
   const makeSelect = () => {
@@ -46,17 +70,15 @@ vi.mock("@workspace/db", () => {
       update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
       delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
     },
-  leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
-  agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
-  pipelineStages: makeTable(), searchConfigs: makeTable(), resendConfigs: makeTable(),
-  smtpConfigs: makeTable(), emailSettings: makeTable(), telegramSettings: makeTable(),
-  pushTokens: makeTable(), aiProviders: makeTable(), emailProviderTokens: makeTable(),
-  workspaces: makeTable(), workspaceMembers: makeTable(), notifications: makeTable(),
+    leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
+    agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
+    pipelineStages: makeTable(), searchConfigs: makeTable(), resendConfigs: makeTable(),
+    smtpConfigs: makeTable(), emailSettings: makeTable(), telegramSettings: makeTable(),
+    pushTokens: makeTable(), aiProviders: makeTable(), emailProviderTokens: makeTable(),
+    workspaces: makeTable(), workspaceMembers: makeTable(), notifications: makeTable(),
   };
 });
-
 vi.mock("../artifacts/api-server/src/lib/supabase-admin", () => ({ verifySupabaseToken: vi.fn().mockResolvedValue(null) }));
-
 vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
   requireAuth: vi.fn((req, _res, next) => {
     req.user = { sub: TEST_USER_ID, userId: TEST_USER_ID, email: "test@example.com", role: "user", activeWorkspaceId: TEST_WORKSPACE_ID };
@@ -72,7 +94,6 @@ vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
     next();
   }),
 }));
-
 vi.mock("../artifacts/api-server/src/lib/ai-engine", () => ({
   analyzeLeadWithGemini: vi.fn().mockResolvedValue({ score: 90, summary: "Mock", opportunities: [], weaknesses: [], recommendations: [], emailSubject: "Test", digitalMaturity: "low", estimatedRevenueImpact: "high" }),
   generateOutreachWithGemini: vi.fn().mockResolvedValue({ subject: "Test", body: "Test body", language: "nl" }),
@@ -90,7 +111,9 @@ describe("API Integration Tests", () => {
   });
 
   it("POST /api/leads creates a new lead", async () => {
-    const res = await request(app).post("/api/leads").set("Authorization", "Bearer test-token").send({ businessName: "Integration Test BV", city: "Rotterdam", source: "test" });
+    const res = await request(app)
+      .post("/api/leads").set("Authorization", "Bearer test-token")
+      .send({ businessName: "Integration Test BV", city: "Rotterdam", source: "test" });
     expect(res.status).toBe(201);
     expect(res.body.lead).toHaveProperty("id");
     expect(res.body.lead.businessName).toBe("Integration Test BV");
