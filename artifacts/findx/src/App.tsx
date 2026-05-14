@@ -124,7 +124,7 @@ function AuthGuard() {
                 <Route path="/workspaces"  component={WorkspacePage} />
                 <Route path="/owner"       component={OwnerDashboardPage} />
                 <Route path="/settings"    component={SettingsPage} />
-                <Route path="/onboarding"  component={OnboardingPage} />
+                <Route path="/onboarding">{() => <OnboardingPage />}</Route>
                 {isAdmin && <Route path="/admin" component={AdminPage} />}
                 <Route>
                   <div
