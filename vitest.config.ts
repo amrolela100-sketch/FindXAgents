@@ -21,13 +21,13 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
+    environmentMatchGlobs: [
+      ["tests/frontend-api-client.test.ts", "jsdom"],
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
       include: [
-  environmentMatchGlobs: [
-    ["tests/frontend-api-client.test.ts", "jsdom"],
-  ],
         "artifacts/api-server/src/routes/**/*.ts",
         "artifacts/api-server/src/middleware/**/*.ts",
         "artifacts/findx/src/lib/api.ts",
