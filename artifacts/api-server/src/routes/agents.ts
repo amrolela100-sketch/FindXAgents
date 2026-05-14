@@ -4,7 +4,7 @@ import { agents, agentSkills, agentLogs, agentPipelineRuns, pipelineStages, lead
 import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { ALLOWED_PHASES, ALLOWED_LEVELS } from "../lib/constants.js";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
@@ -38,7 +38,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 import { AgentRunner } from "../lib/agent-runner.js";
 import { safeError } from "../lib/safe-error.js";
 
-router.post("/agents/run", async (req, res) => {
+router.post("/agents/run", requireWorkspace, async (req, res) => {
   const schema = z.object({
     query: z.string().min(2).max(500),
     sync: z.boolean().default(false),
@@ -50,8 +50,8 @@ router.post("/agents/run", async (req, res) => {
 
   try {
     const [run] = await db.insert(agentPipelineRuns).values({
-      userId:      req.user?.sub ?? null,
-      workspaceId: req.user?.activeWorkspaceId ?? null,
+      userId:      req.user!.userId,
+      workspaceId: req.user!.activeWorkspaceId,
       query:       parsed.data.query,
       status:      "queued",
     }).returning();
@@ -66,7 +66,7 @@ router.post("/agents/run", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
+router.get("/agents/runs/:id/logs/stream", requireWorkspace, async (req, res): Promise<void> => {
   // Security fix: verify run ownership BEFORE opening the SSE stream.
   // Without this check any authenticated user who knows a runId can watch live logs.
   const runId = req.params["id"] as string;
@@ -132,7 +132,7 @@ router.get("/agents/runs/:id/logs/stream", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/agents/runs", async (req, res) => {
+router.get("/agents/runs", requireWorkspace, async (req, res) => {
   try {
     // Scope runs to the active workspace
     const whereClause = eq(agentPipelineRuns.workspaceId, req.user!.activeWorkspaceId);
@@ -160,7 +160,7 @@ function checkRunOwnership(run: { workspaceId: string | null; userId: string | n
   return true;
 }
 
-router.get("/agents/runs/:id", async (req, res) => {
+router.get("/agents/runs/:id", requireWorkspace, async (req, res) => {
   try {
     const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.json({ run: null });
@@ -171,7 +171,7 @@ router.get("/agents/runs/:id", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/emails", async (req, res) => {
+router.get("/agents/runs/:id/emails", requireWorkspace, async (req, res) => {
   try {
     const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run || !checkRunOwnership({ workspaceId: run.workspaceId ?? null, userId: run.userId ?? null }, req, res)) return;
@@ -181,7 +181,7 @@ router.get("/agents/runs/:id/emails", async (req, res) => {
   }
 });
 
-router.get("/agents/runs/:id/logs", async (req, res) => {
+router.get("/agents/runs/:id/logs", requireWorkspace, async (req, res) => {
   try {
     const [run] = await db.select({ id: agentPipelineRuns.id, workspaceId: agentPipelineRuns.workspaceId, userId: agentPipelineRuns.userId }).from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
@@ -211,7 +211,7 @@ router.get("/agents/runs/:id/logs", async (req, res) => {
   }
 });
 
-router.post("/agents/runs/:id/cancel", async (req, res) => {
+router.post("/agents/runs/:id/cancel", requireWorkspace, async (req, res) => {
   try {
     const [run] = await db.select().from(agentPipelineRuns).where(eq(agentPipelineRuns.id, req.params["id"] as string));
     if (!run) return res.status(404).json({ error: "Pipeline run not found" });
@@ -231,7 +231,7 @@ router.post("/agents/runs/:id/cancel", async (req, res) => {
 
 // ─── Agent Logs ───────────────────────────────────────────────────────────────
 
-router.get("/agents/logs", async (req, res) => {
+router.get("/agents/logs", requireWorkspace, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
     const pageSize = Math.min(500, Math.max(1, parseInt(String(req.query.pageSize ?? "25"), 10)));
@@ -293,7 +293,7 @@ router.get("/agents/logs", async (req, res) => {
   }
 });
 
-router.get("/agents/logs/:logId", async (req, res) => {
+router.get("/agents/logs/:logId", requireWorkspace, async (req, res) => {
   try {
     // Scope log access: verify the run belongs to the active workspace
     const [row] = await db.select({

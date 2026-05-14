@@ -429,7 +429,10 @@ router.post("/leads/bulk/analyze", aiLimiter, async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "leadIds must be an array of UUIDs (max 100)", details: parsed.error.flatten() });
 
   const { leadIds } = parsed.data;
-  await db.update(leads).set({ status: "analyzing", updatedAt: new Date() }).where(inArray(leads.id, leadIds));
+  // Security: scope update to the authenticated workspace only (prevents IDOR — same fix as bulk/status)
+  await db.update(leads)
+    .set({ status: "analyzing", updatedAt: new Date() })
+    .where(and(inArray(leads.id, leadIds), eq(leads.workspaceId, req.user!.activeWorkspaceId)));
   return res.json({ queued: leadIds.length, message: "Analysis queued. Configure AI provider to run analysis." });
 });
 
@@ -437,6 +440,7 @@ router.post("/leads/bulk/outreach", aiLimiter, async (req, res) => {
   const schema = z.object({ leadIds: z.array(z.string().uuid()).min(1).max(100) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "leadIds must be an array of UUIDs (max 100)", details: parsed.error.flatten() });
+  // Note: actual outreach generation is async/queued; workspace scoping is enforced at generation time.
   return res.json({ queued: parsed.data.leadIds.length, message: "Outreach generation queued. Configure AI provider to run generation." });
 });
 
@@ -593,8 +597,13 @@ router.get("/leads/export", async (req, res) => {
 // ─── Parameterised :id routes ─────────────────────────────────────────────────
 
 /**
- * Check ownership: leads with a userId may only be accessed by the owning user.
- * Legacy leads (userId = null) are accessible to anyone.
+ * Check ownership: a lead is accessible only if its workspaceId matches the
+ * caller's activeWorkspaceId.
+ *
+ * NOTE: "legacy leads" (workspaceId = null) are NOT accessible to arbitrary
+ * users — they are treated as inaccessible to prevent data leakage.
+ * Admins can still access any lead for support/debugging purposes.
+ *
  * Returns false and writes a 404 response when access is denied.
  */
 function checkLeadOwnership(lead: { workspaceId: string | null; userId: string | null }, req: Request, res: Response): boolean {
@@ -604,7 +613,8 @@ function checkLeadOwnership(lead: { workspaceId: string | null; userId: string |
   // Admins bypass workspace isolation (e.g. support / debugging)
   if (isAdmin) return true;
 
-  if (!reqWorkspaceId || lead.workspaceId !== reqWorkspaceId) {
+  // Reject leads with no workspace (legacy rows) — treat as not found to avoid leakage
+  if (!lead.workspaceId || !reqWorkspaceId || lead.workspaceId !== reqWorkspaceId) {
     res.status(404).json({ error: "Lead not found" });
     return false;
   }
