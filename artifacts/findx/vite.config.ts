@@ -19,36 +19,69 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    // Warn at 400 KB (was 500 KB default). Keeps us honest.
+    // Lower warning threshold — keep chunks honest
     chunkSizeWarningLimit: 400,
+    // Source maps disabled in prod (smaller output, no IP leak)
+    sourcemap: false,
+    // esbuild minification (default) — fast and effective
+    minify: "esbuild",
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core — never changes, max cache hits
-          "vendor-react": ["react", "react-dom"],
+        // ── Vendor chunks: stable filenames → max CDN/browser cache reuse ──
+        manualChunks(id) {
+          // React runtime — smallest possible initial chunk
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor-react";
+          }
+          // Supabase — large (~350 KB), loaded once, changes rarely
+          if (id.includes("node_modules/@supabase/")) {
+            return "vendor-supabase";
+          }
+          // Framer Motion — ~120 KB, only needed post-auth
+          if (id.includes("node_modules/framer-motion")) {
+            return "vendor-framer";
+          }
+          // Radix UI primitives — large but shared across many pages
+          if (id.includes("node_modules/@radix-ui/")) {
+            return "vendor-radix";
+          }
+          // Recharts — heavy charting, only used on Dashboard
+          if (id.includes("node_modules/recharts") ||
+              id.includes("node_modules/d3-") ||
+              id.includes("node_modules/victory-vendor")) {
+            return "vendor-charts";
+          }
+          // DnD Kit — only used in Kanban board
+          if (id.includes("node_modules/@dnd-kit/")) {
+            return "vendor-dnd";
+          }
+          // Lucide icons — tree-shaken but worth isolating
+          if (id.includes("node_modules/lucide-react")) {
+            return "vendor-icons";
+          }
+          // cmdk — command palette, lazy-loaded
+          if (id.includes("node_modules/cmdk")) {
+            return "vendor-cmdk";
+          }
           // Routing
-          "vendor-router": ["wouter"],
-          // Supabase — large, but only loaded once
-          "vendor-supabase": ["@supabase/supabase-js"],
-          // UI primitives (Radix) — large but shared across pages
-          "vendor-radix": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-select",
-            "@radix-ui/react-tooltip",
-            "@radix-ui/react-popover",
-            "@radix-ui/react-tabs",
-          ],
-          // Icons — tree-shaken but still worth isolating
-          "vendor-icons": ["lucide-react"],
-          // Charting / heavy visualisation (used only in dashboard)
-          "vendor-charts": ["recharts"],
-          // i18n translations
-          "chunk-i18n": [
-            "./src/lib/i18n/ar",
-            "./src/lib/i18n/en",
-            "./src/lib/i18n/index",
-          ],
+          if (id.includes("node_modules/wouter")) {
+            return "vendor-router";
+          }
+          // i18n translations — loaded eagerly but small
+          if (id.includes("/src/lib/i18n/")) {
+            return "chunk-i18n";
+          }
+        },
+      },
+      // Aggressive tree-shaking: remove pure side-effect-free calls
+      treeshake: {
+        preset: "recommended",
+        moduleSideEffects: (id) => {
+          // CSS modules and index.css have side effects (inject styles)
+          if (id.endsWith(".css")) return true;
+          // Supabase has no global side effects on import
+          if (id.includes("@supabase/")) return false;
+          return "no-external";
         },
       },
     },
