@@ -71,6 +71,13 @@
       "when": 1747003000000,
       "tag": "0009_drop_ai_providers_name_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1747004000000,
+      "tag": "0010_gmail_tokens_workspace_scoped",
+      "breakpoints": true
     }
   ]
 }
