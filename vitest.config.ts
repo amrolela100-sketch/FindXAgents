@@ -14,8 +14,5 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
-    // globalSetup runs in the main process before workers fork, so env vars
-    // are inherited by every worker before any module (including env.ts) loads.
-    globalSetup: ["./tests/global-setup.ts"],
   },
 });

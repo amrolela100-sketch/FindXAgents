@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { env } from "./lib/env";
+import { env, assertEnv } from "./lib/env";
+assertEnv(); // exits if required vars are missing — only called at server startup
 import app from "./app";
 import { logger } from "./lib/logger";
 import { closeRedis } from "./lib/redis.js";
