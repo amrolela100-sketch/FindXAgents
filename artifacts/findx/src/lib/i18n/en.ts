@@ -146,7 +146,10 @@ export const en = {
     deleteConfirmTitle: "Delete leads?",
     deleteConfirmDesc:  "This will also remove all analyses and outreach emails. Cannot be undone.",
     deleting:    "Deleting…",
-    status: {
+    discoverError: "Failed to discover leads",
+    exportError:   "Failed to export leads",
+    importError:   "Failed to import leads",
+        status: {
       discovered: "New",
       analyzing:  "Analyzing",
       analyzed:   "Analyzed",
