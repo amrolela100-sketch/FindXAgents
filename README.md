@@ -163,10 +163,26 @@ VITE_API_URL=http://localhost:3000/api
 VITE_ADMIN_EMAILS=admin@yourdomain.com
 ```
 
-### 3. Push Database Schema
+### 3. Apply Database Schema
+
+**Production / staging** — run the migration runner (safe, incremental, idempotent):
+
+```bash
+pnpm --filter @workspace/db run migrate
+```
+
+**Local development only** — push schema directly without generating migration files:
 
 ```bash
 pnpm --filter @workspace/db run push
+```
+
+> `push` is for rapid iteration on a local DB. Never run it against a shared or production database — use `migrate` instead.
+
+**Check for drift** (compares schema file against live DB, no changes applied):
+
+```bash
+pnpm --filter @workspace/db run check
 ```
 
 ### 4. Run in Development

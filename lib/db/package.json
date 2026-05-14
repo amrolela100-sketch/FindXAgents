@@ -12,6 +12,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
     "push": "drizzle-kit push",
+    "check": "drizzle-kit check",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {

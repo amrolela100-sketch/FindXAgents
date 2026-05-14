@@ -12,22 +12,32 @@ const __dirname  = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../../../artifacts/api-server/.env") });
 
 /**
- * Error codes that are truly safe to ignore — they mean "object already
- * exists" and cannot indicate real drift in a correctly sequenced history.
+ * PostgreSQL error codes produced when an object already exists.
  *
  * 42P07 — duplicate_table
  * 42701 — duplicate_column
- * 42710 — duplicate_object (index / constraint)
+ * 42710 — duplicate_object (index / constraint / type)
  *
- * ⚠️  We no longer catch generic errors here.  Any unexpected failure
- *     (wrong column type, FK violation, missing table, etc.) surfaces
- *     immediately so the operator knows the DB is out of sync.
+ * These arise when a migration uses `CREATE TABLE IF NOT EXISTS` or
+ * `ADD COLUMN IF NOT EXISTS` but the DDL guard was not present in an older
+ * migration that already ran.  They are safe to skip ONLY at startup, and
+ * we log them clearly so they surface in deploy logs for human review.
+ *
+ * All other errors (wrong type, FK violation, missing table, etc.) are
+ * propagated immediately — they indicate real schema drift.
+ *
+ * ⚠️  Do NOT expand this set.  Every new addition here is a hidden bug.
  */
 const SAFE_DUPLICATE_CODES = new Set(["42P07", "42701", "42710"]);
 
 function extractCode(error: unknown): string | undefined {
   const e = error as any;
   return e?.cause?.code ?? e?.code;
+}
+
+function extractDetail(error: unknown): string {
+  const e = error as any;
+  return e?.cause?.message ?? e?.message ?? String(error);
 }
 
 async function attemptMigration(db: any, migrationsFolder: string): Promise<void> {
@@ -38,8 +48,20 @@ async function attemptMigration(db: any, migrationsFolder: string): Promise<void
     const code = extractCode(error);
 
     if (code && SAFE_DUPLICATE_CODES.has(code)) {
-      // Object already exists — schema is already up to date for this step.
-      console.warn(`⚠️  Migration step skipped (object already exists, pg code: ${code}). Continuing…`);
+      // Object already exists — this migration step is a no-op on this DB.
+      // Log with WARN so it is visible in deploy logs; do NOT suppress silently.
+      console.warn(
+        `⚠️  [pg ${code}] Duplicate object skipped during migration — ` +
+        `the object already exists on this database. ` +
+        `Detail: ${extractDetail(error)}`
+      );
+      console.warn(
+        `   This is expected when replaying migrations on a DB that was ` +
+        `already partially up-to-date.  If this appears on a fresh DB, ` +
+        `it indicates a migration ordering problem — investigate immediately.`
+      );
+      // Continue — Drizzle's migrator has already recorded this migration in
+      // __drizzle_migrations so it won't re-run on next startup.
       return;
     }
 
@@ -52,8 +74,10 @@ async function attemptMigration(db: any, migrationsFolder: string): Promise<void
       return;
     }
 
-    // All other errors are real problems — propagate them.
-    console.error("❌  Migration failed:", error);
+    // All other errors are real problems — propagate and crash the process.
+    console.error("❌  Migration failed with unexpected error (pg code:", code ?? "unknown", ")");
+    console.error("   Detail:", extractDetail(error));
+    console.error("   The database schema may be out of sync. Check migration history.");
     throw error;
   }
 }
