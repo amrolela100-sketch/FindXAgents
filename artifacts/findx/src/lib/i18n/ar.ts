@@ -142,7 +142,10 @@ export const ar: Translations = {
     deleteConfirmTitle: "حذف العملاء؟",
     deleteConfirmDesc:  "سيُزيل هذا أيضاً جميع التحليلات ورسائل التواصل. لا يمكن التراجع.",
     deleting:    "جارٍ الحذف…",
-    status: {
+    discoverError: "فشل في اكتشاف العملاء المحتملين",
+    exportError:   "فشل في تصدير العملاء المحتملين",
+    importError:   "فشل في استيراد العملاء المحتملين",
+        status: {
       discovered: "جديد",
       analyzing:  "قيد التحليل",
       analyzed:   "تم التحليل",
