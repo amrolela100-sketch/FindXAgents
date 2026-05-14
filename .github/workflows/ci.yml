@@ -2,104 +2,69 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
-# Cancel in-progress runs on the same branch when a new push arrives
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PNPM_VERSION: "10"
-  NODE_VERSION: "22"
-
 jobs:
-  # ── Lint & Format ─────────────────────────────────────────────────────────────
   lint:
-    name: Lint & Format Check
+    name: CI / Lint & Format Check
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
+        with: { version: "10" }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Check lockfile is up to date
-        run: |
-          if git diff --name-only | grep -q "pnpm-lock.yaml"; then
-            echo "::warning::pnpm-lock.yaml is out of sync. Run pnpm install locally and commit the lockfile."
-          fi
-
+        with: { node-version: "22", cache: "pnpm" }
+      - run: pnpm install --no-frozen-lockfile
+      - name: Check lockfile is not dirty
+        run: git diff --exit-code pnpm-lock.yaml
       - name: Prettier check
-        # continue-on-error: the codebase has not been formatted yet.
-        # This step reports which files need formatting but does not block CI.
-        # Remove this flag after running: pnpm exec prettier --write "**/*.{ts,tsx,json,css,md}"
-        continue-on-error: true
-        run: pnpm exec prettier --check "**/*.{ts,tsx,json,css,md}" --ignore-path .prettierignore
+        run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,css,md}" --ignore-path .prettierignore
 
-  # ── Typecheck & Tests ─────────────────────────────────────────────────────────
   test:
-    name: Typecheck & Test
+    name: CI / Typecheck & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
+        with: { version: "10" }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
+        with: { node-version: "22", cache: "pnpm" }
+      - run: pnpm install --no-frozen-lockfile
       - name: Run Typecheck
-        run: pnpm run typecheck
+        run: |
+          pnpm --filter "./lib/**" run build --if-present
+          pnpm exec tsc --build
+          pnpm -r --filter "./artifacts/**" run typecheck --if-present
+      - name: Run Tests with Coverage
+        run: pnpm test -- --coverage
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
 
-      - name: Run Tests
-        run: pnpm test
-
-  # ── Build Verification ────────────────────────────────────────────────────────
   build:
-    name: Build Verification (core)
+    name: CI / Build Verification (core)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     needs: test
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
+        with: { version: "10" }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build core (API Server + Web Frontend)
-        env:
-          VITE_API_URL: "/api"
-          VITE_SUPABASE_URL: "https://placeholder.supabase.co"
-          VITE_SUPABASE_ANON_KEY: "placeholder-anon-key"
-          VITE_ADMIN_EMAILS: "ci@example.com"
+        with: { node-version: "22", cache: "pnpm" }
+      - run: pnpm install --no-frozen-lockfile
+      - name: Build core
         run: pnpm run build:core
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_API_URL: /api
