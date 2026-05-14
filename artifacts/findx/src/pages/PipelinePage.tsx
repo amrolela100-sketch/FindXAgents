@@ -5,7 +5,7 @@ import { KanbanBoard } from "../components/kanban-board";
 import { LeadDetailPanel } from "../components/lead-detail-panel";
 import { useLang } from "../lib/lang-context";
 import type { Lead } from "../lib/types";
-import { getLeads, runAgentPipeline, getAgentRun } from "../lib/api";
+import { getLeads, runAgentPipeline, getAgentRun, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { useCompletionSound } from "../lib/hooks/use-completion-sound";
 import { dispatchNotification } from "../lib/hooks/use-notifications";
@@ -164,7 +164,10 @@ export default function PipelinePage() {
             activeRunsRef.current.delete(runId);
             refresh();
           }
-        } catch { /* blip */ }
+        } catch (err) {
+          // Log transient poll errors — don't toast since this runs every 4s
+          console.warn("[pipeline poll] error:", err instanceof Error ? err.message : err);
+        }
       }
     }, 4_000);
   }
@@ -183,7 +186,9 @@ export default function PipelinePage() {
       refresh();
       activeRunsRef.current.set(result.runId, savedQuery);
       startPollInterval();
-    } catch { /* handled */ } finally {
+    } catch (err) {
+      toastError(err, "Failed to start pipeline run");
+    } finally {
       setRunning(false);
     }
   }

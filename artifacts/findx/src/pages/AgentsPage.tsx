@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "../components/page-shell";
 import { AgentRunHistory } from "../components/agent-run-history";
 import { useLang } from "../lib/lang-context";
-import { getAgents, runAgentPipeline, getAgentRuns } from "../lib/api";
+import { getAgents, runAgentPipeline, getAgentRuns, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { usePolling } from "../lib/hooks/use-polling";
 import type { Agent } from "../lib/types";
@@ -329,7 +329,9 @@ export default function AgentsPage() {
       await runAgentPipeline({ query: query.trim(), maxResults, language: emailLang });
       setQuery("");
       refresh();
-    } catch { /* handled */ } finally {
+    } catch (err) {
+      toastError(err, "Failed to start pipeline run");
+    } finally {
       setStarting(false);
     }
   }

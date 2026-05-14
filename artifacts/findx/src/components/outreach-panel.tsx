@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { generateOutreach, updateOutreach, sendOutreach } from "../lib/api";
+import { generateOutreach, updateOutreach, sendOutreach, toastError } from "../lib/api";
 import { useLang } from "../lib/lang-context";
 import type { Lead, Outreach } from "../lib/types";
 import { Send, RefreshCw, Loader2, Check, Edit2, Globe } from "lucide-react";
@@ -33,7 +33,11 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
     try {
       await generateOutreach(lead.id, language);
       onUpdate();
-    } catch {} finally { setGenerating(false); }
+    } catch (err) {
+      toastError(err, "Failed to generate email");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function handleSend(outreachId: string) {
@@ -41,7 +45,11 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
     try {
       const result = await sendOutreach(lead.id, outreachId) as Record<string, unknown> | null;
       if (result) onUpdate();
-    } catch {} finally { setSending(null); }
+    } catch (err) {
+      toastError(err, "Failed to send email");
+    } finally {
+      setSending(null);
+    }
   }
 
   function startEditing(o: Outreach) {
@@ -55,7 +63,9 @@ export function OutreachPanel({ lead, outreaches, onUpdate }: OutreachPanelProps
       await updateOutreach(outreachId, { subject: editSubject, body: editBody });
       setEditingId(null);
       onUpdate();
-    } catch {}
+    } catch (err) {
+      toastError(err, "Failed to save changes");
+    }
   }
 
   const locale = language === "ar" ? "ar-SA" : language === "nl" ? "nl-NL" : language === "fr" ? "fr-FR" : language === "de" ? "de-DE" : language === "es" ? "es-ES" : "en-US";

@@ -15,6 +15,7 @@ import {
   getResendConfig, saveResendConfig, deleteResendConfig, testResendConfig,
   getSearchConfig, saveSearchConfig, deleteSearchConfig, testSearchConfig,
   getTelegramSettings, saveTelegramSettings, testTelegram,
+  toastError,
 } from "../lib/api";
 import type { AiProvider, AiProviderType, SmtpConfigResponse, ResendConfigResponse, SearchConfigResponse } from "../lib/types";
 
@@ -348,16 +349,38 @@ export default function SettingsPage() {
     } finally { setAiLoading(false); }
   }
   async function loadEmailSettings() {
-    try { const d = await getEmailSettings(); setEmailSettingsState({ defaultProvider: d.defaultProvider, providers: d.providers as any }); } catch { }
+    try {
+      const d = await getEmailSettings();
+      setEmailSettingsState({ defaultProvider: d.defaultProvider, providers: d.providers as any });
+    } catch {
+      // Email settings are optional — fail silently; user can still configure manually
+    }
   }
   async function loadSmtpConfig() {
-    try { const d = await getSmtpConfig(); setSmtpConfig(d); if (d.configured && d.host) setSmtpForm({ host: d.host ?? "", port: d.port ?? 465, secure: d.secure ?? true, user: d.user ?? "", password: "", fromEmail: d.fromEmail ?? "", fromName: d.fromName ?? "FindX" }); } catch { }
+    try {
+      const d = await getSmtpConfig();
+      setSmtpConfig(d);
+      if (d.configured && d.host) setSmtpForm({ host: d.host ?? "", port: d.port ?? 465, secure: d.secure ?? true, user: d.user ?? "", password: "", fromEmail: d.fromEmail ?? "", fromName: d.fromName ?? "FindX" });
+    } catch {
+      // SMTP may not be configured yet — silent is fine
+    }
   }
   async function loadResendConfig() {
-    try { const d = await getResendConfig(); setResendConfig(d); if (d.configured && d.fromEmail) setResendForm((f) => ({ ...f, fromEmail: d.fromEmail ?? f.fromEmail })); } catch { }
+    try {
+      const d = await getResendConfig();
+      setResendConfig(d);
+      if (d.configured && d.fromEmail) setResendForm((f) => ({ ...f, fromEmail: d.fromEmail ?? f.fromEmail }));
+    } catch {
+      // Resend may not be configured yet — silent is fine
+    }
   }
   async function loadSearchConfig() {
-    try { const d = await getSearchConfig(); setSearchConfig(d); } catch { }
+    try {
+      const d = await getSearchConfig();
+      setSearchConfig(d);
+    } catch {
+      // Search config is optional — silent is fine
+    }
   }
   async function loadTelegramSettings() {
     try {
@@ -368,7 +391,9 @@ export default function SettingsPage() {
       const chatId: string | undefined = raw.chatId ?? raw.settings?.chatId;
       setTelegramSettingsState({ configured, chatId });
       if (chatId) setTelegramForm((f) => ({ ...f, chatId }));
-    } catch { }
+    } catch {
+      // Telegram not configured yet — silent is fine
+    }
   }
 
   useEffect(() => {

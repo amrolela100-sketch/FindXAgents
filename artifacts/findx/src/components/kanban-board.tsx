@@ -13,7 +13,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { DroppableColumn } from "./kanban-column";
 import { LeadCard } from "./lead-card";
 import type { Lead, LeadStatus } from "../lib/types";
-import { updateLead, getAgentRuns, cancelAgentRun } from "../lib/api";
+import { updateLead, getAgentRuns, cancelAgentRun, toastError } from "../lib/api";
 import { PIPELINE_STAGES } from "../lib/types";
 import { Activity, Zap, XCircle } from "lucide-react";
 
@@ -46,7 +46,10 @@ export function KanbanBoard({
         if (!cancelled) {
           setLiveActivity(active ? { phase: "agents", query: active.query, runId: active.id } : null);
         }
-      } catch { /* ignore */ }
+      } catch {
+        // Background polling — swallow network blips silently.
+        // Failures here don't affect the main kanban UI.
+      }
     }
     checkActivity();
     const interval = setInterval(checkActivity, 5000);
@@ -90,7 +93,11 @@ export function KanbanBoard({
             <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Live</span>
             <button
               onClick={async () => {
-                try { await cancelAgentRun(liveActivity.runId); } catch { /* ignore */ }
+                try {
+                  await cancelAgentRun(liveActivity.runId);
+                } catch (err) {
+                  toastError(err, "Failed to cancel run");
+                }
                 setLiveActivity(null);
               }}
               className="ml-2 flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors"

@@ -477,3 +477,35 @@ export function markNotificationRead(id: string): Promise<{ ok: boolean }> {
 export function clearAllNotifications(): Promise<{ ok: boolean }> {
   return fetchApi("/notifications", { method: "DELETE" });
 }
+
+// ─── Error helper ─────────────────────────────────────────────────────────────
+/**
+ * toastError — call inside catch blocks to surface errors to the user.
+ *
+ * - 401 / 429 / 5xx errors are already shown by fetchApi(); skip them here
+ *   to avoid double-toasting (they are still re-thrown so callers can react).
+ * - Network offline is caught and shown.
+ * - Everything else surfaces a readable message.
+ *
+ * Usage:
+ *   try { await someApi(); }
+ *   catch (err) { toastError(err, "Failed to discover leads"); }
+ */
+export function toastError(err: unknown, fallback = "Something went wrong"): void {
+  if (!err) return;
+
+  // fetchApi already toasted these — avoid double-toast
+  const msg = err instanceof Error ? err.message : String(err);
+  const skipMessages = [
+    "No internet connection",
+    "Unauthorized",
+    "Too many requests",
+  ];
+  if (skipMessages.some((s) => msg.includes(s))) return;
+
+  toast({
+    title: fallback,
+    description: msg.length > 120 ? msg.slice(0, 120) + "…" : msg,
+    variant: "destructive",
+  });
+}

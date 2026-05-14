@@ -7,7 +7,7 @@ import { KanbanBoard } from "../components/kanban-board";
 import { DashboardCards } from "../components/dashboard-cards";
 import { useLang } from "../lib/lang-context";
 import type { Lead } from "../lib/types";
-import { getLeads, discoverLeads, importLeads, exportLeads } from "../lib/api";
+import { getLeads, discoverLeads, importLeads, exportLeads, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { LayoutList, LayoutGrid, Zap, Upload, Download, RefreshCw } from "lucide-react";
 
@@ -31,7 +31,14 @@ export default function LeadsPage() {
 
   async function handleDiscover() {
     setDiscovering(true);
-    try { await discoverLeads(); await refresh(); } catch {} finally { setDiscovering(false); }
+    try {
+      await discoverLeads();
+      await refresh();
+    } catch (err) {
+      toastError(err, t.leads.discoverError ?? "Failed to discover leads");
+    } finally {
+      setDiscovering(false);
+    }
   }
 
   async function handleExport() {
@@ -43,14 +50,21 @@ export default function LeadsPage() {
       a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {}
+    } catch (err) {
+      toastError(err, t.leads.exportError ?? "Failed to export leads");
+    }
   }
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    try { await importLeads(text); await refresh(); } catch {}
+    try {
+      await importLeads(text);
+      await refresh();
+    } catch (err) {
+      toastError(err, t.leads.importError ?? "Failed to import leads");
+    }
     e.target.value = "";
   }
 
