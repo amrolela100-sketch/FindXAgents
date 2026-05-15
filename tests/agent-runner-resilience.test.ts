@@ -15,8 +15,6 @@ const { mockState, analyzeLeadWithGeminiMock, generateOutreachWithGeminiMock, sm
   smartScrapeMock: vi.fn(),
 }));
 
-const table = (name: string) => new Proxy({ __name: name }, { get: (target, prop) => prop === "__name" ? name : { table: name, column: String(prop) } });
-
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args) => ({ op: "eq", args })),
   and: vi.fn((...args) => ({ op: "and", args })),
@@ -69,6 +67,7 @@ function makeSelectChain() {
 }
 
 vi.mock("@workspace/db", () => {
+  const table = (name: string) => new Proxy({ __name: name }, { get: (_t: any, prop: string | symbol) => prop === "__name" ? name : { table: name, column: String(prop) } });
   const leads = table("leads");
   const analyses = table("analyses");
   const outreaches = table("outreaches");
