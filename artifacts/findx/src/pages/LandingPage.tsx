@@ -8,7 +8,7 @@ import {
   ArrowRight, ArrowLeft, Sun, Moon, Globe,
   CheckCircle, TrendingUp, Users, Clock,
 } from "lucide-react";
-import { getDashboardStats } from "../lib/api";
+import { getDashboardStats, toastError } from "../lib/api";
 import { MagneticButton } from "../components/magnetic-button";
 
 /* ─── Spring config (no linear easing) ─── */
@@ -182,7 +182,7 @@ export default function LandingPage() {
         const accuracy = convRate > 0 ? `${Math.min(Math.round(convRate * 10 + 60), 97)}%` : "94%";
         setLiveStats({ leads: label, accuracy, timeSaved: "18" });
       })
-      .catch(() => {});
+      .catch((err) => toastError(err, "Failed to load live stats"));
   }, []);
 
   const features = [

@@ -84,7 +84,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           router.replace("/");
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn("[mobile] failed to check onboarding status", err);
         setOnboardingDone(true);
         setOnboardingChecked(true);
         if (inLoginScreen) router.replace("/");

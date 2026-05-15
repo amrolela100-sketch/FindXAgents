@@ -352,8 +352,8 @@ export default function SettingsPage() {
     try {
       const d = await getEmailSettings();
       setEmailSettingsState({ defaultProvider: d.defaultProvider, providers: d.providers as any });
-    } catch {
-      // Email settings are optional — fail silently; user can still configure manually
+    } catch (err) {
+      toastError(err, "Failed to load email settings");
     }
   }
   async function loadSmtpConfig() {
@@ -361,8 +361,8 @@ export default function SettingsPage() {
       const d = await getSmtpConfig();
       setSmtpConfig(d);
       if (d.configured && d.host) setSmtpForm({ host: d.host ?? "", port: d.port ?? 465, secure: d.secure ?? true, user: d.user ?? "", password: "", fromEmail: d.fromEmail ?? "", fromName: d.fromName ?? "FindX" });
-    } catch {
-      // SMTP may not be configured yet — silent is fine
+    } catch (err) {
+      toastError(err, "Failed to load SMTP config");
     }
   }
   async function loadResendConfig() {
@@ -370,16 +370,16 @@ export default function SettingsPage() {
       const d = await getResendConfig();
       setResendConfig(d);
       if (d.configured && d.fromEmail) setResendForm((f) => ({ ...f, fromEmail: d.fromEmail ?? f.fromEmail }));
-    } catch {
-      // Resend may not be configured yet — silent is fine
+    } catch (err) {
+      toastError(err, "Failed to load Resend config");
     }
   }
   async function loadSearchConfig() {
     try {
       const d = await getSearchConfig();
       setSearchConfig(d);
-    } catch {
-      // Search config is optional — silent is fine
+    } catch (err) {
+      toastError(err, "Failed to load search config");
     }
   }
   async function loadTelegramSettings() {
@@ -391,8 +391,8 @@ export default function SettingsPage() {
       const chatId: string | undefined = raw.chatId ?? raw.settings?.chatId;
       setTelegramSettingsState({ configured, chatId });
       if (chatId) setTelegramForm((f) => ({ ...f, chatId }));
-    } catch {
-      // Telegram not configured yet — silent is fine
+    } catch (err) {
+      toastError(err, "Failed to load Telegram settings");
     }
   }
 

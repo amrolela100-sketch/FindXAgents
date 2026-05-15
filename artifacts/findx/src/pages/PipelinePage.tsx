@@ -176,7 +176,7 @@ export default function PipelinePage() {
     if (!query.trim()) return;
     setRunning(true);
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+      Notification.requestPermission().catch((err) => toastError(err, "Failed to request notification permission"));
     }
     try {
       const savedQuery = query.trim();

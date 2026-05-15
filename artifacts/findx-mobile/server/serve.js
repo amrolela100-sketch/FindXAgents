@@ -40,7 +40,8 @@ function getAppName() {
     const appJsonPath = path.resolve(__dirname, "..", "app.json");
     const appJson = JSON.parse(fs.readFileSync(appJsonPath, "utf-8"));
     return appJson.expo?.name || "App Landing Page";
-  } catch {
+  } catch (err) {
+    console.warn("[mobile serve] failed to read app name", err);
     return "App Landing Page";
   }
 }

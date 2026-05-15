@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useLang } from "../lib/lang-context";
 import { useTheme } from "../lib/theme-context";
-import { getLeads } from "../lib/api";
+import { getLeads, toastError } from "../lib/api";
 import type { Lead } from "../lib/types";
 import {
   LayoutDashboard, Bot, GitBranch, Users, Building2,
@@ -55,7 +55,7 @@ export function CommandPalette() {
   // Load leads for search
   useEffect(() => {
     if (!open) return;
-    getLeads({ pageSize: 50 }).then((d) => setLeads(d.leads)).catch(() => {});
+    getLeads({ pageSize: 50 }).then((d) => setLeads(d.leads)).catch((err) => toastError(err, "Failed to load command palette leads"));
   }, [open]);
 
   const go = useCallback((path: string) => {

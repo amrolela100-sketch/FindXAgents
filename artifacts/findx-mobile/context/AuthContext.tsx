@@ -33,7 +33,8 @@ function getRedirectUrl(): string {
 async function goToDashboard() {
   try {
     router.replace("/(tabs)");
-  } catch {
+  } catch (err) {
+    console.warn("[mobile] failed to navigate to dashboard", err);
     router.replace("/");
   }
 }
