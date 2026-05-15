@@ -6,6 +6,7 @@ import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import OpenAI from "openai";
+import { decryptSecret } from "../lib/secret-crypto.js";
 
 const router = Router();
 
@@ -72,11 +73,12 @@ async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; m
       .where(and(eq(aiProviders.workspaceId, workspaceId), eq(aiProviders.isDefault, true)))
       .limit(1);
 
-    if (defaultProv?.apiKey || defaultProv?.providerType === "ollama") {
+    const defaultApiKey = decryptSecret(defaultProv?.apiKey);
+    if (defaultProv && (defaultApiKey || defaultProv.providerType === "ollama")) {
       const baseURL = defaultProv.baseUrl || PROVIDER_BASE_URLS[defaultProv.providerType] || "";
       return {
         client: new OpenAI({
-          apiKey: defaultProv.apiKey || "ollama",
+          apiKey: defaultApiKey || "ollama",
           baseURL,
           defaultHeaders: defaultProv.providerType === "openrouter" ? {
             "HTTP-Referer": "https://find-x-agents-findx.vercel.app",
@@ -96,11 +98,12 @@ async function resolveAIClient(workspaceId: string): Promise<{ client: OpenAI; m
       .orderBy(desc(aiProviders.createdAt))
       .limit(1);
 
-    if (anyProv?.apiKey || anyProv?.providerType === "ollama") {
+    const anyApiKey = decryptSecret(anyProv?.apiKey);
+    if (anyProv && (anyApiKey || anyProv.providerType === "ollama")) {
       const baseURL = anyProv.baseUrl || PROVIDER_BASE_URLS[anyProv.providerType] || "";
       return {
         client: new OpenAI({
-          apiKey: anyProv.apiKey || "ollama",
+          apiKey: anyApiKey || "ollama",
           baseURL,
           defaultHeaders: anyProv.providerType === "openrouter" ? {
             "HTTP-Referer": "https://find-x-agents-findx.vercel.app",

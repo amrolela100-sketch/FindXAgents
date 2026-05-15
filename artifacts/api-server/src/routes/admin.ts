@@ -3,18 +3,13 @@ import { requireAuth } from "../middleware/auth";
 import { db, users, leads, agentPipelineRuns } from "@workspace/db";
 import { count, sql, eq } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
-import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
-
-function isAdmin(email: string): boolean {
-  return isAdminEmail(email);
-}
 
 router.use(requireAuth);
 
 router.get("/admin/stats", async (req, res) => {
-  if (!isAdmin(req.user!.email)) {
+  if (req.user!.role !== "admin") {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {
@@ -38,7 +33,7 @@ router.get("/admin/stats", async (req, res) => {
 });
 
 router.get("/admin/users", async (req, res) => {
-  if (!isAdmin(req.user!.email)) {
+  if (req.user!.role !== "admin") {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {
@@ -66,7 +61,7 @@ router.get("/admin/users", async (req, res) => {
       lastSignIn: u.updatedAt,
       leadCount: countMap[u.id] ?? 0,
       onboardingCompleted: u.onboardingCompleted,
-      isAdmin: isAdmin(u.email),
+      isAdmin: u.role === "admin",
     }));
 
     return res.json({ users: formattedUsers });

@@ -3,6 +3,7 @@ import { eq, sql, and, ilike, isNull } from "drizzle-orm";
 import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
+import { decryptSecret } from "./secret-crypto.js";
 import { notifyPipelineComplete, notifyPipelineFailed } from "./telegram.js";
 import pLimit from "p-limit";
 
@@ -32,14 +33,14 @@ async function getTavilyKey(workspaceId?: string | null): Promise<string | null>
         .from(searchConfigs)
         .where(eq(searchConfigs.workspaceId, workspaceId))
         .limit(1);
-      if (wsCfg?.apiKey) return wsCfg.apiKey;
+      if (wsCfg?.apiKey) return decryptSecret(wsCfg.apiKey);
     }
     // 2. Global / owner-level config (workspaceId IS NULL)
     const [globalCfg] = await db.select({ apiKey: searchConfigs.apiKey })
       .from(searchConfigs)
       .where(isNull(searchConfigs.workspaceId))
       .limit(1);
-    if (globalCfg?.apiKey) return globalCfg.apiKey;
+    if (globalCfg?.apiKey) return decryptSecret(globalCfg.apiKey);
   } catch { /* fall through */ }
   // 3. Environment variable fallback
   return process.env.TAVILY_API_KEY ?? null;

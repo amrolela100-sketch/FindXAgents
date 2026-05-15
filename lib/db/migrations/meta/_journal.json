@@ -78,6 +78,13 @@
       "when": 1747004000000,
       "tag": "0010_gmail_tokens_workspace_scoped",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778884513222,
+      "tag": "0011_security_hardening",
+      "breakpoints": true
     }
   ]
 }

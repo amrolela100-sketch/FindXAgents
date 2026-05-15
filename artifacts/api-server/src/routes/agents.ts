@@ -5,23 +5,14 @@ import { eq, and, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { ALLOWED_PHASES, ALLOWED_LEVELS } from "../lib/constants.js";
 import { requireAuth, requireWorkspace } from "../middleware/auth";
-import { isAdminEmail } from "../lib/env.js";
 
 const router = Router();
 
 router.use(requireAuth);
 
-/**
- * Unified admin check: user qualifies as admin if their DB role = "admin"
- * OR their email is in the ADMIN_EMAILS env list.
- * Using both sources avoids the inconsistency where some routes checked role
- * and others checked email, leading to contradictory access decisions.
- */
+/** Admin check based only on the DB-backed users.role field. */
 function isAdmin(req: Request): boolean {
-  if (!req.user) return false;
-  if (req.user.role === "admin") return true;
-  if (isAdminEmail(req.user.email)) return true;
-  return false;
+  return req.user?.role === "admin";
 }
 
 /** Middleware: blocks non-admin users with 403. */

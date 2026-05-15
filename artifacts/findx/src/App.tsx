@@ -54,11 +54,6 @@ function NullFallback() {
   return null;
 }
 
-const ADMIN_EMAILS = (env.VITE_ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((e: string) => e.trim().toLowerCase())
-  .filter(Boolean);
-
 function AuthGuard() {
   const { user, loading } = useAuth();
   const { isRtl } = useLang();
@@ -89,9 +84,7 @@ function AuthGuard() {
     );
   }
 
-  const isAdmin =
-    ADMIN_EMAILS.includes((user.email ?? "").toLowerCase()) ||
-    user.role === "admin";
+  const isAdmin = user.role === "admin";
 
   return (
     <WorkspaceProvider>

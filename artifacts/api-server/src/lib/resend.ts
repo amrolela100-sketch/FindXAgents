@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { db, resendConfigs } from "@workspace/db";
 import { eq, isNull } from "drizzle-orm";
+import { decryptSecret } from "./secret-crypto.js";
 
 let _client: Resend | null = null;
 let _cachedKey: string | null = null;
@@ -17,14 +18,14 @@ async function getResendApiKey(workspaceId?: string | null): Promise<string | nu
         .from(resendConfigs)
         .where(eq(resendConfigs.workspaceId, workspaceId))
         .limit(1);
-      if (wsCfg?.apiKey) return wsCfg.apiKey;
+      if (wsCfg?.apiKey) return decryptSecret(wsCfg.apiKey);
     }
     // 2. Global / owner-level config (workspaceId IS NULL)
     const [globalCfg] = await db.select({ apiKey: resendConfigs.apiKey })
       .from(resendConfigs)
       .where(isNull(resendConfigs.workspaceId))
       .limit(1);
-    if (globalCfg?.apiKey) return globalCfg.apiKey;
+    if (globalCfg?.apiKey) return decryptSecret(globalCfg.apiKey);
   } catch { /* fall through */ }
   // 3. Environment variable fallback
   return process.env.RESEND_API_KEY ?? null;

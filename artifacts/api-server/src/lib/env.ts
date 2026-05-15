@@ -15,7 +15,7 @@ const envSchema = z.object({
   // Access control
   OWNER_EMAIL: z.string().optional().default(""),
   OWNER_PASSWORD: z.string().optional().default(""),
-  ADMIN_EMAILS: z.string().optional().default(""),
+  SECRET_ENCRYPTION_KEY: z.string().optional(),
   // CORS
   FRONTEND_URL: z.string().url().optional(),
   // Infrastructure
@@ -35,7 +35,6 @@ export type Env = z.infer<typeof envSchema>;
 /**
  * Validated env object. Always exported — in tests the object may be
  * partially populated (only optional fields have defaults). Route helpers
- * like isAdminEmail() degrade gracefully when values are empty strings.
  *
  * Call assertEnv() at app startup (index.ts) to hard-fail on missing vars.
  */
@@ -67,23 +66,15 @@ export function assertEnv(): void {
   if (!env.OWNER_EMAIL || !env.OWNER_PASSWORD) {
     logger.warn("Owner panel disabled - set OWNER_EMAIL and OWNER_PASSWORD");
   }
+  if (!env.SECRET_ENCRYPTION_KEY && !process.env.MASTER_KEY) {
+    logger.warn("API key storage disabled - set SECRET_ENCRYPTION_KEY to save encrypted provider keys");
+  }
 }
 
 // ── Derived helpers ───────────────────────────────────────────────────────────
 
-/** Parsed, lowercased list of admin emails from ADMIN_EMAILS env var */
-export const adminEmails: string[] = (env.ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
 /** Lowercased owner email */
 export const ownerEmail: string = (env.OWNER_EMAIL ?? "").trim().toLowerCase();
-
-/** Returns true if the given email belongs to an admin */
-export function isAdminEmail(email: string): boolean {
-  return adminEmails.includes(email.toLowerCase());
-}
 
 /** Returns true if the given email is the owner */
 export function isOwnerEmail(email: string): boolean {

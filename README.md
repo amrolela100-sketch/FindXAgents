@@ -127,7 +127,7 @@ SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 OWNER_EMAIL=admin@yourdomain.com
 OWNER_PASSWORD=your-secure-password
-ADMIN_EMAILS=admin@yourdomain.com
+SECRET_ENCRYPTION_KEY=generate-with-openssl-rand-base64-32
 TAVILY_API_KEY=tvly-...
 RESEND_API_KEY=re_...
 GEMINI_API_KEY=AIza...
@@ -138,7 +138,6 @@ GEMINI_API_KEY=AIza...
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_API_URL=http://localhost:3000/api
-VITE_ADMIN_EMAILS=admin@yourdomain.com
 ```
 
 ### 3. Database Setup
@@ -184,7 +183,7 @@ See [`DEPLOY.md`](./DEPLOY.md) for full instructions.
 | **Admin** | All users' leads + admin panel |
 | **Owner** | Everything + operator panel at `/owner` |
 
-Set `ADMIN_EMAILS` in your API `.env` to grant admin.
+Grant admin by setting `users.role = 'admin'` in the database.
 Set `OWNER_EMAIL` + `OWNER_PASSWORD` to enable the owner panel.
 
 ---
