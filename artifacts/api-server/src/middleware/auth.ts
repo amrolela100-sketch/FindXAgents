@@ -9,69 +9,88 @@ import { logger } from "../lib/logger.js";
  */
 async function syncAndMapUser(supabaseUser: { userId: string; email: string }) {
   const { db, users, workspaces, workspaceMembers } = await import("@workspace/db");
-  const { eq } = await import("drizzle-orm");
+  const { and, eq } = await import("drizzle-orm");
 
-  let [dbUser] = await db.select().from(users).where(eq(users.id, supabaseUser.userId)).limit(1);
+  const dbUser = await db.transaction(async (tx) => {
+    let [user] = await tx.select().from(users).where(eq(users.id, supabaseUser.userId)).limit(1);
 
-  if (!dbUser) {
-    // ── First login: create user row ──────────────────────────────────────
-    logger.info({ userId: supabaseUser.userId }, "Syncing new user to local DB from Supabase");
+    if (!user) {
+      logger.info({ userId: supabaseUser.userId }, "Syncing new user to local DB from Supabase");
 
-    const [newUser] = await db.insert(users).values({
-      id:                  supabaseUser.userId,
-      email:               supabaseUser.email,
-      role:                "user",
-      onboardingCompleted: false,
-      passwordHash:        null,
-    }).returning();
+      // Race-safe user creation: concurrent auth/me calls can arrive together.
+      await tx.insert(users).values({
+        id:                  supabaseUser.userId,
+        email:               supabaseUser.email,
+        role:                "user",
+        onboardingCompleted: false,
+        passwordHash:        null,
+      }).onConflictDoNothing();
 
-    dbUser = newUser;
-  }
-
-  // ── Auto-create "Default" workspace if the user has none ─────────────────
-  let activeWorkspaceId = dbUser.activeWorkspaceId ?? null;
-
-  if (!activeWorkspaceId) {
-    // Check if any workspace exists for this user
-    const [existing] = await db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(eq(workspaces.ownerId, supabaseUser.userId))
-      .limit(1);
-
-    if (existing) {
-      activeWorkspaceId = existing.id;
-    } else {
-      // Create the default workspace
-      const [defaultWs] = await db.insert(workspaces).values({
-        ownerId:     supabaseUser.userId,
-        name:        "Default",
-        description: "My default workspace",
-      }).returning();
-
-      // Add user as owner in workspace_members
-      await db.insert(workspaceMembers).values({
-        workspaceId: defaultWs.id,
-        userId:      supabaseUser.userId,
-        role:        "owner",
-      });
-
-      activeWorkspaceId = defaultWs.id;
-      logger.info({ userId: supabaseUser.userId, workspaceId: defaultWs.id }, "Created default workspace for new user");
+      [user] = await tx.select().from(users).where(eq(users.id, supabaseUser.userId)).limit(1);
+      if (!user) throw new Error("Failed to sync authenticated user");
     }
 
-    // Persist activeWorkspaceId on user row
-    await db.update(users)
-      .set({ activeWorkspaceId, updatedAt: new Date() })
-      .where(eq(users.id, supabaseUser.userId));
-  }
+    let activeWorkspaceId = user.activeWorkspaceId ?? null;
+
+    if (!activeWorkspaceId) {
+      // Prefer an existing Default workspace. A DB partial unique index prevents
+      // two concurrent requests from creating two Default workspaces.
+      let [workspace] = await tx
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(and(eq(workspaces.ownerId, supabaseUser.userId), eq(workspaces.name, "Default")))
+        .limit(1);
+
+      if (!workspace) {
+        await tx.insert(workspaces).values({
+          ownerId:     supabaseUser.userId,
+          name:        "Default",
+          description: "My default workspace",
+        }).onConflictDoNothing();
+
+        [workspace] = await tx
+          .select({ id: workspaces.id })
+          .from(workspaces)
+          .where(and(eq(workspaces.ownerId, supabaseUser.userId), eq(workspaces.name, "Default")))
+          .limit(1);
+      }
+
+      // If a legacy account already had a non-default workspace, fall back to it.
+      if (!workspace) {
+        [workspace] = await tx
+          .select({ id: workspaces.id })
+          .from(workspaces)
+          .where(eq(workspaces.ownerId, supabaseUser.userId))
+          .limit(1);
+      }
+
+      if (!workspace) throw new Error("Failed to create or find default workspace");
+
+      await tx.insert(workspaceMembers).values({
+        workspaceId: workspace.id,
+        userId:      supabaseUser.userId,
+        role:        "owner",
+      }).onConflictDoNothing();
+
+      activeWorkspaceId = workspace.id;
+
+      const [updated] = await tx.update(users)
+        .set({ activeWorkspaceId, updatedAt: new Date() })
+        .where(eq(users.id, supabaseUser.userId))
+        .returning();
+
+      return updated ?? { ...user, activeWorkspaceId };
+    }
+
+    return user;
+  });
 
   return {
     sub:               supabaseUser.userId,
     userId:            supabaseUser.userId,
     email:             supabaseUser.email,
     role:              (dbUser.role as "admin" | "user") || "user",
-    activeWorkspaceId: activeWorkspaceId as string,
+    activeWorkspaceId: dbUser.activeWorkspaceId as string,
   };
 }
 

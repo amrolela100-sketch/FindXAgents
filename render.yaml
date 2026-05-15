@@ -54,6 +54,16 @@ services:
       - key: SECRET_ENCRYPTION_KEY
         sync: false            # generate with: openssl rand -base64 32
 
+
+      - key: INTERNAL_JOB_SECRET
+        sync: false            # shared secret for internal job worker endpoint
+
+      - key: QSTASH_TOKEN
+        sync: false            # optional; use when enqueueing through Upstash QStash
+
+      - key: JOB_WORKER_URL
+        sync: false            # e.g. https://findx-api.onrender.com
+
       # ── Frontend origin (CORS) ────────────────────────────────────────────
       - key: FRONTEND_URL
         sync: false            # e.g. https://findx.vercel.app

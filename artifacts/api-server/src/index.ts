@@ -4,6 +4,7 @@ assertEnv(); // exits if required vars are missing — only called at server sta
 import app from "./app";
 import { logger } from "./lib/logger";
 import { closeRedis } from "./lib/redis.js";
+import { markActiveAgentRunsInterrupted } from "./lib/agent-job-queue.js";
 
 const port = Number(env.PORT);
 
@@ -72,6 +73,7 @@ async function startServer() {
     const shutdown = async (signal: string) => {
       logger.info({ signal }, "Shutting down gracefully...");
       server.close(async () => {
+        await markActiveAgentRunsInterrupted(`Server received ${signal} before the agent run completed. Please re-run.`);
         await closeRedis();
         logger.info("Server and Redis closed. Bye.");
         process.exit(0);

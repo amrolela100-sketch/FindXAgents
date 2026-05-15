@@ -18,6 +18,7 @@ import workspacesRouter from "./workspaces.js";
 import onboardingRouter from "./onboarding.js";
 import ownerRouter from "./owner.js";
 import chatRouter from "./chat.js";
+import jobsRouter from "./jobs.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router: IRouter = Router();
@@ -25,6 +26,7 @@ const router: IRouter = Router();
 // ─── Public routes (no auth required) ────────────────────────────────────────
 router.use(healthRouter);
 router.use(authRouter);
+router.use(jobsRouter);
 
 // ─── Protected routes (JWT required) ─────────────────────────────────────────
 router.use(requireAuth);

@@ -10,6 +10,7 @@ import {
   index,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,10 @@ export const workspaces = pgTable(
     createdAt:      timestamp("created_at").notNull().defaultNow(),
     updatedAt:      timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [index("idx_workspaces_owner_id").on(t.ownerId)],
+  (t) => [
+    index("idx_workspaces_owner_id").on(t.ownerId),
+    uniqueIndex("uq_workspaces_one_default_per_owner").on(t.ownerId).where(sql`${t.name} = 'Default'`),
+  ],
 );
 
 // ─── Workspace Members (future sharing) ──────────────────────────────────────

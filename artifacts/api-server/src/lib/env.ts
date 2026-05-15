@@ -16,6 +16,12 @@ const envSchema = z.object({
   OWNER_EMAIL: z.string().optional().default(""),
   OWNER_PASSWORD: z.string().optional().default(""),
   SECRET_ENCRYPTION_KEY: z.string().optional(),
+  INTERNAL_JOB_SECRET: z.string().optional(),
+  QSTASH_JOB_SECRET: z.string().optional(),
+  QSTASH_TOKEN: z.string().optional(),
+  JOB_WORKER_URL: z.string().url().optional(),
+  PUBLIC_API_URL: z.string().url().optional(),
+  API_PUBLIC_URL: z.string().url().optional(),
   // CORS
   FRONTEND_URL: z.string().url().optional(),
   // Infrastructure
@@ -68,6 +74,9 @@ export function assertEnv(): void {
   }
   if (!env.SECRET_ENCRYPTION_KEY && !process.env.MASTER_KEY) {
     logger.warn("API key storage disabled - set SECRET_ENCRYPTION_KEY to save encrypted provider keys");
+  }
+  if (env.QSTASH_TOKEN && !env.INTERNAL_JOB_SECRET && !env.QSTASH_JOB_SECRET) {
+    logger.warn("QStash is configured but INTERNAL_JOB_SECRET is missing");
   }
 }
 
