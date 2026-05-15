@@ -61,6 +61,10 @@ SUPABASE_SERVICE_ROLE_KEY = eyJ...
 OWNER_EMAIL               = your@email.com
 OWNER_PASSWORD            = (strong secret password)
 SECRET_ENCRYPTION_KEY    = generate-with-openssl-rand-base64-32
+INTERNAL_JOB_SECRET      = generate-a-shared-job-secret
+# Optional queued jobs: set QSTASH_TOKEN + JOB_WORKER_URL for serverless-safe enqueueing
+QSTASH_TOKEN             =
+JOB_WORKER_URL           = https://your-api-worker.onrender.com
 
 # CORS — paste your Vercel URL after Step 3
 FRONTEND_URL              = https://your-app.vercel.app
@@ -186,6 +190,9 @@ Services:
 | `OWNER_EMAIL` | ✅ | Your email — grants owner panel access |
 | `OWNER_PASSWORD` | ✅ | Secondary password for `/owner` panel |
 | `SECRET_ENCRYPTION_KEY` | ✅ | Master key for encrypting API keys stored in DB |
+| `INTERNAL_JOB_SECRET` | ✅ | Shared secret for internal background-job endpoint |
+| `QSTASH_TOKEN` | — | Optional Upstash QStash token for queued agent runs |
+| `JOB_WORKER_URL` | — | Long-lived worker URL that receives queued agent jobs |
 | `FRONTEND_URL` | ✅ | Vercel URL for CORS |
 | `PORT` | ✅ | Server port (default: 3000) |
 | `GEMINI_API_KEY` | ⚡ | AI analysis & outreach |

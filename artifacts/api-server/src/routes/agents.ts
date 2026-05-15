@@ -26,7 +26,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 
 // ─── Pipeline Runs ────────────────────────────────────────────────────────────
 
-import { AgentRunner } from "../lib/agent-runner.js";
+import { enqueueAgentRun } from "../lib/agent-job-queue.js";
 import { safeError } from "../lib/safe-error.js";
 
 router.post("/agents/run", requireWorkspace, async (req, res) => {
@@ -47,11 +47,24 @@ router.post("/agents/run", requireWorkspace, async (req, res) => {
       status:      "queued",
     }).returning();
 
-    // Fire and forget agent runner
-    const runner = new AgentRunner(run.id, req.user?.activeWorkspaceId ?? null);
-    runner.run(parsed.data.query, parsed.data.maxResults ?? 10, req.user?.sub ?? null, parsed.data.language as any).catch(console.error);
+    let queue: { mode: "qstash" | "in-process" };
+    try {
+      queue = await enqueueAgentRun({
+        runId:       run.id,
+        query:       parsed.data.query,
+        maxResults:  parsed.data.maxResults ?? 10,
+        userId:      req.user?.sub ?? null,
+        workspaceId: req.user?.activeWorkspaceId ?? null,
+        language:    parsed.data.language,
+      });
+    } catch (enqueueErr: any) {
+      await db.update(agentPipelineRuns)
+        .set({ status: "failed", error: enqueueErr?.message ?? "Failed to enqueue agent run", completedAt: new Date() })
+        .where(eq(agentPipelineRuns.id, run.id));
+      throw enqueueErr;
+    }
 
-    return res.status(202).json({ runId: run.id, status: "queued", run });
+    return res.status(202).json({ runId: run.id, status: "queued", queue: queue.mode, run });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
