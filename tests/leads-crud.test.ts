@@ -78,6 +78,14 @@ vi.mock("@workspace/db", () => {
       delete: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([]),
       }),
+      transaction: vi.fn().mockImplementation(async (fn: any) => {
+        const tx = {
+          delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
+          update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
+          insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([]) }) }),
+        };
+        return fn(tx);
+      }),
     },
     leads: makeTable(), analyses: makeTable(), outreaches: makeTable(), users: makeTable(),
     agents: makeTable(), agentSkills: makeTable(), agentLogs: makeTable(), agentPipelineRuns: makeTable(),
