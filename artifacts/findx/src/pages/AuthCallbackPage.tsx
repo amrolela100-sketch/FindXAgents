@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { toast } from "../hooks/use-toast";
 
 export default function AuthCallbackPage() {
   useEffect(() => {
@@ -15,7 +16,14 @@ export default function AuthCallbackPage() {
       }
       window.location.replace(`${import.meta.env.BASE_URL}`);
     };
-    run().catch(() => window.location.replace(`${import.meta.env.BASE_URL}login`));
+    run().catch((err) => {
+      toast({
+        title: "Login callback failed",
+        description: err instanceof Error ? err.message : "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+      window.location.replace(`${import.meta.env.BASE_URL}login`);
+    });
   }, []);
 
   return (

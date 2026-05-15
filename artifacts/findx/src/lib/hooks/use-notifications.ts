@@ -6,6 +6,7 @@ import {
   markNotificationRead,
   clearAllNotifications,
   type ApiNotification,
+  toastError,
 } from "../api";
 import { supabase } from "../supabase";
 
@@ -37,8 +38,8 @@ export async function dispatchNotification(data: {
         emailsDrafted: data.emailsDrafted ?? 0,
       },
     });
-  } catch {
-    // Non-critical — swallow errors silently
+  } catch (err) {
+    toastError(err, "Failed to create notification");
   }
 }
 
@@ -58,8 +59,8 @@ export function useNotifications() {
       const data = await getNotifications();
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
-    } catch {
-      // Not logged in yet or API unavailable — silent
+    } catch (err) {
+      toastError(err, "Failed to load notifications");
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +93,8 @@ export function useNotifications() {
     setUnreadCount(0);
     try {
       await markAllNotificationsRead();
-    } catch {
+    } catch (err) {
+      toastError(err, "Failed to mark notifications as read");
       load(); // revert on error
     }
   }, [load]);
@@ -104,7 +106,8 @@ export function useNotifications() {
     setUnreadCount((prev) => Math.max(0, prev - 1));
     try {
       await markNotificationRead(id);
-    } catch {
+    } catch (err) {
+      toastError(err, "Failed to mark notification as read");
       load();
     }
   }, [load]);
@@ -114,7 +117,8 @@ export function useNotifications() {
     setUnreadCount(0);
     try {
       await clearAllNotifications();
-    } catch {
+    } catch (err) {
+      toastError(err, "Failed to clear notifications");
       load();
     }
   }, [load]);

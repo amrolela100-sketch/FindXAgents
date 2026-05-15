@@ -126,7 +126,8 @@ export async function getWorkspaces(): Promise<Workspace[]> {
   try {
     const { fetchApi } = await import("./api") as unknown as { fetchApi: unknown };
     return [] as Workspace[];
-  } catch {
+  } catch (err) {
+    console.warn("[mobile] failed to load workspaces", err);
     return [];
   }
 }
@@ -145,7 +146,8 @@ export async function getApiKeys(): Promise<ApiKeysSummary> {
       tavily: search.configured ? "configured" : null,
       resend: resend.configured ? resend.fromEmail ?? "configured" : null,
     };
-  } catch {
+  } catch (err) {
+    console.warn("[mobile] failed to load API key summary", err);
     return { tavily: null, resend: null };
   }
 }
@@ -157,8 +159,8 @@ export async function markOnboardingComplete(): Promise<void> {
   try {
     const AsyncStorage = await import("@react-native-async-storage/async-storage");
     await (AsyncStorage.default ?? AsyncStorage).setItem("onboarding_complete", "1");
-  } catch {
-    // Ignore - non-critical
+  } catch (err) {
+    console.warn("[mobile] failed to save onboarding status", err);
   }
 }
 
@@ -167,7 +169,8 @@ export async function getOnboardingStatusM(): Promise<boolean> {
     const AsyncStorage = await import("@react-native-async-storage/async-storage");
     const val = await (AsyncStorage.default ?? AsyncStorage).getItem("onboarding_complete");
     return val === "1";
-  } catch {
+  } catch (err) {
+    console.warn("[mobile] failed to read onboarding status", err);
     return false;
   }
 }

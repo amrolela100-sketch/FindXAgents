@@ -26,7 +26,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const handleRestart = async () => {
     try {
       await reloadAppAsync();
-    } catch {
+    } catch (err) {
+      console.warn("[mobile] failed to reload app", err);
       resetError();
     }
   };

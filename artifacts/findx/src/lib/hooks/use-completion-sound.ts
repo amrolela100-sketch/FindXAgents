@@ -32,8 +32,8 @@ export function useCompletionSound() {
       } else {
         playNotes(ctx);
       }
-    } catch {
-      // Silently ignore — sound is non-critical
+    } catch (err) {
+      console.warn("[sound] completion chime failed", err);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

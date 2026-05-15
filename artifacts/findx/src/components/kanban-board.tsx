@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -28,6 +28,7 @@ export function KanbanBoard({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [liveActivity, setLiveActivity] = useState<{ phase: string; query: string; runId: string } | null>(null);
+  const pollErrorShown = useRef(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const leadsByStatus = PIPELINE_STAGES.map((stage) => ({
@@ -46,9 +47,11 @@ export function KanbanBoard({
         if (!cancelled) {
           setLiveActivity(active ? { phase: "agents", query: active.query, runId: active.id } : null);
         }
-      } catch {
-        // Background polling — swallow network blips silently.
-        // Failures here don't affect the main kanban UI.
+      } catch (err) {
+        if (!cancelled && !pollErrorShown.current) {
+          pollErrorShown.current = true;
+          toastError(err, "Failed to refresh pipeline activity");
+        }
       }
     }
     checkActivity();

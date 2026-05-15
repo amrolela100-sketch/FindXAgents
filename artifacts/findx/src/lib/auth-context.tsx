@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { supabase } from "./supabase";
 import { env } from "./env";
 import type { Session } from "@supabase/supabase-js";
+import { toast } from "../hooks/use-toast";
 
 interface User {
   id: string;
@@ -40,7 +41,12 @@ async function mapSessionToDbUser(session: Session): Promise<User> {
       role:              data.user?.role ?? "user",
       activeWorkspaceId: data.user?.activeWorkspaceId,
     };
-  } catch {
+  } catch (err) {
+    toast({
+      title: "Failed to sync account",
+      description: err instanceof Error ? err.message : "حدث خطأ غير متوقع",
+      variant: "destructive",
+    });
     return fallback;
   }
 }

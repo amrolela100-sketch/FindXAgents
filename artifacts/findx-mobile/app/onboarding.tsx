@@ -155,7 +155,9 @@ export default function OnboardingScreen() {
       setLoading(true);
       try {
         await completeOnboarding({});
-      } catch (_) {}
+      } catch (err) {
+        console.warn("[mobile] failed to complete onboarding", err);
+      }
       router.replace("/(tabs)");
       return;
     }
@@ -168,7 +170,9 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       await completeOnboarding({});
-    } catch (_) {}
+    } catch (err) {
+      console.warn("[mobile] failed to skip onboarding", err);
+    }
     router.replace("/(tabs)");
   };
 

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, User, Loader2, Sparkles, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,10 +18,14 @@ interface Message {
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { supabase } = await import("@/lib/supabase");
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ?? null;
-  } catch {
+  } catch (err) {
+    toast({
+      title: "Failed to read chat session",
+      description: err instanceof Error ? err.message : "حدث خطأ غير متوقع",
+      variant: "destructive",
+    });
     return null;
   }
 }
@@ -295,8 +301,8 @@ export function ChatWidget() {
               // Notify if chat is closed
               if (!open) setUnread((n) => n + 1);
             }
-          } catch {
-            // ignore JSON parse errors
+          } catch (err) {
+            console.warn("[chat] failed to parse stream chunk", err);
           }
         }
       }

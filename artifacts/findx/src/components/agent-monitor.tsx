@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Loader2, CheckCircle2, XCircle, Wrench, Clock, Filter, ChevronDown, Activity } from "lucide-react";
-import { getRunLogs } from "../lib/api";
+import { getRunLogs, toastError } from "../lib/api";
 import type { AgentLog } from "../lib/types";
 
 const LEVEL_CONFIG: Record<string, { color: string; bg: string; border: string; icon: typeof CheckCircle2 }> = {
@@ -47,8 +47,11 @@ export function AgentMonitor({ pipelineRunId, maxHeight = 600, status }: AgentMo
             }
           }
         }
-      } catch {
-        if (!cancelled) setLoading(false);
+      } catch (err) {
+        if (!cancelled) {
+          setLoading(false);
+          toastError(err, "Failed to load agent logs");
+        }
       }
     }
 
