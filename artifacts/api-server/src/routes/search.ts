@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db, searchConfigs } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth.js";
+import { discoveryLimiter } from "../middleware/rate-limit.js";
+import { decryptSecret, encryptSecret } from "../lib/secret-crypto.js";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
@@ -24,13 +26,13 @@ async function getTavilyApiKey(workspaceId: string): Promise<string | null> {
     // 1. Workspace-specific config
     const [ws] = await db.select().from(searchConfigs)
       .where(eq(searchConfigs.workspaceId, workspaceId)).limit(1);
-    if (ws?.apiKey) return ws.apiKey;
+    if (ws?.apiKey) return decryptSecret(ws.apiKey);
 
     // 2. Global / owner-level config (workspaceId IS NULL)
     const { isNull } = await import("drizzle-orm");
     const [global] = await db.select().from(searchConfigs)
       .where(isNull(searchConfigs.workspaceId)).limit(1);
-    if (global?.apiKey) return global.apiKey;
+    if (global?.apiKey) return decryptSecret(global.apiKey);
   } catch { /* fall through */ }
 
   // 3. Environment variable fallback
@@ -152,12 +154,12 @@ router.put("/search/config", async (req, res) => {
       .where(eq(searchConfigs.workspaceId, wsId));
     if (existing) {
       await db.update(searchConfigs)
-        .set({ apiKey: parsed.data.apiKey, provider: parsed.data.provider, updatedAt: new Date() })
+        .set({ apiKey: encryptSecret(parsed.data.apiKey), provider: parsed.data.provider, updatedAt: new Date() })
         .where(eq(searchConfigs.workspaceId, wsId));
     } else {
       await db.insert(searchConfigs).values({
         workspaceId: wsId,
-        apiKey:      parsed.data.apiKey,
+        apiKey:      encryptSecret(parsed.data.apiKey),
         provider:    parsed.data.provider,
       });
     }
@@ -177,7 +179,7 @@ router.delete("/search/config", async (req, res) => {
   }
 });
 
-router.post("/search/test", async (req, res) => {
+router.post("/search/test", discoveryLimiter, async (req, res) => {
   const apiKey = await getTavilyApiKey(req.user!.activeWorkspaceId);
   if (!apiKey)
     return res.status(503).json({ ok: false, error: "Tavily API key not configured" });

@@ -9,7 +9,7 @@ import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { logger } from "../lib/logger.js";
 import { aiLimiter, discoveryLimiter } from "../middleware/rate-limit.js";
 import { safeError } from "../lib/safe-error.js";
-import { isAdminEmail } from "../lib/env.js";
+import { decryptSecret } from "../lib/secret-crypto.js";
 
 /** Check if OpenRouter API key is available (DB takes priority over env) */
 async function hasOpenRouterKey(): Promise<boolean> {
@@ -165,7 +165,7 @@ import { searchConfigs } from "@workspace/db";
 async function runTavilyEnrichment(leadId: string, businessName: string, city: string) {
   try {
     const [config] = await db.select().from(searchConfigs).where(eq(searchConfigs.id, "default"));
-    const apiKey = config?.apiKey || process.env.TAVILY_API_KEY;
+    const apiKey = decryptSecret(config?.apiKey) || process.env.TAVILY_API_KEY;
     if (!apiKey) return;
 
     const query = `${businessName} ${city} Netherlands`;
@@ -858,8 +858,8 @@ router.post("/leads/:id/outreach/send", async (req, res) => {
 
 // ─── Delete endpoints ─────────────────────────────────────────────────────────
 
-function isAdminUser(email: string): boolean {
-  return isAdminEmail(email);
+function isAdminUser(req: Request): boolean {
+  return req.user?.role === "admin";
 }
 
 /**
@@ -878,7 +878,7 @@ router.post("/leads/bulk/delete", async (req, res) => {
   }
 
   const { leadIds } = parsed.data;
-  const admin = isAdminUser(req.user!.email);
+  const admin = isAdminUser(req);
 
   try {
     // Fetch only IDs the caller is allowed to delete
@@ -897,10 +897,12 @@ router.post("/leads/bulk/delete", async (req, res) => {
       return res.status(404).json({ error: "No leads found to delete" });
     }
 
-    // Cascade delete
-    await db.delete(outreaches).where(inArray(outreaches.leadId, allowedIds));
-    await db.delete(analyses).where(inArray(analyses.leadId, allowedIds));
-    await db.delete(leads).where(inArray(leads.id, allowedIds));
+    // Transactional cascade delete — rollback if any step fails
+    await db.transaction(async (tx) => {
+      await tx.delete(outreaches).where(inArray(outreaches.leadId, allowedIds));
+      await tx.delete(analyses).where(inArray(analyses.leadId, allowedIds));
+      await tx.delete(leads).where(inArray(leads.id, allowedIds));
+    });
 
     return res.json({ deleted: allowedIds.length, skipped: leadIds.length - allowedIds.length });
   } catch (err) {
@@ -921,15 +923,17 @@ router.delete("/leads/:id", async (req, res) => {
 
     if (!lead) return res.status(404).json({ error: "Lead not found" });
 
-    const admin = isAdminUser(req.user!.email);
+    const admin = isAdminUser(req);
     if (!admin && lead.workspaceId !== req.user!.activeWorkspaceId) {
       return res.status(403).json({ error: "Forbidden — not your lead" });
     }
 
-    // Cascade: delete related analyses and outreaches first
-    await db.delete(outreaches).where(eq(outreaches.leadId, id));
-    await db.delete(analyses).where(eq(analyses.leadId, id));
-    await db.delete(leads).where(eq(leads.id, id));
+    // Transactional cascade delete — rollback if any step fails
+    await db.transaction(async (tx) => {
+      await tx.delete(outreaches).where(eq(outreaches.leadId, id));
+      await tx.delete(analyses).where(eq(analyses.leadId, id));
+      await tx.delete(leads).where(eq(leads.id, id));
+    });
 
     return res.json({ deleted: true, id });
   } catch (err) {

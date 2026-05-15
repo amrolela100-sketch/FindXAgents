@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, isNull, or } from "drizzle-orm";
+import { decryptSecret } from "./secret-crypto.js";
 import { type ScrapedWebsite, type ScrapyAuditResult, buildExtendedContext, calculateGroundedScore } from "./website-scraper.js";
 
 // ── Prompt Injection Sanitizer ───────────────────────────────────────────────
@@ -100,14 +101,14 @@ async function getOpenRouterKey(workspaceId?: string | null): Promise<string> {
         .from(aiProviders)
         .where(eq(aiProviders.workspaceId, workspaceId))
         .limit(1);
-      if (wsCfg?.apiKey) { validateKey(wsCfg.apiKey); return wsCfg.apiKey; }
+      if (wsCfg?.apiKey) { const key = decryptSecret(wsCfg.apiKey)!; validateKey(key); return key; }
     }
     // 2. Global / owner-level provider (workspaceId IS NULL)
     const [globalCfg] = await db.select({ apiKey: aiProviders.apiKey })
       .from(aiProviders)
       .where(isNull(aiProviders.workspaceId))
       .limit(1);
-    if (globalCfg?.apiKey) { validateKey(globalCfg.apiKey); return globalCfg.apiKey; }
+    if (globalCfg?.apiKey) { const key = decryptSecret(globalCfg.apiKey)!; validateKey(key); return key; }
   } catch (e: any) {
     if (e.message?.includes("Invalid OpenRouter API key")) throw e;
   }

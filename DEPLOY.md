@@ -60,7 +60,7 @@ SUPABASE_SERVICE_ROLE_KEY = eyJ...
 # Your owner panel
 OWNER_EMAIL               = your@email.com
 OWNER_PASSWORD            = (strong secret password)
-ADMIN_EMAILS              = your@email.com
+SECRET_ENCRYPTION_KEY    = generate-with-openssl-rand-base64-32
 
 # CORS — paste your Vercel URL after Step 3
 FRONTEND_URL              = https://your-app.vercel.app
@@ -103,7 +103,6 @@ RESEND_API_KEY            = re_...
 VITE_SUPABASE_URL        = https://xxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY   = eyJ...
 VITE_API_URL             = /api
-VITE_ADMIN_EMAILS        = your@email.com
 ```
 
 > ⚠️ **`VITE_API_URL` must be `/api` on Vercel**, not the full Render URL.
@@ -186,7 +185,7 @@ Services:
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role key (secret!) |
 | `OWNER_EMAIL` | ✅ | Your email — grants owner panel access |
 | `OWNER_PASSWORD` | ✅ | Secondary password for `/owner` panel |
-| `ADMIN_EMAILS` | ✅ | Comma-separated admin emails |
+| `SECRET_ENCRYPTION_KEY` | ✅ | Master key for encrypting API keys stored in DB |
 | `FRONTEND_URL` | ✅ | Vercel URL for CORS |
 | `PORT` | ✅ | Server port (default: 3000) |
 | `GEMINI_API_KEY` | ⚡ | AI analysis & outreach |
@@ -204,7 +203,6 @@ Services:
 | `VITE_SUPABASE_URL` | ✅ | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | ✅ | Supabase anon/public key |
 | `VITE_API_URL` | ✅ | Always `/api` on Vercel — proxy handles routing to Render |
-| `VITE_ADMIN_EMAILS` | ✅ | Shows admin nav item in sidebar |
 
 ---
 

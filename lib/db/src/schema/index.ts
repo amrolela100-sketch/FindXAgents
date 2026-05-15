@@ -138,9 +138,9 @@ export const leads = pgTable(
   "leads",
   {
     id:              text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId:          text("user_id"),
+    userId:          text("user_id").references(() => users.id, { onDelete: "cascade" }),
     // ← NEW
-    workspaceId:     text("workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
+    workspaceId:     text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
     businessName:    text("business_name").notNull(),
     kvkNumber:       text("kvk_number"),
     address:         text("address"),
@@ -235,7 +235,7 @@ export const agentPipelineRuns = pgTable(
     id:             text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId:         text("user_id"),
     // ← NEW
-    workspaceId:    text("workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
+    workspaceId:    text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
     query:          text("query").notNull(),
     status:         text("status").notNull().default("running"),
     leadsFound:     integer("leads_found").notNull().default(0),

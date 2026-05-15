@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth";
 import { db, users, agentPipelineRuns, leads } from "@workspace/db";
 import { count, sql, eq, desc } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
-import { env, isAdminEmail, isOwnerEmail, ownerEmail } from "../lib/env.js";
+import { env, isOwnerEmail, ownerEmail } from "../lib/env.js";
 
 const router = Router();
 
@@ -192,7 +192,7 @@ router.get("/owner/users", requireOwnerUnlock, async (req, res) => {
       id: u.id,
       email: u.email,
       role: u.role,
-      isAdmin: isAdminEmail(u.email),
+      isAdmin: u.role === "admin",
       isOwner: isOwnerEmail(u.email),
       onboardingCompleted: u.onboardingCompleted,
       leadCount: leadCountMap[u.id] ?? 0,

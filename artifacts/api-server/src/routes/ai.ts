@@ -7,15 +7,15 @@ import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError, extractErrorMessage } from "../lib/safe-error.js";
 import { logger } from "../lib/logger.js";
-import { isAdminEmail } from "../lib/env.js";
+import { decryptSecret, encryptNullableSecret, encryptSecret, maskSecret } from "../lib/secret-crypto.js";
 
 const router = Router();
 
 // All AI provider endpoints require authentication
 router.use(requireAuth);
 
-function isAdmin(email: string): boolean {
-  return isAdminEmail(email);
+function isAdminRole(req: { user?: { role?: string } }): boolean {
+  return req.user?.role === "admin";
 }
 
 const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?: string }> = {
@@ -35,10 +35,6 @@ const PROVIDER_DEFAULTS: Record<string, { defaultModel: string; defaultBaseUrl?:
   custom:     { defaultModel: "",                                defaultBaseUrl: "" },
 };
 
-function maskKey(key: string | null | undefined) {
-  if (!key) return null;
-  return `${key.slice(0, 8)}${"*".repeat(8)}`;
-}
 
 /**
  * Returns the active provider for a specific workspace only.
@@ -87,7 +83,7 @@ router.get("/ai/providers", async (req, res) => {
       .from(aiProviders)
       .where(eq(aiProviders.workspaceId, wsId))
       .orderBy(desc(aiProviders.isDefault));
-    const masked = rows.map((p) => ({ ...p, apiKey: maskKey(p.apiKey) }));
+    const masked = rows.map((p) => ({ ...p, apiKey: maskSecret(p.apiKey) }));
     const active = await getActiveProvider(wsId);
     return res.json({
       providers: masked,
@@ -137,7 +133,7 @@ router.post("/ai/providers", async (req, res) => {
       workspaceId,
       name:         data.name,
       providerType: data.providerType,
-      apiKey:       data.apiKey ?? null,
+      apiKey:       encryptNullableSecret(data.apiKey),
       baseUrl:      data.baseUrl || defaults?.defaultBaseUrl || null,
       model:        data.model,
       temperature:  data.temperature !== undefined && data.temperature !== null ? String(data.temperature) : null,
@@ -145,7 +141,7 @@ router.post("/ai/providers", async (req, res) => {
       isActive:     data.isActive,
       isDefault:    false,
     }).returning();
-    return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
+    return res.json({ provider: { ...provider, apiKey: maskSecret(provider.apiKey) } });
   } catch (err: any) {
     const message = extractErrorMessage(err);
     logger.error({ err }, "POST /ai/providers failed");
@@ -171,7 +167,8 @@ router.patch("/ai/providers/:id", async (req, res) => {
     const data   = parsed.data;
     const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
     if (data.temperature !== undefined) update.temperature = data.temperature === null ? null : String(data.temperature);
-    if (!data.apiKey) delete update.apiKey;
+    if (data.apiKey) update.apiKey = encryptSecret(data.apiKey);
+    else delete update.apiKey;
 
     const [provider] = await db
       .update(aiProviders)
@@ -179,7 +176,7 @@ router.patch("/ai/providers/:id", async (req, res) => {
       .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)))
       .returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
-    return res.json({ provider: { ...provider, apiKey: maskKey(provider.apiKey) } });
+    return res.json({ provider: { ...provider, apiKey: maskSecret(provider.apiKey) } });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
@@ -211,7 +208,8 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
       .from(aiProviders)
       .where(and(eq(aiProviders.id, String(req.params.id)), eq(aiProviders.workspaceId, wsId)));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
-    if (!provider.apiKey && provider.providerType !== "ollama") {
+    const decryptedApiKey = decryptSecret(provider.apiKey);
+    if (!decryptedApiKey && provider.providerType !== "ollama") {
       return res.json({ ok: false, error: "No API key configured for this provider" });
     }
 
@@ -275,7 +273,7 @@ router.post("/ai/providers/:id/test", integrationTestLimiter, async (req, res) =
     }
 
     const baseURL = resolvedBaseURL;
-    const apiKey  = provider.apiKey || "ollama";
+    const apiKey  = decryptedApiKey || "ollama";
     const headers: Record<string, string> = {
       "Content-Type":  "application/json",
       "Authorization": `Bearer ${apiKey}`,
@@ -346,7 +344,7 @@ router.get("/ai/providers/defaults", (_req, res) => {
 
 // ── POST /ai/providers/seed-from-env ──────────────────────────────────────
 router.post("/ai/providers/seed-from-env", async (req, res) => {
-  if (!isAdmin(req.user!.email))
+  if (!isAdminRole(req))
     return res.status(403).json({ error: "Forbidden — admin only" });
 
   try {
@@ -365,7 +363,7 @@ router.post("/ai/providers/seed-from-env", async (req, res) => {
           workspaceId:  wsId,
           name:         "Gemini (env)",
           providerType: "gemini",
-          apiKey:       process.env.GEMINI_API_KEY,
+          apiKey:       encryptSecret(process.env.GEMINI_API_KEY),
           baseUrl:      defaults.defaultBaseUrl ?? null,
           model:        defaults.defaultModel,
           maxTokens:    4096,

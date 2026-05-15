@@ -6,6 +6,7 @@ import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
+import { encryptSecret } from "../lib/secret-crypto.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -52,7 +53,7 @@ router.get("/email/provider/status", async (req, res) => {
   try {
     const wsId = req.user!.activeWorkspaceId;
     const hasGmailCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-    const hasResendKey = await isResendConfiguredAsync();
+    const hasResendKey = await isResendConfiguredAsync(wsId);
     const gmailToken    = await getGmailToken(req.user!.activeWorkspaceId);
     const smtpConfig    = await getSmtpConfig(wsId);
     const resendConfig  = await getResendConfig(wsId);
@@ -110,7 +111,7 @@ router.get("/email/settings", async (req, res) => {
     const setting      = await getEmailSettings(wsId);
     const smtpConfig   = await getSmtpConfig(wsId);
     const resendConfig = await getResendConfig(wsId);
-    const hasResendKey = await isResendConfiguredAsync();
+    const hasResendKey = await isResendConfiguredAsync(wsId);
     const gmailToken   = await getGmailToken(req.user!.activeWorkspaceId);
 
     return res.json({
@@ -270,10 +271,10 @@ router.put("/email/resend/config", async (req, res) => {
     let config;
     if (existing && existing.workspaceId === wsId) {
       [config] = await db.update(resendConfigs)
-        .set({ ...parsed.data, updatedAt: new Date() })
+        .set({ ...parsed.data, apiKey: encryptSecret(parsed.data.apiKey), updatedAt: new Date() })
         .where(eq(resendConfigs.workspaceId, wsId)).returning();
     } else {
-      [config] = await db.insert(resendConfigs).values({ workspaceId: wsId, ...parsed.data }).returning();
+      [config] = await db.insert(resendConfigs).values({ workspaceId: wsId, ...parsed.data, apiKey: encryptSecret(parsed.data.apiKey) }).returning();
     }
     return res.json({ configured: true, fromEmail: config!.fromEmail, source: "db" });
   } catch (err) {
@@ -291,12 +292,12 @@ router.delete("/email/resend/config", async (req, res) => {
 });
 
 router.post("/email/resend/test", async (_req, res) => {
-  const isConfigured = await isResendConfiguredAsync();
+  const isConfigured = await isResendConfiguredAsync(_req.user!.activeWorkspaceId);
   if (!isConfigured)
     return res.status(503).json({ ok: false, error: "Resend API key is not configured" });
   try {
     const { getResendClientAsync } = await import("../lib/resend");
-    const client = await getResendClientAsync();
+    const client = await getResendClientAsync(_req.user!.activeWorkspaceId);
     await client.domains.list();
     return res.json({ ok: true, message: "Resend connection successful" });
   } catch (err) {

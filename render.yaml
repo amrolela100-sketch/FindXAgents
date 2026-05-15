@@ -44,15 +44,15 @@ services:
           type: redis
           property: connectionString
 
-      # ── Owner / Admin access ──────────────────────────────────────────────
+      # ── Owner access / secret encryption ─────────────────────────────────
       - key: OWNER_EMAIL
         sync: false            # your email address
 
       - key: OWNER_PASSWORD
         sync: false            # strong secondary password for /owner panel
 
-      - key: ADMIN_EMAILS
-        sync: false            # comma-separated admin emails
+      - key: SECRET_ENCRYPTION_KEY
+        sync: false            # generate with: openssl rand -base64 32
 
       # ── Frontend origin (CORS) ────────────────────────────────────────────
       - key: FRONTEND_URL

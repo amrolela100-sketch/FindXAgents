@@ -3,7 +3,6 @@ import { z } from "zod";
 const envSchema = z.object({
   // Accept either a full URL (local dev) or a relative path "/api" (production proxy via Vercel)
   VITE_API_URL:          z.string().optional().default("/api"),
-  VITE_ADMIN_EMAILS:     z.string().optional(),
   // Supabase — optional here so the app can render a friendly error banner
   // instead of crashing at import time (see supabase.ts for lazy init)
   VITE_SUPABASE_URL:     z.string().url().optional(),
@@ -31,5 +30,5 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   console.warn("Missing Supabase env vars:", missing);
 }
 
-export const env = parsed.data || { VITE_API_URL: "/api", VITE_ADMIN_EMAILS: "" };
+export const env = parsed.data || { VITE_API_URL: "/api" };
 export { isEnvValid, envErrors };
