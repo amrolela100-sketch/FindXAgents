@@ -7,13 +7,23 @@
     "pnpm": ">=10"
   },
   "scripts": {
+    "dev": "echo 'Run: pnpm --filter @workspace/api-server run dev  AND  pnpm --filter @workspace/findx run dev'",
+
     "build": "pnpm run build:core",
     "build:core": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/findx run build",
-    "build:marketing": "pnpm --filter @workspace/findx-pitch-deck run build && pnpm --filter @workspace/findx-promo run build",
+
     "build:mobile": "pnpm --filter @workspace/findx-mobile run build",
+    "build:marketing": "pnpm --filter @workspace/findx-pitch-deck run build && pnpm --filter @workspace/findx-promo run build",
+
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter './artifacts/**' --if-present run typecheck",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
-    "test": "vitest run"
+
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+
+    "lint": "prettier --check '**/*.{ts,tsx,js,json,css,md}' --ignore-path .prettierignore",
+    "format": "prettier --write '**/*.{ts,tsx,js,json,css,md}' --ignore-path .prettierignore"
   },
   "private": true,
   "devDependencies": {
@@ -21,6 +31,7 @@
     "prettier": "^3.8.1",
     "supertest": "^7.2.2",
     "typescript": "~5.9.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "jsdom": "^25.0.0"
   }
 }
