@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, assertUser } from "../middleware/auth";
 import { db, users, leads, agentPipelineRuns } from "@workspace/db";
 import { count, desc } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
@@ -9,7 +9,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.get("/admin/stats", async (req, res) => {
-  if (req.user!.role !== "admin") {
+  if (assertUser(req).role !== "admin") {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {
@@ -24,7 +24,7 @@ router.get("/admin/stats", async (req, res) => {
         totalUsers: totalUsersResult[0]?.count ?? 0,
         totalLeads: totalLeadsResult[0]?.count ?? 0,
         totalRuns: totalRunsResult[0]?.count ?? 0,
-        adminEmail: req.user!.email,
+        adminEmail: assertUser(req).email,
       },
     });
   } catch (err) {
@@ -41,7 +41,7 @@ router.get("/admin/stats", async (req, res) => {
  * Now supports ?page=1&pageSize=50 (max 100 per page).
  */
 router.get("/admin/users", async (req, res) => {
-  if (req.user!.role !== "admin") {
+  if (assertUser(req).role !== "admin") {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {

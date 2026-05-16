@@ -1,10 +1,12 @@
 import { db, agentPipelineRuns, agentLogs, agents, agentSkills, leads, analyses, outreaches, searchConfigs, aiProviders, notifications } from "@workspace/db";
 import { eq, sql, and, ilike, isNull } from "drizzle-orm";
-import { analyzeLeadWithGemini, generateOutreachWithGemini } from "./ai-engine.js";
+import { analyzeLeadWithGemini, generateOutreachWithGemini, type LeadForAnalysis } from "./ai-engine.js";
 import { smartScrape, isDirectoryUrl, buildExtendedContext, type ScrapedWebsite, type ScrapyAuditResult } from "./website-scraper.js";
 import { logger } from "./logger.js";
 import { decryptSecret } from "./secret-crypto.js";
 import { notifyPipelineComplete, notifyPipelineFailed } from "./telegram.js";
+// LOW-1: import shared getDomain from utils — removed local duplicate definition
+import { getDomain } from "./utils.js";
 import pLimit from "p-limit";
 
 /**
@@ -58,15 +60,7 @@ async function getTavilyKey(workspaceId?: string | null): Promise<string | null>
   return process.env.TAVILY_API_KEY ?? null;
 }
 
-function getDomain(url?: string): string | null {
-  if (!url) return null;
-  try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
-    return u.hostname.replace(/^www\./, "").toLowerCase();
-  } catch {
-    return url.toLowerCase();
-  }
-}
+// LOW-1: getDomain() removed — now imported from ./utils.js (single source of truth)
 
 async function logToDB(agentId: string, runId: string, phase: string, level: string, message: string) {
   await db.insert(agentLogs).values({ agentId, pipelineRunId: runId, phase, level, message });
@@ -597,7 +591,20 @@ export class AgentRunner {
             const leadForAnalysis = resolvedWebsite !== lead.website
               ? { ...lead, website: resolvedWebsite }
               : lead;
-            const result = await withRetry(() => analyzeLeadWithGemini(leadForAnalysis as any, scrapedData, false, this.workspaceId), 3, 1_000);
+            // MED-7: explicit cast to LeadForAnalysis instead of 'as any'
+            // Lead (DB type) is a superset of LeadForAnalysis — all required fields are present.
+            const leadForAI: LeadForAnalysis = {
+              id:           leadForAnalysis.id,
+              businessName: leadForAnalysis.businessName,
+              city:         leadForAnalysis.city,
+              address:      leadForAnalysis.address ?? null,
+              industry:     leadForAnalysis.industry ?? null,
+              website:      leadForAnalysis.website ?? null,
+              phone:        leadForAnalysis.phone ?? null,
+              email:        leadForAnalysis.email ?? null,
+              kvkNumber:    leadForAnalysis.kvkNumber ?? null,
+            };
+            const result = await withRetry(() => analyzeLeadWithGemini(leadForAI, scrapedData, false, this.workspaceId), 3, 1_000);
 
             const deepAudit = scrapedData ? (scrapedData as ScrapyAuditResult) : null;
 
@@ -772,7 +779,18 @@ export class AgentRunner {
           }
 
           const outreach = await withRetry(
-            () => generateOutreachWithGemini(lead as any, analysisResult, language, scrapedSummary, false, this.workspaceId),
+            // MED-7: explicit cast to LeadForAnalysis instead of 'as any'
+            () => generateOutreachWithGemini({
+              id:           lead.id,
+              businessName: lead.businessName,
+              city:         lead.city,
+              address:      lead.address ?? null,
+              industry:     lead.industry ?? null,
+              website:      lead.website ?? null,
+              phone:        lead.phone ?? null,
+              email:        lead.email ?? null,
+              kvkNumber:    lead.kvkNumber ?? null,
+            } satisfies LeadForAnalysis, analysisResult, language, scrapedSummary, false, this.workspaceId),
             2,
             1_000
           );

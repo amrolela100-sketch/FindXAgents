@@ -181,3 +181,28 @@ export async function requireWorkspace(req: Request, res: Response, next: NextFu
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+// ─── assertUser ───────────────────────────────────────────────────────────────
+/**
+ * LOW-2: Runtime guard — replaces req.user! non-null assertions.
+ *
+ * Usage (inside a route handler that has requireAuth in its chain):
+ *   const user = assertUser(req);
+ *   // user is AuthenticatedUser — TypeScript knows it's non-null,
+ *   // and at runtime we throw a 500 (programmer error) instead of
+ *   // a silent "Cannot read property of undefined" crash.
+ *
+ * Why not just use req.user! everywhere?
+ *   The `!` assertion silences TypeScript but panics at runtime with a
+ *   confusing error if the middleware chain is ever mis-ordered or skipped.
+ *   assertUser() turns that into a clear, catchable 500 error with a
+ *   meaningful message.
+ */
+export function assertUser(req: import("express").Request): NonNullable<typeof req.user> {
+  if (!req.user) {
+    // This should never happen in a correctly-wired route (requireAuth must precede).
+    // If it does, it's a programming error — throw so it surfaces clearly.
+    throw new Error("assertUser: req.user is undefined — ensure requireAuth runs before this handler");
+  }
+  return req.user;
+}

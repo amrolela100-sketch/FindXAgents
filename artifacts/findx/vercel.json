@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && npm install -g pnpm@10 && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/findx run build",
+  "buildCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10 --activate && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/findx run build",
   "outputDirectory": "dist",
   "installCommand": "echo 'install handled by buildCommand'",
   "framework": null,
