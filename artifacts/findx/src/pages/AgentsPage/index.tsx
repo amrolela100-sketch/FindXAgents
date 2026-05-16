@@ -34,7 +34,7 @@ export default function AgentsPage() {
   async function handleRun() {
     if (!query.trim()) return;
     setStarting(true);
-    try { await runAgentPipeline({ query, maxResults, emailLang }); await refresh(); setQuery(""); }
+    try { await runAgentPipeline({ query, maxResults, language: emailLang }); await refresh(); setQuery(""); }
     catch (err) { toastError(err, "Pipeline failed"); }
     finally { setStarting(false); }
   }
