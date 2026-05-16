@@ -274,6 +274,9 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       {/* ── DESKTOP SIDEBAR ── */}
       <aside
         className={`hidden md:flex flex-col fixed top-0 h-full z-20 ${collapsed ? "w-16" : "w-60"} ${isRtl ? "sidebar-glass sidebar-glass-rtl" : "sidebar-glass"}`}
+        dir={isRtl ? "rtl" : "ltr"}
+        role="navigation"
+        aria-label="Main navigation"
         style={{
           [isRtl ? "right" : "left"]: 0,
           transition: "width 0.3s ease",
@@ -285,6 +288,8 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         <button
           onClick={onToggleCollapse}
           className={`absolute top-6 w-6 h-6 rounded-full flex items-center justify-center z-30 ${isRtl ? "-left-3" : "-right-3"}`}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
           style={{
             background: "var(--glass-raised)",
             backdropFilter: "blur(12px)",
@@ -311,7 +316,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30 topbar-glass"
       >
         <Link href="/">
-          <a className="flex items-center gap-2">
+          <a className="flex items-center gap-2" aria-label="FindX home">
             <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
               <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
             </div>
@@ -342,6 +347,9 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       {/* ── MOBILE DRAWER ── */}
       <div
         className={`md:hidden fixed top-0 h-full w-72 z-50 transition-transform duration-300 ${isRtl ? "sidebar-glass sidebar-glass-rtl" : "sidebar-glass"}`}
+        dir={isRtl ? "rtl" : "ltr"}
+        role="navigation"
+        aria-label="Mobile navigation"
         style={{
           [isRtl ? "right" : "left"]: 0,
           transform: mobileOpen ? "translateX(0)" : isRtl ? "translateX(100%)" : "translateX(-100%)",

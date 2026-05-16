@@ -167,7 +167,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         </div>
 
         {/* User menu */}
-        <div className="relative ml-1">
+        <div className="relative ms-1" role="group" aria-label="Language settings">
           <button
             onClick={() => { setUserMenuOpen((v) => !v); setNotifOpen(false); }}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all hover:scale-105"
@@ -185,6 +185,8 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
               <div
                 className={`absolute ${isRtl ? "left-0" : "right-0"} top-10 w-52 z-20 rounded-2xl overflow-hidden animate-slide-up`}
+                role="menu"
+                aria-label="Language selector"
                 style={DROPDOWN_STYLE}
               >
                 <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--glass-border)" }}>
