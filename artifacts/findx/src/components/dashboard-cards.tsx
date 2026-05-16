@@ -5,8 +5,9 @@ import { getDashboardStats } from "../lib/api";
 import type { DashboardStats } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
 import { useLang } from "../lib/lang-context";
+import { cn } from "@/lib/utils";
 
-// ── Animated counter ──────────────────────────────────────────────────────────
+// ── Animated counter hook ───────────────────────────────────────────────────
 function useAnimatedCounter(target: number | string, duration = 1200): React.RefObject<HTMLSpanElement | null> {
   const elRef = useRef<HTMLSpanElement | null>(null);
   const animatedRef = useRef(false);
@@ -51,8 +52,8 @@ function useAnimatedCounter(target: number | string, duration = 1200): React.Ref
   return elRef;
 }
 
-// ── Mini SVG sparkline ────────────────────────────────────────────────────────
-function Sparkline({ points, accent, glow }: { points: number[]; accent: string; glow: string }) {
+// ── Mini SVG sparkline ──────────────────────────────────────────────────────
+function Sparkline({ points, colorClass, glowClass }: { points: number[]; colorClass: string; glowClass: string }) {
   const W = 72, H = 28;
   const max = Math.max(...points, 1);
   const min = Math.min(...points);
@@ -60,38 +61,41 @@ function Sparkline({ points, accent, glow }: { points: number[]; accent: string;
   const step = W / Math.max(points.length - 1, 1);
   const coords = points.map((v, i) => `${i * step},${H - ((v - min) / range) * (H - 2) - 1}`);
   const pathD = `M ${coords.join(" L ")}`;
-  const fillD = `M 0,${H} L ${coords.join(" L ")} L ${(points.length - 1) * step},${H} Z`;
-  const uid = accent.replace(/[^a-zA-Z0-9]/g, "");
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none" className="overflow-visible flex-shrink-0">
-      <defs>
-        <linearGradient id={`sg-${uid}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={accent} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={accent} stopOpacity="0" />
-        </linearGradient>
-        <filter id={`glow-${uid}`}>
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-      <path d={fillD} fill={`url(#sg-${uid})`} />
-      <path d={pathD} stroke={accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
-        filter={`url(#glow-${uid})`} style={{ filter: `drop-shadow(0 0 4px ${glow})` }} />
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none" className={cn("overflow-visible flex-shrink-0", colorClass)}>
+      <path 
+        d={pathD} 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className={cn("drop-shadow-[0_0_4px_currentColor]", glowClass)} 
+      />
     </svg>
   );
 }
 
-// ── Card defs ─────────────────────────────────────────────────────────────────
+// ── KPI Card Component ──────────────────────────────────────────────────────
+const cardVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { type: "spring" as const, stiffness: 100, damping: 20, delay: i * 0.06 },
+  }),
+};
+
 type CardDef = {
   labelKey: keyof ReturnType<typeof useLang>["t"]["dashboard"];
-  getValue:       (s: DashboardStats) => number | string;
-  icon:           typeof Users;
-  getTrend:       (s: DashboardStats, t: any) => string;
-  positive:       (s: DashboardStats) => boolean;
-  neutral:        (s: DashboardStats) => boolean;
-  accent:         string;
-  glowColor:      string;
+  getValue: (s: DashboardStats) => number | string;
+  icon: any;
+  getTrend: (s: DashboardStats, t: any) => string;
+  positive: (s: DashboardStats) => boolean;
+  neutral: (s: DashboardStats) => boolean;
+  colorClass: string;
+  bgClass: string;
+  borderClass: string;
+  glowClass: string;
   getSparkPoints: (s: DashboardStats) => number[];
 };
 
@@ -103,105 +107,64 @@ const CARD_DEFS: CardDef[] = [
     getTrend: (s, t) => s.leadsThisWeek > 0 ? `+${s.leadsThisWeek} ${t.dashboard.thisWeek}` : t.dashboard.noNewLeads,
     positive: (s) => s.leadsThisWeek > 0,
     neutral:  (s) => s.leadsThisWeek === 0,
-    accent:   "#60A5FA",
-    glowColor:"rgba(59,130,246,0.4)",
-    getSparkPoints: (s) => {
-      const w = s.leadsThisWeek;
-      const b = Math.max(s.totalLeads - w * 4, 0);
-      return [b, b + w, b + w * 2, b + w * 3, s.totalLeads];
-    },
+    colorClass: "text-info",
+    bgClass: "bg-info/10",
+    borderClass: "border-info/20",
+    glowClass: "shadow-glow-info",
+    getSparkPoints: (s) => [s.totalLeads * 0.7, s.totalLeads * 0.8, s.totalLeads * 0.75, s.totalLeads * 0.9, s.totalLeads],
   },
   {
     labelKey: "analyzed",
     getValue: (s) => s.leadsAnalyzed,
     icon: Search,
-    getTrend: (s, t) => `${s.totalLeads > 0 ? Math.round((s.leadsAnalyzed / s.totalLeads) * 100) : 0}% ${t.dashboard.ofTotal}`,
+    getTrend: (s, t) => `${s.totalLeads > 0 ? Math.round((s.leadsAnalyzed / s.totalLeads) * 100) : 0}% of total`,
     positive: (s) => s.leadsAnalyzed > 0,
     neutral:  (s) => s.leadsAnalyzed === 0,
-    accent:   "#FBBF24",
-    glowColor:"rgba(245,158,11,0.4)",
-    getSparkPoints: (s) => {
-      const v = s.leadsAnalyzed;
-      return [0, Math.floor(v * 0.25), Math.floor(v * 0.5), Math.floor(v * 0.8), v];
-    },
+    colorClass: "text-warning",
+    bgClass: "bg-warning/10",
+    borderClass: "border-warning/20",
+    glowClass: "shadow-glow-warning",
+    getSparkPoints: (s) => [0, s.leadsAnalyzed * 0.3, s.leadsAnalyzed * 0.6, s.leadsAnalyzed * 0.8, s.leadsAnalyzed],
   },
   {
     labelKey: "contacted",
     getValue: (s) => s.leadsContacted,
     icon: Mail,
-    getTrend: (s, t) => `${s.leadsResponded} ${t.dashboard.responded}`,
+    getTrend: (s, t) => `${s.leadsResponded} responded`,
     positive: (s) => s.leadsResponded > 0,
     neutral:  (s) => s.leadsContacted === 0,
-    accent:   "#34D399",
-    glowColor:"rgba(16,185,129,0.4)",
-    getSparkPoints: (s) => {
-      const v = s.leadsContacted;
-      return [0, Math.floor(v * 0.2), Math.floor(v * 0.45), Math.floor(v * 0.72), v];
-    },
+    colorClass: "text-success",
+    bgClass: "bg-success/10",
+    borderClass: "border-success/20",
+    glowClass: "shadow-glow-success",
+    getSparkPoints: (s) => [0, s.leadsContacted * 0.2, s.leadsContacted * 0.5, s.leadsContacted * 0.7, s.leadsContacted],
   },
   {
     labelKey: "conversion",
     getValue: (s) => s.conversionRate + "%",
     icon: TrendingUp,
-    getTrend: (s, t) => `${s.leadsWon} ${t.dashboard.wonDeals}`,
+    getTrend: (s, t) => `${s.leadsWon} won deals`,
     positive: (s) => s.leadsWon > 0,
     neutral:  (s) => s.leadsWon === 0,
-    accent:   "#C084FC",
-    glowColor:"rgba(168,85,247,0.4)",
-    getSparkPoints: (s) => {
-      const r = Number(s.conversionRate);
-      return [0, r * 0.3, r * 0.55, r * 0.8, r];
-    },
+    colorClass: "text-primary",
+    bgClass: "bg-primary/10",
+    borderClass: "border-primary/20",
+    glowClass: "shadow-glow-brand",
+    getSparkPoints: (s) => [0, 20, 45, 75, 100],
   },
 ];
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: "var(--glass)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: "1px solid var(--glass-border)",
-      }}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-9 h-9 rounded-xl skeleton" />
-        <div className="w-16 h-7 rounded-lg skeleton" />
-      </div>
-      <div className="h-8 w-20 rounded-lg skeleton mb-1.5" />
-      <div className="h-3 w-24 rounded skeleton mb-4" />
-      <div className="h-px w-full skeleton mb-3" />
-      <div className="h-3 w-28 rounded skeleton" />
-    </div>
-  );
-}
-
-// ── KPI Card ──────────────────────────────────────────────────────────────────
-const cardVariants = {
-  hidden:  { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { type: "spring" as const, stiffness: 100, damping: 20, delay: i * 0.06 },
-  }),
-};
-
 function KpiCard({ def, stats, index }: { def: CardDef; stats: DashboardStats; index: number }) {
-  const { t }    = useLang();
-  const Icon     = def.icon;
-  const value    = def.getValue(stats);
-  const trend    = def.getTrend(stats, t);
-  const isPos    = def.positive(stats);
-  const isNeu    = def.neutral(stats);
-  const numRef   = useAnimatedCounter(value);
-  const spark    = def.getSparkPoints(stats);
+  const { t } = useLang();
+  const Icon = def.icon;
+  const value = def.getValue(stats);
+  const trend = def.getTrend(stats, t);
+  const isPos = def.positive(stats);
+  const isNeu = def.neutral(stats);
+  const numRef = useAnimatedCounter(value);
+  const spark = def.getSparkPoints(stats);
 
   const TrendIcon = isNeu ? Minus : ArrowUpRight;
-  const trendColor = isNeu
-    ? "var(--text-subtle)"
-    : isPos ? "#34D399" : "var(--color-danger)";
 
   return (
     <motion.div
@@ -209,85 +172,56 @@ function KpiCard({ def, stats, index }: { def: CardDef; stats: DashboardStats; i
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      whileHover={{ y: -2, boxShadow: `0 8px 32px ${def.glowColor}, 0 4px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.12)` }}
-      className="rounded-2xl p-5 cursor-default"
-      style={{
-        background: "var(--glass)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        border: "1px solid var(--glass-border)",
-        boxShadow: `0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.10)`,
-        transition: "box-shadow 0.25s ease, transform 0.25s ease",
-      }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group relative rounded-2xl p-5 bg-glass backdrop-blur-glass border border-glass-border shadow-sm transition-all hover:shadow-xl hover:border-primary/20"
     >
-      {/* Top row: icon + sparkline */}
-      <div className="flex items-start justify-between mb-4">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{
-            background: `${def.accent}18`,
-            border: `1px solid ${def.accent}30`,
-            boxShadow: `0 0 12px ${def.glowColor}`,
-          }}
-        >
-          <Icon className="w-4 h-4" style={{ color: def.accent }} strokeWidth={2} />
+      <div className="flex items-start justify-between mb-5">
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border", def.bgClass, def.borderClass, def.colorClass)}>
+          <Icon className="w-5 h-5" strokeWidth={2} />
         </div>
-        <Sparkline points={spark} accent={def.accent} glow={def.glowColor} />
+        <Sparkline points={spark} colorClass={def.colorClass} glowClass={def.glowClass} />
       </div>
 
-      {/* Value */}
-      <p className="text-[28px] font-bold leading-none tracking-tight" style={{ color: "var(--text)" }}>
-        <span ref={numRef}>{value}</span>
-      </p>
+      <div className="space-y-1">
+        <h4 className="text-2xl font-bold tracking-tighter text-text leading-none">
+          <span ref={numRef}>{value}</span>
+        </h4>
+        <p className="text-xs font-bold text-text-muted uppercase tracking-widest">
+          {t.dashboard[def.labelKey] as string}
+        </p>
+      </div>
 
-      {/* Label */}
-      <p className="text-[13px] mt-1.5 font-medium" style={{ color: "var(--text-muted)" }}>
-        {t.dashboard[def.labelKey] as string}
-      </p>
-
-      {/* Divider */}
-      <div className="my-3 h-px" style={{ background: "var(--glass-border)" }} />
-
-      {/* Trend */}
-      <div className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: trendColor }}>
-        <TrendIcon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
-        <span>{trend}</span>
+      <div className="mt-5 pt-4 border-t border-glass-border/50 flex items-center justify-between">
+        <div className={cn(
+          "flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-tight",
+          isNeu ? "text-text-subtle" : isPos ? "text-success" : "text-danger"
+        )}>
+          <TrendIcon className="w-3.5 h-3.5" strokeWidth={2.5} />
+          {trend}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
 export function DashboardCards() {
-  const containerRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = usePolling(() => getDashboardStats(), 15_000);
   const stats = data?.stats ?? null;
-
-  // legacy reveal class support
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !stats) return;
-    const items = container.querySelectorAll<HTMLElement>(".reveal");
-    const obs = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } }),
-      { threshold: 0.1 }
-    );
-    items.forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, [stats]);
 
   if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-40 rounded-2xl bg-glass-raised animate-pulse border border-glass-border" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {CARD_DEFS.map((def, i) => (
-        <KpiCard key={String(def.labelKey)} def={def} stats={stats} index={i} />
+        <KpiCard key={i} def={def} stats={stats} index={i} />
       ))}
     </div>
   );
