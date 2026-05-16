@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Semantic Tokens (Layer 2)
+   
+   Purpose-based aliases. USE THESE in components.
+   They reference primitive tokens and automatically adapt to light/dark mode.
+   
+   Migration note: --brand, --text, --glass etc. are backward-compat aliases
+   pointing to these semantic tokens.
+   
+   @version 2.0.0
+   @layer tokens
+═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════════════
+     BRAND / ACCENT
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-accent:              var(--findx-color-brand-500);
+  --findx-accent-hover:        var(--findx-color-brand-600);
+  --findx-accent-foreground:   #FFFFFF;
+  --findx-accent-subtle:       rgba(245, 158, 11, 0.12);
+  --findx-accent-muted:        var(--findx-color-brand-200);
+  --findx-accent-glow:         rgba(245, 158, 11, 0.35);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TEXT
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-text-primary:   #1A1825;
+  --findx-text-secondary: #6B6580;
+  --findx-text-muted:     #A09CB8;
+  --findx-text-subtle:    #A09CB8;
+  --findx-text-inverted:  #FFFFFF;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BACKGROUNDS
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-bg-base:    #F0EFF8;
+  --findx-bg-subtle:  #E8E6F4;
+  --findx-bg-inset:   #DDD9EE;
+  --findx-bg-elevated: #FFFFFF;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SURFACES (Glass morphism layers)
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-surface-glass:          rgba(255, 255, 255, 0.65);
+  --findx-surface-glass-raised:   rgba(255, 255, 255, 0.80);
+  --findx-surface-glass-overlay:  rgba(255, 255, 255, 0.92);
+  --findx-surface-border:         rgba(255, 255, 255, 0.75);
+  --findx-surface-border-strong:  rgba(200, 195, 220, 0.6);
+  --findx-surface-blur:           var(--findx-blur-glass);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BORDERS
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-border-default: var(--findx-color-neutral-200);
+  --findx-border-strong:  var(--findx-color-neutral-300);
+  --findx-border-focus:   var(--findx-color-brand-500);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     INTERACTIVE STATES
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-interactive-hover:    rgba(255, 255, 255, 0.65);
+  --findx-interactive-disabled: var(--findx-bg-inset);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     FEEDBACK SEMANTIC COLORS
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-feedback-success:        var(--findx-color-success-500);
+  --findx-feedback-success-bg:     rgba(16, 185, 129, 0.12);
+  --findx-feedback-success-border: rgba(16, 185, 129, 0.25);
+  --findx-feedback-warning:        var(--findx-color-warning-500);
+  --findx-feedback-warning-bg:     rgba(245, 158, 11, 0.12);
+  --findx-feedback-warning-border: rgba(245, 158, 11, 0.25);
+  --findx-feedback-danger:         var(--findx-color-danger-500);
+  --findx-feedback-danger-bg:      rgba(239, 68, 68, 0.12);
+  --findx-feedback-danger-border:  rgba(239, 68, 68, 0.25);
+  --findx-feedback-info:           var(--findx-color-info-500);
+  --findx-feedback-info-bg:        rgba(59, 130, 246, 0.12);
+  --findx-feedback-info-border:    rgba(59, 130, 246, 0.25);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SCROLLBAR
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-scrollbar-thumb:       var(--findx-surface-border-strong);
+  --findx-scrollbar-thumb-hover: var(--findx-text-muted);
+  --findx-scrollbar-track:       transparent;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BACKWARD-COMPAT ALIASES (Legacy short names)
+     These allow existing components to work unchanged.
+     DO NOT use these in new code — use --findx-* tokens directly.
+  ═══════════════════════════════════════════════════════════════════ */
+  --brand:           var(--findx-accent);
+  --brand-hover:     var(--findx-accent-hover);
+  --brand-fg:        var(--findx-accent-foreground);
+  --brand-subtle:    var(--findx-accent-subtle);
+  --brand-subtle-fg: #92400E;
+  --brand-glow:      var(--findx-accent-glow);
+
+  --bg:              var(--findx-bg-base);
+  --bg-subtle:       var(--findx-bg-subtle);
+  --bg-inset:        var(--findx-bg-inset);
+  --bg-mesh:         var(--findx-bg-base);
+
+  --glass:           var(--findx-surface-glass);
+  --glass-raised:    var(--findx-surface-glass-raised);
+  --glass-overlay:   var(--findx-surface-glass-overlay);
+  --glass-border:    var(--findx-surface-border);
+  --glass-border-strong: var(--findx-surface-border-strong);
+
+  --text:            var(--findx-text-primary);
+  --text-muted:      var(--findx-text-secondary);
+  --text-subtle:     var(--findx-text-muted);
+  --text-inverted:   var(--findx-text-inverted);
+
+  --border:          var(--findx-surface-border);
+
+  color-scheme: light;
+}

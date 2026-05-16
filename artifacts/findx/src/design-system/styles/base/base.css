@@ -1,0 +1,110 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Base Styles
+   
+   HTML reset, body styles, mesh background, scrollbar, selection.
+   
+   @version 2.0.0
+   @layer base
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MESH BACKGROUND — The magic that makes Glass pop
+═══════════════════════════════════════════════════════════════════════════════ */
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fixed mesh gradient — pointer-events none overlay avoids iOS Safari scroll bug */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 10% -10%,  rgba(139, 92, 246, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 90%  5%,   rgba(245, 158, 11, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%,  rgba(59, 130, 246, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 80%  70%,  rgba(236, 72, 153, 0.06) 0%, transparent 45%);
+}
+
+.dark body::before {
+  background-image:
+    radial-gradient(ellipse 80% 55% at 10% -10%,  rgba(109, 40, 217, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 90%  5%,   rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%,  rgba(37, 99, 235, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 80%  70%,  rgba(219, 39, 119, 0.07) 0%, transparent 45%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE RESET
+═══════════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Tabular numbers for all data displays */
+.font-mono, code, pre, [data-mono] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+[dir="rtl"] body,
+[dir="rtl"] .font-body {
+  font-family: "Noto Sans Arabic", "Outfit", sans-serif;
+}
+
+/* Headlines: tight tracking */
+h1, h2 { letter-spacing: -0.035em; line-height: 1.05; }
+h3, h4  { letter-spacing: -0.025em; line-height: 1.15; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASS-TINTED SCROLLBAR
+═══════════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--glass-border-strong);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-subtle);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border-strong) transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SELECTION & FOCUS
+═══════════════════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background-color: var(--brand-subtle);
+  color: var(--brand);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
