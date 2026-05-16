@@ -3,17 +3,12 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { sentryRequestHandler, sentryErrorHandler } from "./lib/sentry.js";
 
 const app: Express = express();
 
 import helmet from "helmet";
 
-/**
- * CORS configuration.
- *
- * Accepts requests from:
- *  - Only the specified FRONTEND_URL or FRONTEND_ORIGIN env var, or localhost for dev
- */
 function buildCorsOptions(): cors.CorsOptions {
   const allowedOrigins = process.env.FRONTEND_URL
     ? [process.env.FRONTEND_URL]
@@ -38,32 +33,25 @@ function buildCorsOptions(): cors.CorsOptions {
   };
 }
 
+// ── Sentry request tracing (must be first middleware) ─────────────────────────
+app.use(sentryRequestHandler());
+
 app.use(
   pinoHttp({
     logger,
     serializers: {
       req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
 );
 
-// ── Security headers via helmet ───────────────────────────────────────────────
-// Overrides the helmet() defaults with a strict, explicit CSP.
-// The API is JSON-only — no inline scripts, frames, or images are served.
 app.use(
   helmet({
-    // Strict Content-Security-Policy for an API server (no HTML served)
     contentSecurityPolicy: {
       directives: {
         defaultSrc:     ["'none'"],
@@ -75,40 +63,30 @@ app.use(
         upgradeInsecureRequests: [],
       },
     },
-    // HSTS — force HTTPS for 1 year, include subdomains
-    hsts: {
-      maxAge:            31_536_000,
-      includeSubDomains: true,
-      preload:           true,
-    },
-    // Prevent MIME-type sniffing
+    hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
     noSniff: true,
-    // Block embedding in iframes
     frameguard: { action: "deny" },
-    // XSS filter (legacy browsers)
     xssFilter: true,
-    // Remove X-Powered-By: Express
     hidePoweredBy: true,
-    // Referrer policy
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-    // Permissions policy — disable unused browser features
     permittedCrossDomainPolicies: { permittedPolicies: "none" },
-    crossOriginEmbedderPolicy:   false, // API doesn't serve documents
-    crossOriginResourcePolicy:   { policy: "cross-origin" }, // API is consumed by cross-origin frontend (Vercel ↔ Render)
+    crossOriginEmbedderPolicy:   false,
+    crossOriginResourcePolicy:   { policy: "cross-origin" },
     crossOriginOpenerPolicy:     { policy: "same-origin" },
   }),
 );
 app.use(cors(buildCorsOptions()));
-// Limit request body to 1 MB to prevent DoS via oversized JSON payloads
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// MED-3 fix: /leads/import accepts CSV up to 5MB — override body limit for that route only.
-// Must be registered BEFORE the global router to take precedence.
+// MED-3: /leads/import accepts CSV up to 5MB
 app.use("/api/leads/import", express.text({ type: ["text/csv", "application/csv", "text/plain"], limit: "5mb" }));
 
 import { globalLimiter } from "./middleware/rate-limit.js";
 
 app.use("/api", globalLimiter, router);
+
+// ── Sentry error handler (must be after routes, before safeError) ─────────────
+app.use(sentryErrorHandler());
 
 export default app;
