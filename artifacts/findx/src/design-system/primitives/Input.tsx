@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 // INPUT COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   /** Error state — shows red border and error message */
   error?: string;
   /** Warning state — shows yellow border */
@@ -42,7 +42,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   /** Success state — shows green border and checkmark */
   success?: boolean;
   /** Size variant */
-  inputSize?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg";
   /** Full width */
   fullWidth?: boolean;
   /** Left icon */
