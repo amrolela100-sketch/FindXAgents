@@ -1,17 +1,5 @@
-/**
- * SettingsPage — Thin Wrapper
- *
- * The main settings page that renders tab navigation and delegates
- * to modular tab components. This file is intentionally lightweight.
- *
- * Before: 76KB single file (1340 lines)
- * After:  ~3KB wrapper + 6 modular files
- *
- * @module pages/SettingsPage
- */
-
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Settings2 } from "lucide-react";
 import { TABS, SPRING, FADE_UP, type TabId } from "./provider-config";
 import { AIProvidersTab } from "./AIProvidersTab";
@@ -19,8 +7,9 @@ import { EmailTab } from "./EmailTab";
 import { SearchTab } from "./SearchTab";
 import { NotificationsTab } from "./NotificationsTab";
 import { DataTab } from "./DataTab";
+import { cn } from "@/lib/utils";
+import { PageShell } from "@/components/page-shell";
 
-// ─── Tab Component Map ───────────────────────────────────────────────────────
 const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
   ai:            AIProvidersTab,
   email:         EmailTab,
@@ -29,68 +18,79 @@ const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
   data:          DataTab,
 };
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// Map provider colors to Tailwind semantic classes where possible, 
+// or use inline style for brand colors but in a safe way.
+const TAB_COLOR_MAP: Record<TabId, string> = {
+  ai:            "text-primary",
+  email:         "text-info",
+  search:        "text-warning",
+  notifications: "text-orange-500",
+  data:          "text-danger",
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("ai");
   const ActiveTabComponent = TAB_COMPONENTS[activeTab];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+    <PageShell>
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-10 space-y-8">
 
-        {/* ── Page Header ──────────────────────────────── */}
-        <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="visible">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.22)" }}>
-              <Settings2 className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={1.8} />
+        {/* Page Header */}
+        <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="visible" className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20 shadow-sm">
+              <Settings2 className="w-5 h-5 text-primary" strokeWidth={2} />
             </div>
-            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Settings</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-text">Settings</h1>
           </div>
-          <p className="text-[13px] ml-[42px]" style={{ color: "var(--text-muted)" }}>
-            Configure AI providers, email, search, and manage data.
+          <p className="text-sm text-text-muted max-w-lg">
+            Configure your workspace, AI engine, and connected channels to optimize your prospecting workflow.
           </p>
         </motion.div>
 
-        {/* ── Tab Bar ──────────────────────────────────── */}
+        {/* Tab Bar Navigation */}
         <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="visible">
-          <div className="flex gap-1 p-1 rounded-2xl overflow-x-auto"
-            style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}>
+          <div className="flex gap-1.5 p-1.5 rounded-2xl bg-glass border border-glass-border shadow-sm overflow-x-auto scrollbar-none">
             {TABS.map((tab, i) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const colorClass = TAB_COLOR_MAP[tab.id];
+
               return (
-                <motion.button
+                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...SPRING, delay: i * 0.05 }}
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap flex-shrink-0"
-                  style={isActive ? {
-                    background: `${tab.color}18`, color: tab.color,
-                    border: `1px solid ${tab.color}30`, boxShadow: `0 2px 12px ${tab.color}20`,
-                  } : { color: "var(--text-muted)", border: "1px solid transparent" }}
-                >
-                  <motion.span animate={isActive ? { rotate: [0, -8, 8, 0] } : { rotate: 0 }} transition={{ duration: 0.35 }}>
-                    <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
-                  </motion.span>
-                  {tab.label}
-                  {isActive && (
-                    <motion.span layoutId="activeTabDot" className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ background: tab.color }} transition={SPRING} />
+                  className={cn(
+                    "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap border",
+                    isActive 
+                      ? "bg-primary text-white border-primary shadow-glow-brand" 
+                      : "text-text-muted hover:text-text hover:bg-glass-raised border-transparent"
                   )}
-                </motion.button>
+                >
+                  <Icon className={cn("w-4 h-4", isActive ? "text-white" : colorClass)} strokeWidth={2} />
+                  {tab.label.toUpperCase()}
+                  {isActive && (
+                    <motion.div layoutId="activeTabPill" className="w-1.5 h-1.5 rounded-full bg-white ml-1 shadow-sm" />
+                  )}
+                </button>
               );
             })}
           </div>
         </motion.div>
 
-        {/* ── Active Tab Content ────────────────────────── */}
-        <ActiveTabComponent />
+        {/* Tab Content Area */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, x: 5 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -5 }}
+          transition={{ duration: 0.2 }}
+          className="min-h-[400px]"
+        >
+          <ActiveTabComponent />
+        </motion.div>
       </div>
-    </div>
+    </PageShell>
   );
 }

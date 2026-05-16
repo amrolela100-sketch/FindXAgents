@@ -14,12 +14,43 @@ type ActivityItem = {
   timestamp: string;
 };
 
-const TYPE_CONFIG: Record<ActivityType, { icon: React.ReactNode; accent: string; glow: string }> = {
-  lead:       { icon: <UserPlus     className="w-3.5 h-3.5" strokeWidth={2} />, accent: "#60A5FA", glow: "rgba(59,130,246,0.3)" },
-  analysis:   { icon: <Search       className="w-3.5 h-3.5" strokeWidth={2} />, accent: "#FBBF24", glow: "rgba(245,158,11,0.3)" },
-  outreach:   { icon: <Mail         className="w-3.5 h-3.5" strokeWidth={2} />, accent: "#34D399", glow: "rgba(16,185,129,0.3)" },
-  run:        { icon: <Bot          className="w-3.5 h-3.5" strokeWidth={2} />, accent: "#C084FC", glow: "rgba(168,85,247,0.3)" },
-  run_failed: { icon: <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />, accent: "#F87171", glow: "rgba(248,113,113,0.3)" },
+/* ─── Mapping Activity to Semantic Tokens ───────────────────────────────────── */
+const TYPE_CONFIG: Record<ActivityType, { icon: React.ReactNode; colorClass: string; bgClass: string; borderClass: string; glowClass: string }> = {
+  lead: { 
+    icon: <UserPlus className="w-3.5 h-3.5" />, 
+    colorClass: "text-info", 
+    bgClass: "bg-info-bg", 
+    borderClass: "border-info-border",
+    glowClass: "shadow-glow-info"
+  },
+  analysis: { 
+    icon: <Search className="w-3.5 h-3.5" />, 
+    colorClass: "text-warning", 
+    bgClass: "bg-warning-bg", 
+    borderClass: "border-warning-border",
+    glowClass: "shadow-glow-warning"
+  },
+  outreach: { 
+    icon: <Mail className="w-3.5 h-3.5" />, 
+    colorClass: "text-success", 
+    bgClass: "bg-success-bg", 
+    borderClass: "border-success-border",
+    glowClass: "shadow-glow-success"
+  },
+  run: { 
+    icon: <Bot className="w-3.5 h-3.5" />, 
+    colorClass: "text-primary", 
+    bgClass: "bg-primary/10", 
+    borderClass: "border-primary/20",
+    glowClass: "shadow-glow-brand"
+  },
+  run_failed: { 
+    icon: <AlertTriangle className="w-3.5 h-3.5" />, 
+    colorClass: "text-danger", 
+    bgClass: "bg-danger-bg", 
+    borderClass: "border-danger-border",
+    glowClass: "shadow-glow-danger"
+  },
 };
 
 function formatRelativeTime(dateStr: string): string {
@@ -88,10 +119,10 @@ function buildActivityItems(leads: Lead[], runs: AgentPipelineRun[]): ActivityIt
 function SkeletonRow({ w }: { w: string }) {
   return (
     <div className="flex items-center gap-3 py-2.5">
-      <div className="w-7 h-7 rounded-xl skeleton flex-shrink-0" />
+      <div className="w-7 h-7 rounded-xl bg-muted/20 skeleton flex-shrink-0" />
       <div className="flex-1 space-y-1.5">
-        <div className="h-3 rounded skeleton" style={{ width: w }} />
-        <div className="h-2 rounded skeleton w-20" />
+        <div className="h-3 rounded bg-muted/30 skeleton" style={{ width: w }} />
+        <div className="h-2 rounded bg-muted/10 skeleton w-20" />
       </div>
     </div>
   );
@@ -120,7 +151,7 @@ export function ActivityFeed({ compact = false }: { compact?: boolean }) {
 
   if (isLoading && items.length === 0) {
     return (
-      <div className="space-y-0 divide-y" style={{ borderColor: "var(--glass-border)" }}>
+      <div className="space-y-0 divide-y border-glass-border">
         {["70%", "55%", "65%", "50%", "60%"].map((w, i) => (
           <SkeletonRow key={i} w={w} />
         ))}
@@ -130,23 +161,14 @@ export function ActivityFeed({ compact = false }: { compact?: boolean }) {
 
   if (items.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-12 text-center rounded-2xl"
-        style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
-      >
-        <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-          style={{
-            background: "rgba(192,132,252,0.12)",
-            border: "1px solid rgba(192,132,252,0.2)",
-          }}
-        >
-          <Bot className="w-5 h-5" style={{ color: "#C084FC" }} strokeWidth={1.5} />
+      <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl bg-glass-raised border border-glass-border">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-primary/10 border border-primary/20 text-primary">
+          <Bot className="w-5 h-5" strokeWidth={1.5} />
         </div>
-        <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>
+        <p className="text-[13px] font-medium text-text-muted">
           No recent activity yet
         </p>
-        <p className="text-[12px] mt-1" style={{ color: "var(--text-subtle)" }}>
+        <p className="text-[12px] mt-1 text-text-subtle">
           Run an agent pipeline to start discovering leads
         </p>
       </div>
@@ -155,16 +177,12 @@ export function ActivityFeed({ compact = false }: { compact?: boolean }) {
 
   return (
     <div
-      className="overflow-y-auto"
+      className="overflow-y-auto scrollbar-thin"
       style={{ maxHeight: compact ? "320px" : "420px" }}
     >
-      {/* Timeline container */}
       <div className="relative">
-        {/* Vertical line */}
-        <div
-          className="absolute left-[13px] top-3 bottom-3 w-px"
-          style={{ background: "linear-gradient(to bottom, transparent, var(--glass-border) 10%, var(--glass-border) 90%, transparent)" }}
-        />
+        {/* Vertical line with gradient fade */}
+        <div className="absolute left-[13px] top-3 bottom-3 w-px bg-gradient-to-b from-transparent via-glass-border to-transparent" />
 
         <AnimatePresence initial={false}>
           <ul className="space-y-0">
@@ -178,31 +196,24 @@ export function ActivityFeed({ compact = false }: { compact?: boolean }) {
                   transition={{ type: "spring", stiffness: 120, damping: 20, delay: idx * 0.03 }}
                   className="flex items-start gap-3 group"
                 >
-                  {/* Timeline node */}
-                  <div
-                    className="relative z-10 w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-2"
-                    style={{
-                      background: `${cfg.accent}15`,
-                      border: `1px solid ${cfg.accent}28`,
-                      boxShadow: `0 0 8px ${cfg.glow}`,
-                      color: cfg.accent,
-                    }}
-                  >
+                  {/* Timeline node with semantic coloring and glow */}
+                  <div className={`
+                    relative z-10 w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-2
+                    border ${cfg.borderClass} ${cfg.bgClass} ${cfg.colorClass} ${cfg.glowClass}
+                    transition-all duration-300
+                  `}>
                     {cfg.icon}
                   </div>
 
                   {/* Content row */}
-                  <div
-                    className="flex-1 flex items-start justify-between gap-3 py-2.5 border-b"
-                    style={{ borderColor: idx === items.length - 1 ? "transparent" : "var(--glass-border)" }}
-                  >
-                    <p className="text-[13px] leading-snug" style={{ color: "var(--text)" }}>
+                  <div className={`
+                    flex-1 flex items-start justify-between gap-3 py-2.5 border-b
+                    ${idx === items.length - 1 ? "border-transparent" : "border-glass-border"}
+                  `}>
+                    <p className="text-[13px] leading-snug text-text">
                       {item.description}
                     </p>
-                    <span
-                      className="text-[11px] flex-shrink-0 tabular-nums font-mono mt-0.5"
-                      style={{ color: "var(--text-subtle)" }}
-                    >
+                    <span className="text-[11px] flex-shrink-0 tabular-nums font-mono mt-0.5 text-text-subtle">
                       {formatRelativeTime(item.timestamp)}
                     </span>
                   </div>

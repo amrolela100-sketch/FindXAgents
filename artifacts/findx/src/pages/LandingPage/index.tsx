@@ -10,10 +10,11 @@ import {
 } from "lucide-react";
 import { getDashboardStats, toastError } from "@/lib/api";
 import { MagneticButton } from "@/components/magnetic-button";
+import { cn } from "@/lib/utils";
 
-/* ─── Spring config (no linear easing) ─── */
+const SPRING = { type: "spring", stiffness: 100, damping: 15 };
+const SPRING_FAST = { type: "spring", stiffness: 120, damping: 20 };
 
-/* ─── Stagger container variants ─── */
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
@@ -22,12 +23,7 @@ const itemVariants = {
   hidden:  { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0, transition: SPRING },
 };
-const fadeIn = {
-  hidden:  { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.5 } },
-};
 
-/* ─── Animated counter on scroll ─── */
 function StatCounter({ value, label }: { value: string; label: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,33 +54,17 @@ function StatCounter({ value, label }: { value: string; label: string }) {
   }, [inView, value]);
 
   return (
-    <div ref={containerRef}>
-      <div
-        className="text-3xl md:text-4xl font-bold tracking-tighter leading-none mb-2"
-        style={{ color: "var(--text)" }}
-      >
+    <div ref={containerRef} className="flex flex-col items-center md:items-start">
+      <div className="text-3xl md:text-4xl font-bold tracking-tighter leading-none mb-2 text-text">
         <span ref={ref}>0</span>
       </div>
-      <div className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{label}</div>
+      <div className="text-sm font-medium text-text-muted">{label}</div>
     </div>
   );
 }
 
-/* ─── Feature row item (zigzag) ─── */
-function FeatureRow({
-  icon: Icon,
-  step,
-  title,
-  desc,
-  color,
-  index,
-}: {
-  icon: typeof Search;
-  step: number;
-  title: string;
-  desc: string;
-  color: string;
-  index: number;
+function FeatureRow({ icon: Icon, step, title, desc, colorClass, borderClass, bgClass, index }: {
+  icon: any; step: number; title: string; desc: string; colorClass: string; borderClass: string; bgClass: string; index: number;
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -96,61 +76,25 @@ function FeatureRow({
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
       variants={containerVariants}
-      className={`grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20 items-center ${
-        isEven ? "" : "md:[&>*:first-child]:order-2"
-      }`}
+      className={cn("grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20 items-center", !isEven && "md:rtl:grid-cols-2")}
     >
-      {/* Text side */}
-      <motion.div variants={itemVariants} className={isEven ? "" : "md:order-2"}>
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider mb-5"
-          style={{
-            background: `${color}15`,
-            color: color,
-            border: `1px solid ${color}30`,
-          }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: color }}
-          />
+      <motion.div variants={itemVariants} className={cn(isEven ? "md:order-1" : "md:order-2")}>
+        <div className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-5 border", bgClass, colorClass, borderClass)}>
+          <span className={cn("w-1.5 h-1.5 rounded-full", colorClass.replace('text-', 'bg-'))} />
           Step {step}
         </div>
-        <h3
-          className="text-2xl md:text-3xl font-bold tracking-tight mb-4"
-          style={{ color: "var(--text)" }}
-        >
+        <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-4 text-text">
           {title}
         </h3>
-        <p
-          className="text-base leading-relaxed max-w-[52ch]"
-          style={{ color: "var(--text-muted)", lineHeight: 1.75 }}
-        >
+        <p className="text-base leading-relaxed max-w-[52ch] text-text-muted">
           {desc}
         </p>
       </motion.div>
 
-      {/* Visual side */}
-      <motion.div variants={itemVariants} className={isEven ? "" : "md:order-1"}>
-        <div
-          className="rounded-2xl p-8 flex items-center justify-center aspect-[4/3]"
-          style={{
-            background: "var(--glass)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid var(--glass-border)",
-            boxShadow: `0 0 40px ${color}12, inset 0 1px 0 rgba(255,255,255,0.10)`,
-          }}
-        >
-          <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center"
-            style={{
-              background: `${color}18`,
-              border: `1px solid ${color}30`,
-              boxShadow: `0 0 24px ${color}25`,
-            }}
-          >
-            <Icon className="w-9 h-9" strokeWidth={1.5} style={{ color }} />
+      <motion.div variants={itemVariants} className={cn(isEven ? "md:order-2" : "md:order-1")}>
+        <div className="rounded-3xl p-8 flex items-center justify-center aspect-[4/3] bg-glass backdrop-blur-glass border border-glass-border shadow-xl">
+          <div className={cn("w-24 h-24 rounded-2xl flex items-center justify-center border transition-all duration-500 hover:scale-110", bgClass, borderClass)}>
+            <Icon className={cn("w-10 h-10", colorClass)} strokeWidth={1.5} />
           </div>
         </div>
       </motion.div>
@@ -158,17 +102,12 @@ function FeatureRow({
   );
 }
 
-/* ════════════════════════════════════════
-   LANDING PAGE
-════════════════════════════════════════ */
 export default function LandingPage() {
   const { t, lang, toggleLang, isRtl } = useLang();
   const { isDark, toggleTheme } = useTheme();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
-
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
-
   const [liveStats, setLiveStats] = useState<{ leads: string; accuracy: string; timeSaved: string } | null>(null);
 
   useEffect(() => {
@@ -180,13 +119,13 @@ export default function LandingPage() {
         const accuracy = convRate > 0 ? `${Math.min(Math.round(convRate * 10 + 60), 97)}%` : "94%";
         setLiveStats({ leads: label, accuracy, timeSaved: "18" });
       })
-      .catch((err) => toastError(err, "Failed to load live stats"));
+      .catch((err) => console.log("Stats load error", err));
   }, []);
 
   const features = [
-    { icon: Search,   key: "discover" as const, color: "#60A5FA" },
-    { icon: BarChart3, key: "analyze"  as const, color: "#FBBF24" },
-    { icon: Mail,     key: "outreach" as const, color: "#34D399" },
+    { icon: Search,   key: "discover" as const, colorClass: "text-info", bgClass: "bg-info-bg", borderClass: "border-info-border" },
+    { icon: BarChart3, key: "analyze"  as const, colorClass: "text-warning", bgClass: "bg-warning-bg", borderClass: "border-warning-border" },
+    { icon: Mail,     key: "outreach" as const, colorClass: "text-success", bgClass: "bg-success-bg", borderClass: "border-success-border" },
   ];
 
   const stats: { value: string; key: keyof typeof t.landing.stats; icon: typeof TrendingUp }[] = [
@@ -195,7 +134,6 @@ export default function LandingPage() {
     { value: liveStats?.timeSaved ?? "18",  key: "timeSaved", icon: Clock },
   ];
 
-  /* mock dashboard for hero preview */
   const mockKpis = [
     { n: "247", label: t.landing.mockStats.leads },
     { n: "189", label: t.landing.mockStats.analyzed },
@@ -204,382 +142,181 @@ export default function LandingPage() {
   ];
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"}>
-
-      {/* ══ NAV ══ */}
-      <nav
-        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-14 topbar-glass"
-      >
+    <div dir={isRtl ? "rtl" : "ltr"} className="bg-background min-h-screen selection:bg-primary/30">
+      
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 bg-glass-overlay backdrop-blur-glass border-b border-glass-border">
         <Link href="/">
           <a className="flex items-center gap-2.5 group">
-            <div
-              className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center"
-              style={{ boxShadow: "0 2px 8px var(--brand-glow)" }}
-            >
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-glow-brand transition-transform group-hover:scale-105">
+              <Zap className="w-4 h-4 text-white fill-current" />
             </div>
-            <span className="font-bold text-sm tracking-tight" style={{ color: "var(--text)" }}>
-              FindX
-            </span>
+            <span className="font-bold text-lg tracking-tight text-text">FindX</span>
           </a>
         </Link>
 
-        <div className="flex items-center gap-1">
-          <button onClick={toggleLang} className="btn btn-ghost text-xs gap-1.5 px-2.5">
-            <Globe className="w-3.5 h-3.5" strokeWidth={1.5} />
-            {lang.toUpperCase()}
+        <div className="flex items-center gap-2">
+          <button onClick={toggleLang} className="btn btn-ghost text-xs gap-1.5 px-3 h-9 text-text-muted hover:text-text uppercase font-bold tracking-widest">
+            <Globe className="w-4 h-4" />
+            {lang}
           </button>
-          <button onClick={toggleTheme} className="btn btn-ghost px-2">
-            {isDark
-              ? <Sun className="w-4 h-4" strokeWidth={1.5} />
-              : <Moon className="w-4 h-4" strokeWidth={1.5} />
-            }
+          <button onClick={toggleTheme} className="btn btn-ghost w-9 h-9 p-0 text-text-muted hover:text-text">
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <Link href="/login">
-            <MagneticButton className="btn btn-primary px-4 py-1.5 text-xs ml-1" strength={0.25}>
+            <button className="btn btn-primary h-9 px-4 text-xs font-bold gap-2 shadow-glow-brand ml-2">
               {t.landing.getStarted}
-              <ArrowIcon className="w-3.5 h-3.5" strokeWidth={2} />
-            </MagneticButton>
+              <ArrowIcon className="w-3.5 h-3.5" />
+            </button>
           </Link>
         </div>
       </nav>
 
-      {/* ══ HERO — ASYMMETRIC SPLIT ══ */}
-      <section
-        ref={heroRef}
-        className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 items-center px-6 md:px-0"
-      >
-        {/* LEFT: text */}
-        <motion.div
-          initial="hidden"
-          animate={heroInView ? "visible" : "hidden"}
-          variants={containerVariants}
-          className="md:pl-16 lg:pl-24 py-20 md:py-0 w-full max-w-xl"
-        >
-          {/* Badge */}
-          <motion.div variants={itemVariants}>
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-8"
-              style={{
-                background: "var(--brand-subtle)",
-                color: "var(--brand)",
-                border: "1px solid rgba(245,158,11,0.25)",
-              }}
-            >
-              <motion.span
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--brand)" }}
-                animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
-              {t.landing.badge}
-            </div>
-          </motion.div>
-
-          {/* H1 */}
-          <motion.h1
-            variants={itemVariants}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.05] mb-6 text-balance"
-            style={{ color: "var(--text)" }}
-          >
-            {t.landing.heroTitle.split("\n").map((line, i) =>
-              i === 0 ? (
-                <span key={i}>{line}</span>
-              ) : (
-                <span key={i} className="block gradient-brand-text">{line}</span>
-              )
-            )}
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            variants={itemVariants}
-            className="text-lg leading-relaxed mb-10 text-balance"
-            style={{ color: "var(--text-muted)", maxWidth: "52ch", lineHeight: 1.7 }}
-          >
-            {t.landing.heroSubtitle}
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
-            <Link href="/login">
-              <MagneticButton
-                className="btn btn-primary px-7 py-3 text-sm"
-                strength={0.3}
-              >
-                {t.landing.getStarted}
-                <ArrowIcon className="w-4 h-4" strokeWidth={2} />
-              </MagneticButton>
-            </Link>
-            <a href="#how" className="btn btn-secondary px-7 py-3 text-sm">
-              {t.landing.learnMore}
-            </a>
-          </motion.div>
-
-          {/* Trust row */}
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative overflow-hidden pt-12 md:pt-20 pb-20 md:pb-32 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <motion.div
-            variants={itemVariants}
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-10"
-            style={{ color: "var(--text-subtle)" }}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+            variants={containerVariants}
+            className="text-center md:text-left rtl:md:text-right"
           >
-            {["Real website scraping", "No hallucination", "Instant setup"].map((item) => (
-              <div key={item} className="flex items-center gap-1.5 text-xs">
-                <CheckCircle className="w-3.5 h-3.5" strokeWidth={2} style={{ color: "var(--color-success)" }} />
-                <span>{item}</span>
+            <motion.div variants={itemVariants}>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-8 bg-primary/10 text-primary border border-primary/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                {t.landing.badge}
               </div>
-            ))}
+            </motion.div>
+
+            <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[1.1] mb-8 text-text text-balance">
+              {t.landing.heroTitle.split("\n").map((line, i) => (
+                <span key={i} className={i === 1 ? "text-primary block" : "block"}>{line}</span>
+              ))}
+            </motion.h1>
+
+            <motion.p variants={itemVariants} className="text-lg md:text-xl text-text-muted mb-10 max-w-2xl mx-auto md:mx-0 leading-relaxed text-balance">
+              {t.landing.heroSubtitle}
+            </motion.p>
+
+            <motion.div variants={itemVariants} className="flex flex-wrap justify-center md:justify-start gap-4">
+              <Link href="/login">
+                <button className="btn btn-primary h-12 px-8 text-sm font-bold gap-3 shadow-glow-brand">
+                  {t.landing.getStarted}
+                  <ArrowIcon className="w-4 h-4" />
+                </button>
+              </Link>
+              <a href="#how" className="btn btn-outline h-12 px-8 text-sm font-bold bg-glass-raised border-glass-border hover:bg-glass text-text transition-all">
+                {t.landing.learnMore}
+              </a>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-12 flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-3">
+               {["Real website scraping", "No hallucination", "Instant setup"].map((item) => (
+                  <div key={item} className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-text-subtle">
+                    <CheckCircle className="w-4 h-4 text-success" />
+                    {item}
+                  </div>
+               ))}
+            </motion.div>
           </motion.div>
-        </motion.div>
 
-        {/* RIGHT: mock dashboard */}
-        <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={heroInView ? { opacity: 1, x: 0 } : {}}
-          transition={{ ...SPRING, delay: 0.25 }}
-          className="hidden md:flex items-center relative pl-10 pr-6 lg:pr-16 py-16"
-        >
-          {/* Glow accent */}
-          <div
-            className="absolute top-1/4 right-0 w-80 h-80 rounded-full pointer-events-none"
-            style={{
-              background: "radial-gradient(circle, var(--brand-glow) 0%, transparent 70%)",
-              filter: "blur(40px)",
-            }}
-          />
-
-          {/* Browser mockup */}
-          <div
-            className="relative rounded-2xl overflow-hidden"
-            style={{
-              background: "var(--glass)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid var(--glass-border)",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
-            }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, x: 20 }}
+            animate={heroInView ? { opacity: 1, scale: 1, x: 0 } : {}}
+            transition={{ ...SPRING, delay: 0.3 }}
+            className="hidden md:block relative"
           >
-            {/* Chrome */}
-            <div
-              className="flex items-center gap-2 px-4 py-3"
-              style={{ borderBottom: "1px solid var(--glass-border)" }}
-            >
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
-              <div
-                className="flex-1 mx-4 h-5 rounded-md text-[10px] flex items-center justify-center font-mono"
-                style={{ background: "var(--glass-raised)", color: "var(--text-subtle)" }}
-              >
-                app.findx.nl/dashboard
+            <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full animate-pulse" />
+            <div className="relative rounded-2xl bg-glass border border-glass-border-strong shadow-2xl overflow-hidden backdrop-blur-glass">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-glass-border bg-glass-raised/50">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                </div>
+                <div className="flex-1 bg-black/5 dark:bg-white/5 rounded px-3 py-1 text-[10px] text-text-subtle font-mono text-center truncate">
+                  app.findx.nl/dashboard
+                </div>
               </div>
-            </div>
-
-            {/* KPI row */}
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-4 gap-2">
-                {mockKpis.map(({ n, label }, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={heroInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ ...SPRING_FAST, delay: 0.4 + i * 0.08 }}
-                    className="rounded-xl p-3"
-                    style={{
-                      background: "var(--glass-raised)",
-                      border: "1px solid var(--glass-border)",
-                    }}
-                  >
-                    <div
-                      className="h-1 w-8 rounded mb-2"
-                      style={{ background: "var(--glass-border-strong)" }}
-                    />
-                    <div
-                      className="text-sm font-bold font-mono tabular-nums"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {n}
-                    </div>
-                    <div className="text-[9px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                      {label}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Mini kanban */}
-              <div
-                className="rounded-xl p-3"
-                style={{
-                  background: "var(--glass-raised)",
-                  border: "1px solid var(--glass-border)",
-                }}
-              >
-                <div
-                  className="h-1.5 w-16 rounded mb-3"
-                  style={{ background: "var(--glass-border-strong)" }}
-                />
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { color: "#94A3B8", cards: 3 },
-                    { color: "#FBBF24", cards: 2 },
-                    { color: "#60A5FA", cards: 2 },
-                    { color: "#34D399", cards: 1 },
-                  ].map(({ color, cards }, ci) => (
-                    <div key={ci} className="space-y-1.5">
-                      <div
-                        className="h-1 w-full rounded"
-                        style={{ background: color, opacity: 0.6 }}
-                      />
-                      {[...Array(cards)].map((_, j) => (
-                        <motion.div
-                          key={j}
-                          className="h-8 rounded-lg"
-                          initial={{ opacity: 0, scaleY: 0.5 }}
-                          animate={heroInView ? { opacity: 1, scaleY: 1 } : {}}
-                          transition={{ ...SPRING_FAST, delay: 0.5 + ci * 0.06 + j * 0.04 }}
-                          style={{
-                            background: "var(--glass)",
-                            borderLeft: `2px solid ${color}`,
-                            border: `1px solid var(--glass-border)`,
-                            borderLeftWidth: "2px",
-                            borderLeftColor: color,
-                          }}
-                        />
-                      ))}
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-4 gap-3">
+                  {mockKpis.map((k, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-glass-raised border border-glass-border">
+                      <div className="h-1 w-6 rounded bg-primary/30 mb-2" />
+                      <div className="text-sm font-bold text-text font-mono">{k.n}</div>
+                      <div className="text-[9px] text-text-muted uppercase font-bold tracking-tighter mt-1">{k.label}</div>
                     </div>
                   ))}
                 </div>
+                <div className="p-4 rounded-xl bg-glass-raised border border-glass-border">
+                  <div className="h-1.5 w-20 rounded bg-primary/20 mb-4" />
+                  <div className="grid grid-cols-4 gap-4 h-32 items-end">
+                    {[60, 80, 45, 95].map((h, i) => (
+                       <div key={i} className="w-full bg-primary/10 rounded-lg relative overflow-hidden group" style={{ height: `${h}%` }}>
+                          <div className="absolute bottom-0 left-0 right-0 bg-primary/40 h-full transform translate-y-1/2 group-hover:translate-y-0 transition-transform duration-500" />
+                       </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
-      {/* ══ STATS BAR ══ */}
-      <section
-        className="px-6 md:px-12 py-16"
-        style={{ borderTop: "1px solid var(--glass-border)", borderBottom: "1px solid var(--glass-border)" }}
-      >
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-3 gap-4 md:gap-12 text-center md:text-left">
-            {stats.map(({ value, key, icon: Icon }) => (
-              <div key={key} className="flex flex-col md:flex-row md:items-start md:gap-4">
-                <div
-                  className="hidden md:flex w-10 h-10 rounded-xl items-center justify-center flex-shrink-0 mt-1"
-                  style={{ background: "var(--glass)", border: "1px solid var(--glass-border)" }}
-                >
-                  <Icon className="w-4.5 h-4.5" strokeWidth={1.5} style={{ color: "var(--brand)" }} />
-                </div>
-                <StatCounter value={value} label={t.landing.stats[key]} />
+      {/* Stats Section */}
+      <section className="py-20 bg-glass-raised/30 border-y border-glass-border">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {stats.map((s, i) => (
+              <div key={i} className="flex items-center gap-6">
+                 <div className="w-14 h-14 rounded-2xl bg-glass border border-glass-border flex items-center justify-center text-primary shadow-lg">
+                    <s.icon className="w-6 h-6" />
+                 </div>
+                 <StatCounter value={s.value} label={t.landing.stats[s.key]} />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══ FEATURES — ZIGZAG ══ */}
-      <section id="how" className="px-6 md:px-12 py-24">
-        <div className="max-w-5xl mx-auto space-y-24">
-          {/* Section header */}
-          <div className="max-w-xl">
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: "var(--brand)" }}
-            >
-              {t.landing.howItWorks}
-            </p>
-            <h2
-              className="text-3xl md:text-4xl font-bold tracking-tighter text-balance"
-              style={{ color: "var(--text)" }}
-            >
-              {t.landing.agentsFull}
-            </h2>
+      {/* Features Section */}
+      <section id="how" className="py-32 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-24 text-center md:text-left rtl:md:text-right">
+             <p className="text-primary font-bold uppercase tracking-[0.2em] text-xs mb-4">
+                {t.landing.howItWorks}
+             </p>
+             <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-text">
+                {t.landing.agentsFull}
+             </h2>
           </div>
 
-          {/* Zigzag feature rows */}
-          {features.map(({ icon, key, color }, i) => (
-            <FeatureRow
-              key={key}
-              icon={icon}
-              step={i + 1}
-              title={t.landing.features[key].title}
-              desc={t.landing.features[key].desc}
-              color={color}
-              index={i}
-            />
-          ))}
+          <div className="space-y-40">
+             {features.map((f, i) => (
+                <FeatureRow key={i} index={i} step={i+1} icon={f.icon} title={t.landing.features[f.key].title} desc={t.landing.features[f.key].desc} {...f} />
+             ))}
+          </div>
         </div>
       </section>
 
-      {/* ══ CTA ══ */}
-      <section className="px-6 py-28">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={SPRING}
-            className="rounded-3xl p-12 md:p-16 text-center relative overflow-hidden"
-            style={{
-              background: "var(--glass)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid var(--glass-border)",
-              boxShadow: "0 0 80px var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.10)",
-            }}
-          >
-            {/* Glow blob */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: "radial-gradient(ellipse 60% 40% at 50% 50%, var(--brand-subtle) 0%, transparent 70%)",
-              }}
-            />
-            <div className="relative">
-              <h2
-                className="text-3xl md:text-4xl font-bold tracking-tighter mb-5 text-balance"
-                style={{ color: "var(--text)" }}
-              >
-                {t.landing.ctaTitle}
-              </h2>
-              <p
-                className="text-base mb-10 max-w-[48ch] mx-auto"
-                style={{ color: "var(--text-muted)", lineHeight: 1.75 }}
-              >
-                {t.landing.ctaSubtitle}
-              </p>
-              <Link href="/login">
-                <MagneticButton
-                  className="btn btn-primary px-10 py-3.5 text-sm"
-                  strength={0.3}
-                >
-                  {t.landing.getStarted}
-                  <ArrowIcon className="w-4 h-4" strokeWidth={2} />
-                </MagneticButton>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ══ FOOTER ══ */}
-      <footer
-        className="px-6 md:px-12 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs"
-        style={{
-          borderTop: "1px solid var(--glass-border)",
-          color: "var(--text-subtle)",
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded gradient-brand flex items-center justify-center">
-            <Zap className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
-          </div>
-          <span>© {new Date().getFullYear()} FindX</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <Link href="/privacy"><a style={{ color: "var(--text-subtle)" }}>Privacy</a></Link>
-          <Link href="/terms"><a style={{ color: "var(--text-subtle)" }}>Terms</a></Link>
-          <a href="mailto:support@findx.nl" style={{ color: "var(--text-subtle)" }}>Contact</a>
+      {/* Footer */}
+      <footer className="py-12 border-t border-glass-border bg-glass-raised/20">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+           <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                 <Zap className="w-4 h-4 fill-current" />
+              </div>
+              <span className="font-bold text-text">© {new Date().getFullYear()} FindX Intelligence.</span>
+           </div>
+           <div className="flex gap-8">
+              <Link href="/privacy"><a className="text-xs font-bold text-text-muted hover:text-primary transition-colors">PRIVACY</a></Link>
+              <Link href="/terms"><a className="text-xs font-bold text-text-muted hover:text-primary transition-colors">TERMS</a></Link>
+              <a href="mailto:support@findx.nl" className="text-xs font-bold text-text-muted hover:text-primary transition-colors">SUPPORT</a>
+           </div>
         </div>
       </footer>
     </div>
