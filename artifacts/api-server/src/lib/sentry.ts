@@ -12,7 +12,8 @@
  */
 
 import * as Sentry from "@sentry/node";
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Scope } from "@sentry/node";
+import type { Request, Response, NextFunction } from "express";
 import { env } from "./env.js";
 
 let _initialized = false;
@@ -43,7 +44,7 @@ export function initSentry(): void {
 export function sentryRequestHandler() {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!_initialized) return next();
-    Sentry.withScope((scope) => {
+    Sentry.withScope((scope: Scope) => {
       scope.setTag("route", req.path);
       scope.setUser(req.user ? { id: req.user.sub, email: req.user.email } : null);
       next();
@@ -55,7 +56,7 @@ export function sentryRequestHandler() {
 export function sentryErrorHandler() {
   return (err: Error, req: Request, res: Response, next: NextFunction) => {
     if (_initialized) {
-      Sentry.withScope((scope) => {
+      Sentry.withScope((scope: Scope) => {
         scope.setTag("route", req.path);
         scope.setTag("method", req.method);
         if (req.user) scope.setUser({ id: req.user.sub, email: req.user.email });
@@ -72,7 +73,7 @@ export function sentryErrorHandler() {
  */
 export function captureException(err: unknown, context?: Record<string, unknown>): void {
   if (!_initialized) return;
-  Sentry.withScope((scope) => {
+  Sentry.withScope((scope: Scope) => {
     if (context) scope.setExtras(context);
     Sentry.captureException(err);
   });
