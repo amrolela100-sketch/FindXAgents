@@ -267,7 +267,7 @@ const AvatarGroup = React.forwardRef<HTMLDivElement, AvatarGroupProps>(
                 key: index,
                 // Add stacking shadow
                 className: cn(
-                  (child as React.ReactElement).props.className,
+                  (child as React.ReactElement<{ className?: string }>).props.className,
                   "ring-2 ring-[var(--findx-bg-base)]"
                 ),
               }
@@ -368,4 +368,4 @@ AvatarStack.displayName = "AvatarStack";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export { Avatar, AvatarGroup, AvatarStack };
-export type { AvatarProps, AvatarGroupProps, AvatarStackProps, AvatarSize };
+// Types are exported inline above
