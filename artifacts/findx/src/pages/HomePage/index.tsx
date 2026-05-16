@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 import { STAGGER_CONTAINER as containerVariants, STAGGER_CHILD as itemVariants } from "@/lib/motion";
 
-const SPRING = { type: "spring", stiffness: 100, damping: 15 };
+const SPRING = { type: "spring" as const, stiffness: 100, damping: 15 };
 
 // ── Donut chart ───────────────────────────────────────────────────────────────
 function DonutChart({ hot, warm, cold, unscored, total }: {
