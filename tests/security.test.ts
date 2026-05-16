@@ -177,6 +177,7 @@ vi.mock("../artifacts/api-server/src/middleware/auth", () => ({
 
 import app from "../artifacts/api-server/src/app";
 import { db } from "@workspace/db";
+import * as authMiddleware from "../artifacts/api-server/src/middleware/auth";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function asUser(userId: string, workspaceId: string, role: "user" | "admin" = "user") {
@@ -212,11 +213,7 @@ describe("Security Tests — TEST-3", () => {
   describe("1. Unauthenticated access is blocked", () => {
     beforeEach(() => {
       // Override requireAuth to NOT call next — simulates 401
-      const authMod = vi.mocked(
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require("../artifacts/api-server/src/middleware/auth")
-      );
-      authMod.requireAuth.mockImplementationOnce((_req: any, res: any, _next: any) => {
+      vi.mocked(authMiddleware.requireAuth).mockImplementationOnce((_req: any, res: any, _next: any) => {
         res.status(401).json({ error: "Unauthorized" });
       });
     });
