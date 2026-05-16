@@ -26,6 +26,10 @@ import { supabase } from "./supabase";
 // and "http://localhost:3000/api" in local dev. Never hardcode "/api".
 const BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
 
+// MED-4: 401 debounce flag — prevents duplicate signOut/redirect when parallel
+// requests all return 401 simultaneously (e.g. expired token, dashboard load).
+let _isHandling401 = false;
+
 async function getAuthToken(): Promise<string | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -57,12 +61,18 @@ async function fetchApi<T>(path: string, init?: RequestInit & { skipAuthRedirect
   
   if (!res.ok) {
     if (res.status === 401) {
-      // Only redirect to login if not explicitly suppressed and not already there
-      if (!skipAuthRedirect) {
+      // MED-4 fix: debounce 401 redirects.
+      // Without this, parallel API calls (e.g. dashboard loads 5 endpoints at once)
+      // all hit 401 simultaneously → 5 signOut() + 5 window.location reassignments.
+      // The flag prevents duplicate signOut/redirect calls within the same tab session.
+      if (!skipAuthRedirect && !_isHandling401) {
+        _isHandling401 = true;
         await supabase.auth.signOut();
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
         }
+        // Reset after navigation (fallback — normally the page reloads anyway)
+        setTimeout(() => { _isHandling401 = false; }, 5000);
       }
       throw new Error("Unauthorized");
     }

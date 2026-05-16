@@ -20,10 +20,17 @@ jobs:
         with: { version: "10" }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: "pnpm" }
+      # Note: using --no-frozen-lockfile because the workspace uses pnpm catalog
+      # which can cause minor lockfile drift on clean installs. LOW-14 (frozen-lockfile)
+      # will be enforced once the lockfile is fully stabilized in Phase 3.
       - run: pnpm install --no-frozen-lockfile
       - name: Prettier check
         continue-on-error: true
         run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,css,md}" --ignore-path .prettierignore
+      # LOW-8 fix: audit dependencies for known vulnerabilities on every PR.
+      - name: Security audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
 
   test:
     name: CI / Typecheck & Test

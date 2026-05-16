@@ -99,6 +99,13 @@
       "when": 1747437600000,
       "tag": "0013_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1747524000000,
+      "tag": "0014_business_name_index",
+      "breakpoints": true
     }
   ]
 }

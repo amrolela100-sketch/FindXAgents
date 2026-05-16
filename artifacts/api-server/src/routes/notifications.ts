@@ -27,11 +27,24 @@ router.get("/notifications", requireAuth, async (req, res) => {
   }
 });
 
+// MED-6 fix: allowlist notification types.
+// Previously `type` accepted any string — an attacker could craft arbitrary
+// notification types to confuse the frontend or enable phishing within the platform.
+const NOTIFICATION_TYPES = [
+  "pipeline_complete",
+  "pipeline_failed",
+  "run_failed",
+  "lead_analyzed",
+  "lead_contacted",
+  "workspace_invite",
+  "system",
+] as const;
+
 // ── POST /notifications ───────────────────────────────────────────────────────
 // Create a new notification (called internally by the pipeline, or from frontend)
 router.post("/notifications", requireAuth, async (req, res) => {
   const schema = z.object({
-    type:  z.string().default("pipeline_complete"),
+    type:  z.enum(NOTIFICATION_TYPES).default("pipeline_complete"),
     title: z.string().min(1).max(200),
     body:  z.string().default(""),
     meta:  z.record(z.unknown()).default({}),
