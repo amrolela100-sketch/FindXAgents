@@ -117,9 +117,18 @@ describe("API Integration Tests", () => {
   beforeAll(() => { process.env.OPENROUTER_API_KEY = "test-key"; });
 
   it("GET /api/healthz returns ok", async () => {
+    // /healthz is a fast liveness probe — always 200, no DB check.
     const res = await request(app).get("/api/healthz");
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("status");
+  });
+
+  it("GET /api/readyz returns dependency status", async () => {
+    // /readyz checks DB + Redis. CI has real postgres:16 + redis:7 services.
+    const res = await request(app).get("/api/readyz");
+    expect([200, 503]).toContain(res.status);
+    expect(res.body).toHaveProperty("checks");
+    expect(res.body.checks).toHaveProperty("db");
   });
 
   it("POST /api/leads creates a new lead", async () => {

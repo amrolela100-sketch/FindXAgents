@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
+import { aiLimiter } from "../middleware/rate-limit.js";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
@@ -165,7 +166,9 @@ const chatSchema = z.object({
 
 // ─── POST /chat ───────────────────────────────────────────────────────────────
 
-router.post("/chat", requireAuth, async (req, res): Promise<void> => {
+// HIGH-1 fix: apply AI rate limiter to prevent runaway token spending
+// 20 requests/hour per user (defined in rate-limit.ts as aiLimiter)
+router.post("/chat", requireAuth, aiLimiter, async (req, res): Promise<void> => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });

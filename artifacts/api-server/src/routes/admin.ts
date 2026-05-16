@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { db, users, leads, agentPipelineRuns } from "@workspace/db";
-import { count, sql, eq } from "drizzle-orm";
+import { count, desc } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
 
 const router = Router();
@@ -32,12 +32,31 @@ router.get("/admin/stats", async (req, res) => {
   }
 });
 
+/**
+ * HIGH-6 fix: GET /admin/users now paginates results.
+ *
+ * Previously fetched ALL users with no LIMIT — on large tables this causes
+ * a memory blowup (e.g. 100,000 users loaded into a single array).
+ *
+ * Now supports ?page=1&pageSize=50 (max 100 per page).
+ */
 router.get("/admin/users", async (req, res) => {
   if (req.user!.role !== "admin") {
     return res.status(403).json({ error: "Forbidden — admin only" });
   }
   try {
-    const allUsers = await db.select().from(users);
+    const page     = Math.max(1, parseInt(String(req.query.page     ?? "1"),  10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(String(req.query.pageSize ?? "50"), 10)));
+
+    const [pagedUsers, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      db.select({ count: count() }).from(users),
+    ]);
 
     const userLeadCounts = await db
       .select({
@@ -52,7 +71,7 @@ router.get("/admin/users", async (req, res) => {
       if (row.userId) countMap[row.userId] = Number(row.count);
     }
 
-    const formattedUsers = allUsers.map((u) => ({
+    const formattedUsers = pagedUsers.map((u) => ({
       id: u.id,
       email: u.email,
       name: u.email.split("@")[0] ?? "Unknown",
@@ -64,7 +83,12 @@ router.get("/admin/users", async (req, res) => {
       isAdmin: u.role === "admin",
     }));
 
-    return res.json({ users: formattedUsers });
+    return res.json({
+      users: formattedUsers,
+      total: Number(totalResult[0]?.count ?? 0),
+      page,
+      pageSize,
+    });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

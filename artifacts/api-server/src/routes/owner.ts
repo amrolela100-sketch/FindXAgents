@@ -8,13 +8,17 @@ import { env, isOwnerEmail, ownerEmail } from "../lib/env.js";
 
 const router = Router();
 
-// CRIT-3 fix: OWNER_UNLOCK_SECRET must be explicitly set — never derive from password
-// Warn loudly but do NOT crash the server — operator must set the variable.
-// The /owner/unlock endpoint is guarded by isOwner() check regardless.
-if (!process.env.OWNER_UNLOCK_SECRET) {
-  console.warn("[WARN] OWNER_UNLOCK_SECRET env variable is not set. Owner step-up auth will use an insecure fallback. Set this variable in production.");
+// CRIT-1 fix: OWNER_UNLOCK_SECRET must be explicitly set.
+// If missing, ALL /owner/* routes return 503 — no fallback secret ever.
+const OWNER_UNLOCK_SECRET_MISSING = !process.env.OWNER_UNLOCK_SECRET;
+if (OWNER_UNLOCK_SECRET_MISSING) {
+  console.error(
+    "[CRITICAL] OWNER_UNLOCK_SECRET env variable is not set. " +
+    "All /owner/* routes are disabled until this variable is configured. " +
+    "Set OWNER_UNLOCK_SECRET in your environment to enable owner access."
+  );
 }
-const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? "insecure-fallback-set-OWNER_UNLOCK_SECRET-in-env";
+const UNLOCK_SECRET = process.env.OWNER_UNLOCK_SECRET ?? "";
 // Unlock tokens are valid for 30 minutes
 const UNLOCK_TTL_MS  = 30 * 60 * 1000;
 
@@ -62,6 +66,10 @@ function verifyUnlockToken(email: string, token: string): boolean {
 // ─── Unlock ───────────────────────────────────────────────────────────────────
 
 router.post("/owner/unlock", async (req, res) => {
+  // CRIT-1 fix: block entire route if secret is not configured
+  if (OWNER_UNLOCK_SECRET_MISSING) {
+    return res.status(503).json({ error: "Owner authentication is not configured. Set OWNER_UNLOCK_SECRET in the server environment." });
+  }
   const email = req.user!.email.toLowerCase();
   if (!isOwner(email)) return res.status(403).json({ error: "Forbidden" });
   if (!env.OWNER_PASSWORD) return res.status(503).json({ error: "Owner password not configured" });
@@ -85,6 +93,10 @@ router.post("/owner/unlock", async (req, res) => {
 // ─── Middleware: require a valid unlock token ─────────────────────────────────
 
 function requireOwnerUnlock(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
+  // CRIT-1 fix: if secret is not set, no owner route is accessible
+  if (OWNER_UNLOCK_SECRET_MISSING) {
+    return res.status(503).json({ error: "Owner authentication is not configured on this server." });
+  }
   if (!isOwner(req.user!.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }

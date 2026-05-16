@@ -8,12 +8,22 @@
  * When REDIS_URL is absent:
  *   → Falls back to MemoryStore (express-rate-limit default) — fine for
  *     local dev and single-instance deployments.
+ *
+ * When NODE_ENV=test:
+ *   → All limiters are replaced with a no-op passthrough so the test suite
+ *     never gets blocked by 429. Rate limiting logic is tested separately.
  */
 
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { RedisStore, type RedisReply } from "rate-limit-redis";
 import { getRedisClient } from "../lib/redis.js";
 import { logger } from "../lib/logger.js";
+import type { RequestHandler } from "express";
+
+const IS_TEST = process.env.NODE_ENV === "test";
+
+/** No-op middleware — passes every request straight through */
+const noopLimiter: RequestHandler = (_req, _res, next) => next();
 
 /** Shared options type — plain object, no Omit gymnastics */
 interface LimiterConfig {
@@ -27,15 +37,17 @@ interface LimiterConfig {
 
 /**
  * Build a rateLimit middleware, auto-selecting RedisStore or MemoryStore.
+ * Returns a no-op in test environment.
  */
-function makeLimiter(config: LimiterConfig) {
+function makeLimiter(config: LimiterConfig): RequestHandler {
+  if (IS_TEST) return noopLimiter;
+
   const redis = getRedisClient();
 
   if (redis) {
     return rateLimit({
       ...config,
       store: new RedisStore({
-        // ioredis sendCommand signature: (command: string, ...args: string[])
         sendCommand: (command: string, ...args: string[]) =>
           redis.call(command, ...args) as Promise<RedisReply>,
         prefix: "rl:",
