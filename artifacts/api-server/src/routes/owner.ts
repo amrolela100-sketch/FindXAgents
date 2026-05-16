@@ -8,8 +8,17 @@ import { env, isOwnerEmail, ownerEmail } from "../lib/env.js";
 
 const router = Router();
 
-// Secret used to sign short-lived unlock tokens (falls back to a derived secret)
-const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? `owner-unlock-${env.OWNER_PASSWORD ?? "changeme"}`;
+// CRIT-3 fix: OWNER_UNLOCK_SECRET must be explicitly set — never derive from password
+if (!process.env.OWNER_UNLOCK_SECRET) {
+  // In production this is fatal; in dev we warn loudly
+  if (process.env.NODE_ENV === "production") {
+    console.error("[FATAL] OWNER_UNLOCK_SECRET env variable is not set. Refusing to start in production.");
+    process.exit(1);
+  } else {
+    console.warn("[WARN] OWNER_UNLOCK_SECRET is not set. Using insecure fallback (dev only).");
+  }
+}
+const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? "dev-insecure-unlock-secret-change-me";
 // Unlock tokens are valid for 30 minutes
 const UNLOCK_TTL_MS  = 30 * 60 * 1000;
 
@@ -61,10 +70,15 @@ router.post("/owner/unlock", async (req, res) => {
   if (!isOwner(email)) return res.status(403).json({ error: "Forbidden" });
   if (!env.OWNER_PASSWORD) return res.status(503).json({ error: "Owner password not configured" });
   const password = String(req.body?.password ?? "");
-  // Use timing-safe comparison to prevent timing attacks
-  const passwordMatch =
-    password.length === env.OWNER_PASSWORD.length &&
-    timingSafeEqual(Buffer.from(password), Buffer.from(env.OWNER_PASSWORD));
+  // CRIT-2 fix: always compare fixed-length buffers to prevent timing side-channel.
+  // Pad both sides to the same length before timingSafeEqual so buffer-length check
+  // does not leak the expected password length.
+  const MAX_LEN = 256;
+  const pwdBuf  = Buffer.alloc(MAX_LEN);
+  const expBuf  = Buffer.alloc(MAX_LEN);
+  Buffer.from(password).copy(pwdBuf);
+  Buffer.from(env.OWNER_PASSWORD).copy(expBuf);
+  const passwordMatch = timingSafeEqual(pwdBuf, expBuf) && password.length === env.OWNER_PASSWORD.length;
   if (!passwordMatch) return res.status(401).json({ error: "Incorrect password" });
 
   // Issue a short-lived unlock token — owner dashboard routes will verify this
@@ -156,17 +170,26 @@ router.get("/owner/dashboard", requireOwnerUnlock, async (req, res) => {
 
 router.get("/owner/users", requireOwnerUnlock, async (req, res) => {
   try {
-    const allUsers = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        onboardingCompleted: users.onboardingCompleted,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
-      .from(users)
-      .orderBy(desc(users.createdAt));
+    // HIGH-4 fix: paginate to prevent memory blowup on large user tables
+    const page     = Math.max(1, parseInt(String(req.query.page     ?? "1"),  10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(String(req.query.pageSize ?? "50"), 10)));
+
+    const [allUsers, totalResult] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          onboardingCompleted: users.onboardingCompleted,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      db.select({ count: count() }).from(users),
+    ]);
 
     // Lead counts per user
     const leadCounts = await db
@@ -201,7 +224,7 @@ router.get("/owner/users", requireOwnerUnlock, async (req, res) => {
       lastActiveAt: u.updatedAt,
     }));
 
-    return res.json({ users: enriched, total: enriched.length });
+    return res.json({ users: enriched, total: Number(totalResult[0]?.count ?? 0), page, pageSize });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { isResendConfiguredAsync, sendViaResend } from "../lib/resend";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
-import { encryptSecret } from "../lib/secret-crypto.js";
+import { encryptSecret, decryptSecret } from "../lib/secret-crypto.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -188,13 +188,18 @@ router.put("/email/smtp/config", async (req, res) => {
   try {
     const wsId = req.user!.activeWorkspaceId;
     const existing = await getSmtpConfig(wsId);
+    // HIGH-7 fix: encrypt password before storing (same pattern as resendConfigs.apiKey)
+    const dataToStore = {
+      ...parsed.data,
+      password: encryptSecret(parsed.data.password),
+    };
     let config;
     if (existing) {
       [config] = await db.update(smtpConfigs)
-        .set({ ...parsed.data, updatedAt: new Date() })
+        .set({ ...dataToStore, updatedAt: new Date() })
         .where(eq(smtpConfigs.workspaceId, wsId)).returning();
     } else {
-      [config] = await db.insert(smtpConfigs).values({ workspaceId: wsId, ...parsed.data }).returning();
+      [config] = await db.insert(smtpConfigs).values({ workspaceId: wsId, ...dataToStore }).returning();
     }
     return res.json({ configured: true, host: config!.host, port: config!.port, secure: config!.secure, user: config!.user, fromEmail: config!.fromEmail, fromName: config!.fromName });
   } catch (err) {

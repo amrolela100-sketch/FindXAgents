@@ -6,6 +6,7 @@ import { z } from "zod";
 import { integrationTestLimiter } from "../middleware/rate-limit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { safeError } from "../lib/safe-error.js";
+import { encryptSecret, decryptSecret } from "../lib/secret-crypto.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -54,18 +55,29 @@ router.post("/telegram/settings", async (req, res) => {
     if (botToken === KEEP_SENTINEL) {
       if (!existing?.botToken)
         return res.status(400).json({ error: "Bot Token is required for first-time setup" });
+      // Keep existing encrypted token as-is (don't decrypt and re-encrypt unnecessarily)
       botToken = existing.botToken;
+      // Store as-is (already encrypted)
+      if (existing) {
+        await db.update(telegramSettings)
+          .set({ chatId, updatedAt: new Date() })
+          .where(eq(telegramSettings.workspaceId, wsId));
+      }
+      return res.json({ success: true });
     }
 
     if (!BOT_TOKEN_REGEX.test(botToken))
       return res.status(400).json({ error: "Invalid bot token format. Expected: 123456789:ABCdef..." });
 
+    // HIGH-6 fix: encrypt botToken before storing (same pattern as resendConfigs.apiKey)
+    const encryptedToken = encryptSecret(botToken);
+
     if (existing) {
       await db.update(telegramSettings)
-        .set({ botToken, chatId, updatedAt: new Date() })
+        .set({ botToken: encryptedToken, chatId, updatedAt: new Date() })
         .where(eq(telegramSettings.workspaceId, wsId));
     } else {
-      await db.insert(telegramSettings).values({ workspaceId: wsId, botToken, chatId });
+      await db.insert(telegramSettings).values({ workspaceId: wsId, botToken: encryptedToken, chatId });
     }
     return res.json({ success: true });
   } catch (err) {
@@ -87,7 +99,8 @@ router.post("/telegram/test", integrationTestLimiter, async (req, res) => {
       const settings = await getSettings(wsId);
       if (!settings?.botToken)
         return res.status(400).json({ error: "No bot token configured. Please save settings first." });
-      botToken = settings.botToken;
+      // HIGH-6 fix: decrypt token before use
+      botToken = decryptSecret(settings.botToken) ?? settings.botToken;
     }
 
     if (!BOT_TOKEN_REGEX.test(botToken))

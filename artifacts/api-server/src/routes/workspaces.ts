@@ -90,8 +90,11 @@ router.put("/workspaces/:id", requireWorkspace, async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
 
   try {
+    // CRIT-6 fix: explicit whitelist of updatable fields — never spread parsed.data directly
+    // to prevent mass-assignment if schema grows with sensitive fields (e.g. ownerId)
+    const { name, description, icp, targetIndustry, targetCity } = parsed.data;
     const [updated] = await db.update(workspaces)
-      .set({ ...parsed.data, updatedAt: new Date() })
+      .set({ name, description, icp, targetIndustry, targetCity, updatedAt: new Date() })
       .where(eq(workspaces.id, ws.id))
       .returning();
     return res.json({ workspace: updated });
