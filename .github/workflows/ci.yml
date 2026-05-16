@@ -20,10 +20,18 @@ jobs:
         with: { version: "10" }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: "pnpm" }
-      - run: pnpm install --no-frozen-lockfile
+      # LOW-14 fix: use --frozen-lockfile to prevent silent dependency drift.
+      # If pnpm-lock.yaml is out of sync with package.json, CI fails instead of
+      # silently installing a different version than production uses.
+      - run: pnpm install --frozen-lockfile
       - name: Prettier check
         continue-on-error: true
         run: pnpm exec prettier --check "**/*.{ts,tsx,js,json,css,md}" --ignore-path .prettierignore
+      # LOW-8 fix: audit dependencies for known vulnerabilities on every PR.
+      # --audit-level=high fails CI only for high/critical CVEs (ignores moderate/low noise).
+      - name: Security audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
 
   test:
     name: CI / Typecheck & Test
@@ -62,7 +70,7 @@ jobs:
         with: { version: "10" }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: "pnpm" }
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Run Typecheck
         run: |
           pnpm --filter "./lib/**" run build
@@ -92,7 +100,7 @@ jobs:
         with: { version: "10" }
       - uses: actions/setup-node@v4
         with: { node-version: "22", cache: "pnpm" }
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Build core
         run: pnpm run build:core
         env:

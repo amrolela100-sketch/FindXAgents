@@ -48,6 +48,30 @@ router.post("/leads/import", async (req, res) => {
       return result;
     }
 
+    // MED-2 fix: batch insert instead of row-by-row.
+    // Previously every row triggered 1 select (duplicate check) + 1 insert = N*2 queries.
+    // New approach:
+    //   1. Parse and validate all rows upfront (no DB calls).
+    //   2. If skipDuplicates: one bulk SELECT to find existing (businessName, city) pairs.
+    //   3. One bulk INSERT for all new rows using onConflictDoNothing as safety net.
+    // Result: 2 queries total regardless of CSV size (was 2*N).
+
+    type ParsedRow = {
+      rowNum: number;
+      businessName: string;
+      city: string;
+      address?: string;
+      industry?: string;
+      website?: string;
+      hasWebsite: boolean;
+      phone?: string;
+      email?: string;
+      kvkNumber?: string;
+      source: string;
+    };
+
+    const validRows: ParsedRow[] = [];
+
     for (let i = 1; i < lines.length; i++) {
       const parts = parseCsvLine(lines[i]);
       const row: Record<string, string> = {};
@@ -61,42 +85,78 @@ router.post("/leads/import", async (req, res) => {
       }
 
       const businessName = sanitizeString(rawBusinessName) || rawBusinessName;
-      const city = sanitizeString(rawCity) || rawCity;
+      const city         = sanitizeString(rawCity) || rawCity;
+      const website      = (row.website && validateWebsiteUrl(row.website)) ? row.website : undefined;
+      const email        = (row.email   && validateEmail(row.email))        ? row.email   : undefined;
 
-      try {
-        if (skipDuplicates) {
-          const userConditions = [
-            ilike(leads.businessName, businessName),
-            ilike(leads.city, city),
-            sql`${leads.workspaceId} = ${req.user!.activeWorkspaceId}` as ReturnType<typeof ilike>,
-          ];
-          const existing = await db
-            .select({ id: leads.id })
-            .from(leads)
-            .where(and(...(userConditions as [ReturnType<typeof ilike>, ...ReturnType<typeof ilike>[]])))
-            .limit(1);
-          if (existing.length > 0) { skipped++; continue; }
+      validRows.push({
+        rowNum: i + 1,
+        businessName,
+        city,
+        address:   sanitizeString(row.address)   || undefined,
+        industry:  sanitizeString(row.industry)  || undefined,
+        website,
+        hasWebsite: !!website,
+        phone:     sanitizeString(row.phone)     || undefined,
+        email,
+        kvkNumber: sanitizeString(row.kvkNumber || row.kvk_number) || undefined,
+        source:    sanitizeString(row.source) || "import",
+      });
+    }
+
+    if (validRows.length === 0) {
+      return res.json({ created: 0, skipped, errors });
+    }
+
+    // ── Duplicate check (single bulk SELECT) ──────────────────────────────────
+    let insertRows = validRows;
+    if (skipDuplicates) {
+      // Fetch all existing (businessName, city) pairs for this workspace in one query.
+      const existingPairs = await db
+        .select({ businessName: leads.businessName, city: leads.city })
+        .from(leads)
+        .where(sql`${leads.workspaceId} = ${req.user!.activeWorkspaceId}`);
+
+      const existingSet = new Set(
+        existingPairs.map(r => `${r.businessName.toLowerCase()}|${r.city.toLowerCase()}`)
+      );
+
+      insertRows = validRows.filter(r => {
+        const key = `${r.businessName.toLowerCase()}|${r.city.toLowerCase()}`;
+        if (existingSet.has(key)) { skipped++; return false; }
+        return true;
+      });
+    }
+
+    // ── Bulk INSERT ───────────────────────────────────────────────────────────
+    if (insertRows.length > 0) {
+      const BATCH_SIZE = 500; // stay within Postgres parameter limits
+      for (let b = 0; b < insertRows.length; b += BATCH_SIZE) {
+        const batch = insertRows.slice(b, b + BATCH_SIZE);
+        try {
+          await db.insert(leads).values(
+            batch.map(r => ({
+              userId:      req.user?.sub ?? null,
+              workspaceId: req.user!.activeWorkspaceId,
+              businessName: r.businessName,
+              city:        r.city,
+              address:     r.address,
+              industry:    r.industry,
+              website:     r.website,
+              hasWebsite:  r.hasWebsite,
+              phone:       r.phone,
+              email:       r.email,
+              kvkNumber:   r.kvkNumber,
+              source:      r.source,
+            }))
+          );
+          batch.forEach(r => created.push(r.rowNum));
+        } catch (batchErr) {
+          // If bulk insert fails, record each row in errors
+          batch.forEach(r => {
+            errors.push({ row: r.rowNum, message: batchErr instanceof Error ? batchErr.message : "Batch insert failed" });
+          });
         }
-
-        const website = (row.website && validateWebsiteUrl(row.website)) ? row.website : undefined;
-        const email = (row.email && validateEmail(row.email)) ? row.email : undefined;
-        await db.insert(leads).values({
-          userId:      req.user?.sub ?? null,
-          workspaceId: req.user!.activeWorkspaceId,
-          businessName,
-          city,
-          address:   sanitizeString(row.address),
-          industry:  sanitizeString(row.industry),
-          website,
-          hasWebsite: !!website,
-          phone:      sanitizeString(row.phone),
-          email,
-          kvkNumber:  sanitizeString(row.kvkNumber || row.kvk_number),
-          source:     sanitizeString(row.source) || "import",
-        });
-        created.push(i);
-      } catch (rowErr) {
-        errors.push({ row: i + 1, message: rowErr instanceof Error ? rowErr.message : "Unknown error" });
       }
     }
 

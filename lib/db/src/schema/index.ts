@@ -171,6 +171,10 @@ export const leads = pgTable(
     index("idx_leads_status").on(t.status),
     index("idx_leads_source").on(t.source),
     index("idx_leads_has_website").on(t.hasWebsite),
+    // MED-5: business_name is used in ILIKE searches and CSV duplicate checks.
+    // A standard btree index won't help ILIKE '%...%' but DOES accelerate
+    // exact/prefix matches (ilike 'name') used in the CSV import dedup query.
+    index("idx_leads_business_name").on(t.businessName),
   ],
 );
 

@@ -209,7 +209,16 @@ router.get("/agents/runs/:id/logs", requireWorkspace, async (req, res) => {
       .leftJoin(agents, eq(agentLogs.agentId, agents.id))
       .where(eq(agentLogs.pipelineRunId, req.params["id"] as string))
       .orderBy(asc(agentLogs.createdAt));
-    return res.json({ logs: rows });
+
+    // MED-11 fix: strip toolInput/toolOutput for non-admin users.
+    // These fields contain raw API responses (website scrape data, scraped emails,
+    // phone numbers) that could be used for data exfiltration if exposed broadly.
+    // Admins get the full payload for debugging; regular users see only metadata.
+    const sanitizedRows = isAdmin(req)
+      ? rows
+      : rows.map(({ toolInput: _ti, toolOutput: _to, ...rest }) => rest);
+
+    return res.json({ logs: sanitizedRows });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

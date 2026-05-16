@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { requireAuth, requireWorkspace } from "../middleware/auth";
 import { db, users, workspaces, workspaceMembers } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
 import { z } from "zod";
 
@@ -38,11 +38,28 @@ const createSchema = z.object({
   targetCity:     z.string().max(200).default(""),
 });
 
+// MED-12 fix: cap workspace creation per user.
+// Without a limit, a single user can create thousands of workspaces, filling
+// the DB and degrading performance for all tenants.
+const MAX_WORKSPACES_PER_USER = 10;
+
 router.post("/workspaces", async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
 
   try {
+    // Check workspace count for this user before inserting
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.userId, req.user!.userId));
+
+    if (Number(total) >= MAX_WORKSPACES_PER_USER) {
+      return res.status(429).json({
+        error: `Workspace limit reached. Maximum ${MAX_WORKSPACES_PER_USER} workspaces per user.`,
+      });
+    }
+
     const [ws] = await db.insert(workspaces).values({
       ownerId:        req.user!.userId,
       name:           parsed.data.name,
