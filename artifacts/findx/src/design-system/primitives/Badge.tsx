@@ -195,10 +195,9 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         {/* Loading spinner */}
         {loading && (
           <svg
-            className="animate-spin"
+            className="animate-spin size-3"
             viewBox="0 0 24 24"
             fill="none"
-            className="size-3"
             aria-hidden="true"
           >
             <circle
@@ -407,4 +406,4 @@ LiveIndicator.displayName = "LiveIndicator";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export { Badge, StatusDot, StatusIndicator, LiveIndicator };
-export type { BadgeProps, BadgeVariant, BadgeSize, StatusDotProps, StatusColor, StatusIndicatorProps, LiveIndicatorProps };
+// Types are exported inline above
