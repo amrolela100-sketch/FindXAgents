@@ -24,6 +24,24 @@ const STATUS_ICONS: Record<string, typeof Trophy> = {
   responded: MessageCircle,
 };
 
+const STATUS_CONFIG: Record<string, { accent: string; glow: string }> = {
+  won:       { accent: "#34D399", glow: "rgba(52,211,153,0.2)" },
+  qualified: { accent: "#C084FC", glow: "rgba(192,132,252,0.2)" },
+  responded: { accent: "#FBBF24", glow: "rgba(251,191,36,0.2)" },
+};
+
+function InitialAvatar({ name }: { name: string }) {
+  const initial = (name ?? "?")[0]?.toUpperCase() ?? "?";
+  return (
+    <div
+      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
+      style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)", color: "var(--text-muted)" }}
+    >
+      {initial}
+    </div>
+  );
+}
+
 // ── Client card ───────────────────────────────────────────────────────────────
 function ClientCard({ lead, onClick, index }: { lead: Lead; onClick: () => void; index: number }) {
   const { t }       = useLang();
