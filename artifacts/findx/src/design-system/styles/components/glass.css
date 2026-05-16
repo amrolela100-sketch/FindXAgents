@@ -1,0 +1,176 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Glass Components
+   
+   Glass card, glass variants, brand glow, skeleton.
+   The core visual identity of FindX's Liquid Glass Design System.
+   
+   @version 2.0.0
+   @layer components
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASS CARD — Core component
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.dark .glass-card {
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(245, 158, 11, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.dark .glass-card-hover:hover {
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(251, 191, 36, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Legacy alias — .card */
+.card {
+  background: var(--glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.dark .card {
+  box-shadow:
+    0 4px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.card-hover:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(245, 158, 11, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.dark .card-hover:hover {
+  border-color: rgba(251, 191, 36, 0.22);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(251, 191, 36, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.card-lift:hover {
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASS VARIANTS
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.glass-sm {
+  background: var(--glass);
+  backdrop-filter: var(--blur-glass-sm);
+  -webkit-backdrop-filter: var(--blur-glass-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.glass-raised {
+  background: var(--glass-raised);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dark .glass-raised {
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BRAND GLOW — The FindX signature
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.brand-glow {
+  box-shadow:
+    0 0 20px var(--brand-glow),
+    0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.dark .brand-glow {
+  box-shadow:
+    0 0 30px var(--brand-glow),
+    0 0 60px rgba(251, 191, 36, 0.10),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LIFT CARD — glass with colored accent hover
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.lift-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.lift-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.dark .lift-card:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKELETON — glass shimmer
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--glass-border) 25%,
+    rgba(255, 255, 255, 0.12) 50%,
+    var(--glass-border) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}

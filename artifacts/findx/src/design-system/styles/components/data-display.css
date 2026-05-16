@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Data Display Components
+   
+   Badge, kanban scroll, status pulse — data presentation styles.
+   
+   @version 2.0.0
+   @layer components
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BADGE
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  backdrop-filter: var(--blur-glass-sm);
+  -webkit-backdrop-filter: var(--blur-glass-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   KANBAN SCROLL
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+.kanban-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--glass-border-strong);
+  border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATUS PULSE
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.pulse-dot {
+  position: relative;
+  display: inline-block;
+}
+
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  animation: pulse-ring 2s ease-out infinite;
+}

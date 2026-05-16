@@ -1,17 +1,38 @@
-/* ════════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — ENTRY POINT
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Standalone CSS Entry Point
    
-   Import this CSS to use the design system:
-     import '@findx/design-system/index.css';
+   Use this if you want the design system as a standalone package:
+     import '@/design-system/index.css';
    
-   Or in HTML:
-     <link rel="stylesheet" href="/dist/findx-design-system/index.css" />
+   For the main app, use '@/index.css' instead — it already includes everything.
+   
+   This file re-exports the modular token system for standalone consumption.
+   
+   @version 2.0.0
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-@import './styles/foundation.css';
+/* Token Layer 1: Primitives */
+@import './styles/tokens/primitives.css';
+/* Token Layer 2: Semantic */
+@import './styles/tokens/semantic-light.css';
+@import './styles/tokens/semantic-dark.css';
 
-/* ════════════════════════════════════════════════════════════════════════════════
-   COMPONENT UTILITY CLASSES
+/* Component utility classes */
+@import './styles/tokens/animations.css';
+@import './styles/base/base.css';
+@import './styles/components/glass.css';
+@import './styles/components/navigation.css';
+@import './styles/components/forms.css';
+@import './styles/components/data-display.css';
+@import './styles/components/command-palette.css';
+@import './styles/utilities.css';
+@import './styles/rtl-a11y.css';
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ADDITIONAL DESIGN SYSTEM CLASSES
+   
+   These utility classes are provided by the design system for components
+   that import from '@/design-system' directly.
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* Card */
@@ -33,41 +54,7 @@
   box-shadow: var(--findx-shadow-lg);
 }
 
-/* Nav Link */
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: var(--findx-space-2);
-  padding: var(--findx-space-2) var(--findx-space-3);
-  border-radius: var(--findx-radius-md);
-  font-size: var(--findx-text-sm);
-  font-weight: 500;
-  color: var(--findx-text-secondary);
-  transition: all var(--findx-duration-fast) var(--findx-ease-out);
-}
-
-.nav-link:hover {
-  background: var(--findx-interactive-hover);
-  color: var(--findx-text-primary);
-}
-
-.nav-link.active {
-  background: var(--findx-accent-subtle);
-  color: var(--findx-accent);
-}
-
-/* Badge */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--findx-space-1);
-  padding: var(--findx-space-0.5) var(--findx-space-2);
-  border-radius: var(--findx-radius-full);
-  font-size: var(--findx-text-xs);
-  font-weight: 500;
-  line-height: 1;
-}
-
+/* Badge variants */
 .badge-default { background: var(--findx-accent-subtle); color: var(--findx-accent); }
 .badge-success { background: var(--findx-feedback-success-bg); color: var(--findx-feedback-success); }
 .badge-warning { background: var(--findx-feedback-warning-bg); color: var(--findx-feedback-warning); }
@@ -76,7 +63,7 @@
 
 /* Form */
 .form-label { display: block; font-size: var(--findx-text-sm); font-weight: 500; color: var(--findx-text-primary); margin-bottom: var(--findx-space-1); }
-.form-help { font-size: var(--findx-text-xs); color: var(--findx-text-muted); margin-top: var(--findx-space-1); }
+.form-help  { font-size: var(--findx-text-xs); color: var(--findx-text-muted); margin-top: var(--findx-space-1); }
 .form-error { font-size: var(--findx-text-xs); color: var(--findx-feedback-danger); margin-top: var(--findx-space-1); }
 
 /* Divider */
@@ -115,7 +102,7 @@
   border: 2px solid var(--findx-border-default);
   border-top-color: var(--findx-accent);
   border-radius: 50%;
-  animation: findx-spin 0.8s linear infinite;
+  animation: spin-slow 0.8s linear infinite;
 }
 
 /* Avatar */
@@ -152,5 +139,5 @@
   height: 8px;
   background: var(--findx-feedback-success);
   border-radius: 50%;
-  animation: findx-pulse 2s ease-in-out infinite;
+  animation: pulse-ring 2s ease-in-out infinite;
 }

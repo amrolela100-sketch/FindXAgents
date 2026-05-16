@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — Tailwind v4 Theme Bridge
+   
+   Maps design tokens to Tailwind's @theme so utilities like
+   bg-brand, text-primary, rounded-lg work with our token values.
+   
+   @version 2.0.0
+   @layer tokens
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Google Fonts are loaded via <link> in index.html — no @import needed. */
+
+@theme inline {
+  /* Font families */
+  --font-sans: "Outfit", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-arabic: "Noto Sans Arabic", "Outfit", sans-serif;
+
+  /* Brand — maps to legacy aliases (which point to --findx-* tokens) */
+  --color-brand:           var(--brand);
+  --color-brand-hover:     var(--brand-hover);
+  --color-brand-fg:        var(--brand-fg);
+  --color-brand-subtle:    var(--brand-subtle);
+  --color-brand-subtle-fg: var(--brand-subtle-fg);
+  --color-brand-glow:      var(--brand-glow);
+
+  /* Background */
+  --color-bg:              var(--bg);
+  --color-bg-subtle:       var(--bg-subtle);
+  --color-bg-inset:        var(--bg-inset);
+  --color-bg-mesh:         var(--bg-mesh);
+
+  /* Glass surface layers */
+  --color-glass:           var(--glass);
+  --color-glass-raised:    var(--glass-raised);
+  --color-glass-overlay:   var(--glass-overlay);
+  --color-glass-border:    var(--glass-border);
+  --color-glass-border-strong: var(--glass-border-strong);
+
+  /* --border alias for backwards compatibility */
+  --color-border-alias:    var(--glass-border);
+
+  /* Legacy surface aliases */
+  --color-surface:         var(--glass);
+  --color-surface-raised:  var(--glass-raised);
+  --color-surface-overlay: var(--glass-overlay);
+  --color-border:          var(--glass-border);
+  --color-border-strong:   var(--glass-border-strong);
+
+  /* Text */
+  --color-text:            var(--text);
+  --color-text-muted:      var(--text-muted);
+  --color-text-subtle:     var(--text-subtle);
+  --color-text-inverted:   var(--text-inverted);
+
+  /* Semantic — glass-aware versions */
+  --color-success:         #10B981;
+  --color-success-bg:      rgba(16, 185, 129, 0.12);
+  --color-success-border:  rgba(16, 185, 129, 0.25);
+  --color-warning:         #F59E0B;
+  --color-warning-bg:      rgba(245, 158, 11, 0.12);
+  --color-warning-border:  rgba(245, 158, 11, 0.25);
+  --color-danger:          #EF4444;
+  --color-danger-bg:       rgba(239, 68, 68, 0.12);
+  --color-danger-border:   rgba(239, 68, 68, 0.25);
+  --color-info:            #3B82F6;
+  --color-info-bg:         rgba(59, 130, 246, 0.12);
+  --color-info-border:     rgba(59, 130, 246, 0.25);
+
+  /* Radius */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-full: 9999px;
+
+  /* Glass blur values */
+  --blur-glass:    blur(20px) saturate(180%);
+  --blur-glass-sm: blur(12px) saturate(160%);
+  --blur-glass-lg: blur(32px) saturate(200%);
+}
