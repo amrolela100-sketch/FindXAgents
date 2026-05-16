@@ -51,6 +51,9 @@ services:
       - key: OWNER_PASSWORD
         sync: false            # strong secondary password for /owner panel
 
+      - key: OWNER_UNLOCK_SECRET
+        sync: false            # generate with: openssl rand -hex 32 (required for /owner step-up auth)
+
       - key: SECRET_ENCRYPTION_KEY
         sync: false            # generate with: openssl rand -base64 32
 
