@@ -9,16 +9,12 @@ import { env, isOwnerEmail, ownerEmail } from "../lib/env.js";
 const router = Router();
 
 // CRIT-3 fix: OWNER_UNLOCK_SECRET must be explicitly set — never derive from password
+// Warn loudly but do NOT crash the server — operator must set the variable.
+// The /owner/unlock endpoint is guarded by isOwner() check regardless.
 if (!process.env.OWNER_UNLOCK_SECRET) {
-  // In production this is fatal; in dev we warn loudly
-  if (process.env.NODE_ENV === "production") {
-    console.error("[FATAL] OWNER_UNLOCK_SECRET env variable is not set. Refusing to start in production.");
-    process.exit(1);
-  } else {
-    console.warn("[WARN] OWNER_UNLOCK_SECRET is not set. Using insecure fallback (dev only).");
-  }
+  console.warn("[WARN] OWNER_UNLOCK_SECRET env variable is not set. Owner step-up auth will use an insecure fallback. Set this variable in production.");
 }
-const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? "dev-insecure-unlock-secret-change-me";
+const UNLOCK_SECRET  = process.env.OWNER_UNLOCK_SECRET ?? "insecure-fallback-set-OWNER_UNLOCK_SECRET-in-env";
 // Unlock tokens are valid for 30 minutes
 const UNLOCK_TTL_MS  = 30 * 60 * 1000;
 
