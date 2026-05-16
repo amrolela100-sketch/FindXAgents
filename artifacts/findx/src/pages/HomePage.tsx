@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { StatCardSkeleton } from "../components/ui/skeleton-patterns";
 import { PageShell } from "../components/page-shell";
 import { DashboardCards } from "../components/dashboard-cards";
 import { ActivityFeed } from "../components/activity-feed";
@@ -170,7 +171,7 @@ function SectionCard({ title, icon: Icon, children, action }: {
 export default function HomePage() {
   const { t }    = useLang();
   const { user } = useAuth();
-  const { data: statsData } = usePolling(() => getDashboardStats(), 15_000);
+  const { data: statsData, isLoading: statsLoading, error: statsError } = usePolling(() => getDashboardStats(), 15_000);
   const { data: scoreData } = usePolling(() => getScoreDistribution(), 30_000);
   const { data: runsData  } = usePolling(() => getAgentRuns(), 10_000);
 
@@ -218,8 +219,9 @@ export default function HomePage() {
             <a
               className="btn btn-primary self-start sm:self-auto flex items-center gap-2 font-semibold"
               style={{ background: "var(--brand)", color: "var(--brand-fg)" }}
+              aria-label="Run discovery agent pipeline"
             >
-              <Play className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <Play className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
               Run Agent
             </a>
           </Link>
@@ -262,9 +264,42 @@ export default function HomePage() {
         )}
 
         {/* ── KPI cards ───────────────────────────────────────────── */}
-        <DashboardCards />
+        {statsError ? (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm"
+            style={{
+              background: "rgba(239,68,68,0.06)",
+              border: "1px solid rgba(239,68,68,0.20)",
+            }}
+            role="alert"
+            aria-live="assertive"
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#F87171" }} aria-hidden="true" />
+            <span style={{ color: "#F87171" }}>Failed to load stats. </span>
+            <button
+              className="underline text-xs"
+              style={{ color: "#F87171" }}
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        ) : statsLoading ? (
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            aria-busy="true"
+            aria-label="Loading KPI statistics"
+          >
+            {Array.from({ length: 4 }).map((_, i) => (
+              <StatCardSkeleton key={`stat-sk-${i}`} />
+            ))}
+          </div>
+        ) : (
+          <DashboardCards />
+        )}
 
         {/* ── Bento grid ──────────────────────────────────────────── */}
+        {/* aria-label provided via section wrappers below */
         <motion.div
           className="grid grid-cols-1 lg:grid-cols-12 gap-5"
           initial="hidden"
