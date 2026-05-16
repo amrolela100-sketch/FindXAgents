@@ -5,6 +5,7 @@ import { AgentRunHistory } from "../components/agent-run-history";
 import { useLang } from "../lib/lang-context";
 import { getAgents, runAgentPipeline, getAgentRuns, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { AgentCardSkeleton } from "../components/ui/skeleton-patterns";
 import { usePolling } from "../lib/hooks/use-polling";
 import type { Agent } from "../lib/types";
 import {
@@ -111,7 +112,11 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
       initial="hidden"
       animate="visible"
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col cursor-default"
+      className="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+      tabIndex={0}
+      role="article"
+      aria-label={`${agent.displayName} - Step ${agent.pipelineOrder} of 3`}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.currentTarget.focus(); }}
     >
       {/* Accent bar */}
       <div
@@ -130,7 +135,7 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
               boxShadow: `0 0 16px ${meta.accent}20`,
             }}
           >
-            <Icon className="w-5 h-5" strokeWidth={1.8} style={{ color: meta.accent }} />
+            <Icon className="w-5 h-5" strokeWidth={1.8} style={{ color: meta.accent }} aria-hidden="true" />
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -231,7 +236,7 @@ export default function AgentsPage() {
   const [starting, setStarting]     = useState(false);
   const [showHistory, setShowHistory] = useState(true);
 
-  const { data: agentsData } = useRealtimeData(() => getAgents(), ["agents"], 60_000);
+  const { data: agentsData, isLoading: agentsLoading } = useRealtimeData(() => getAgents(), ["agents"], 60_000);
   const { data: runsData, refresh } = usePolling(() => getAgentRuns(), 8_000);
 
   // ── Fallback: show the 3 pipeline agents even if DB hasn't been seeded yet ──
@@ -509,6 +514,8 @@ export default function AgentsPage() {
             <button
               onClick={handleRun}
               disabled={starting || !query.trim()}
+          aria-label={starting ? "Starting pipeline..." : t.agents.runPipeline}
+          aria-busy={starting}
               className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
             >
               {starting ? (
@@ -550,15 +557,23 @@ export default function AgentsPage() {
               color: "var(--text-subtle)",
               border: "1px solid var(--glass-border)",
             }}
+            aria-live="polite"
           >
-            {agents.length} agents
+            {agentsLoading ? "…" : `${agents.length} agents`}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {agents.map((agent, i) => (
-            <AgentCard key={agent.id} agent={agent} index={i} />
-          ))}
+        <div
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          aria-busy={agentsLoading}
+          aria-label="Agent cards"
+        >
+          {agentsLoading
+            ? Array.from({ length: 3 }).map((_, i) => <AgentCardSkeleton key={`agent-sk-${i}`} />)
+            : agents.map((agent, i) => (
+                <AgentCard key={agent.id} agent={agent} index={i} />
+              ))
+          }
         </div>
       </motion.div>
 
