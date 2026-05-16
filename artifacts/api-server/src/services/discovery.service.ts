@@ -176,7 +176,8 @@ export async function runDiscoveryJob(
           status: "discovered",
         }).returning();
         leadsFound++;
-        runTavilyEnrichment(newLead.id, lead.businessName, lead.city)
+        // HIGH-2 fix: pass workspaceId so enrichment resolves the correct Tavily key
+        runTavilyEnrichment(newLead.id, lead.businessName, lead.city, workspaceId)
           .catch((err) => logger.error({ err }, "Tavily enrichment failed"));
       }
     }

@@ -352,6 +352,17 @@ router.get("/agents/tools", async (_req, res) => {
 
 // ─── Agent CRUD ───────────────────────────────────────────────────────────────
 
+/**
+ * HIGH-4 fix: strip sensitive prompt fields from agent responses for non-admin users.
+ * Admins get the full record; regular users only get public metadata.
+ */
+function sanitizeAgentForUser(agent: Record<string, unknown>, adminUser: boolean): Record<string, unknown> {
+  if (adminUser) return agent;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { systemPrompt, identityMd, soulMd, toolsMd, toolNames, ...publicFields } = agent as any;
+  return publicFields;
+}
+
 router.get("/agents", async (req, res) => {
   try {
     const { active, role } = req.query as Record<string, string>;
@@ -376,7 +387,10 @@ router.get("/agents", async (req, res) => {
       logCountMap = new Map(logCounts.map((r) => [r.agentId, Number(r.count)]));
     }
 
-    const enriched = rows.map((a) => ({ ...a, _count: { skills: skillCountMap.get(a.id) ?? 0, logs: logCountMap.get(a.id) ?? 0 } }));
+    const adminUser = isAdmin(req);
+    const enriched = rows.map((a) =>
+      sanitizeAgentForUser({ ...a, _count: { skills: skillCountMap.get(a.id) ?? 0, logs: logCountMap.get(a.id) ?? 0 } }, adminUser)
+    );
     return res.json({ agents: enriched });
   } catch (err) {
     return safeError(res, err, "Internal server error");
@@ -393,7 +407,9 @@ router.get("/agents/name/:name", async (req, res) => {
       db.select({ count: count() }).from(agentLogs).where(eq(agentLogs.agentId, agent.id)),
     ]);
 
-    return res.json({ agent: { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } } });
+    // HIGH-4 fix: strip sensitive prompt fields for non-admin users
+    const full = { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } };
+    return res.json({ agent: sanitizeAgentForUser(full, isAdmin(req)) });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }
@@ -443,7 +459,9 @@ router.get("/agents/:id", async (req, res) => {
       db.select({ count: count() }).from(agentLogs).where(eq(agentLogs.agentId, agent.id)),
     ]);
 
-    return res.json({ agent: { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } } });
+    // HIGH-4 fix: strip sensitive prompt fields for non-admin users
+    const full = { ...agent, skills, _count: { logs: Number(logCount[0]?.count ?? 0) } };
+    return res.json({ agent: sanitizeAgentForUser(full, isAdmin(req)) });
   } catch (err) {
     return safeError(res, err, "Internal server error");
   }

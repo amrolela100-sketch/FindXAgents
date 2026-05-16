@@ -1,17 +1,58 @@
 import { db } from "@workspace/db";
 import { leads, analyses, searchConfigs } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { decryptSecret } from "../lib/secret-crypto.js";
+
+/**
+ * HIGH-2 fix: resolve Tavily key using proper workspace-scoped lookup.
+ *
+ * Priority order:
+ *  1. Workspace-specific searchConfig (workspaceId = provided ID)
+ *  2. Global searchConfig (workspaceId IS NULL)
+ *  3. TAVILY_API_KEY env var
+ *
+ * Previously used: `WHERE id = 'default'` — broken after migration 8
+ * (workspace multitenancy). That row never exists, so enrichment silently
+ * skipped Tavily and fell back only to the env var.
+ */
+async function resolveTavilyKey(workspaceId?: string | null): Promise<string | null> {
+  try {
+    // 1. Workspace-specific config
+    if (workspaceId) {
+      const [wsCfg] = await db
+        .select({ apiKey: searchConfigs.apiKey })
+        .from(searchConfigs)
+        .where(eq(searchConfigs.workspaceId, workspaceId))
+        .limit(1);
+      const key = decryptSecret(wsCfg?.apiKey);
+      if (key) return key;
+    }
+
+    // 2. Global / owner-level config (workspaceId IS NULL)
+    const [globalCfg] = await db
+      .select({ apiKey: searchConfigs.apiKey })
+      .from(searchConfigs)
+      .where(isNull(searchConfigs.workspaceId))
+      .limit(1);
+    const globalKey = decryptSecret(globalCfg?.apiKey);
+    if (globalKey) return globalKey;
+  } catch (err) {
+    logger.warn({ err }, "enrichment: failed to read searchConfigs from DB — falling back to env var");
+  }
+
+  // 3. Environment variable fallback
+  return process.env.TAVILY_API_KEY ?? null;
+}
 
 export async function runTavilyEnrichment(
   leadId: string,
   businessName: string,
-  city: string
+  city: string,
+  workspaceId?: string | null
 ): Promise<void> {
   try {
-    const [config] = await db.select().from(searchConfigs).where(eq(searchConfigs.id, "default"));
-    const apiKey = decryptSecret(config?.apiKey) || process.env.TAVILY_API_KEY;
+    const apiKey = await resolveTavilyKey(workspaceId);
     if (!apiKey) return;
 
     const query = `${businessName} ${city} Netherlands`;

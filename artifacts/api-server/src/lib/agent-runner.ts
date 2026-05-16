@@ -7,6 +7,18 @@ import { decryptSecret } from "./secret-crypto.js";
 import { notifyPipelineComplete, notifyPipelineFailed } from "./telegram.js";
 import pLimit from "p-limit";
 
+/**
+ * HIGH-7 fix: global concurrency limiter for AgentRunner.
+ *
+ * Without this, 10 users starting runs simultaneously = 500 concurrent AI calls
+ * (10 runs × 50 leads × pLimit(5) per run), which blows past OpenRouter/Gemini
+ * rate limits and spikes memory.
+ *
+ * Max 3 pipeline runs execute at the same time across the entire server process.
+ * Additional runs queue up and wait until a slot is free.
+ */
+const globalRunLimit = pLimit(3);
+
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -102,6 +114,13 @@ export class AgentRunner {
   constructor(private runId: string, private workspaceId: string | null = null) {}
 
   async run(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
+    // HIGH-7 fix: wrap entire pipeline execution in the global concurrency limiter.
+    // This ensures at most 3 AgentRunner instances execute concurrently across
+    // the whole server, preventing AI API rate limit blowout.
+    return globalRunLimit(() => this._runInternal(query, maxResults, userId, language));
+  }
+
+  private async _runInternal(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
     // BUG-2 fix: capture startTime before try block so it's available in catch for durationMs
     const runStartTime = Date.now();
     try {

@@ -56,7 +56,8 @@ router.get("/leads/:id/enrich", async (req, res) => {
     if (!lead) return res.status(404).json({ error: "Lead not found" });
     if (!checkLeadOwnership({ workspaceId: lead.workspaceId ?? null, userId: lead.userId ?? null }, req, res)) return;
 
-    runTavilyEnrichment(lead.id, lead.businessName, lead.city)
+    // HIGH-2 fix: pass workspaceId so enrichment resolves the correct Tavily key
+    runTavilyEnrichment(lead.id, lead.businessName, lead.city, lead.workspaceId)
       .catch((err) => logger.error({ err }, "Tavily enrichment failed"));
 
     return res.status(202).json({ message: "Enrichment queued." });
