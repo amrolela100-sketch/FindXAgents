@@ -409,4 +409,4 @@ ButtonGroup.displayName = "ButtonGroup";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export { Button, ButtonGroup, buttonVariants };
-export type { ButtonProps, ButtonGroupProps, ButtonVariant, ButtonSize };
+// Types are exported inline above
