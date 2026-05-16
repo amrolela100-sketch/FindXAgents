@@ -71,6 +71,7 @@ jobs:
       - name: Run Tests with Coverage
         run: pnpm test -- --coverage
         env:
+          NODE_ENV: test
           DATABASE_URL: postgresql://test:test@localhost:5432/testdb
           REDIS_URL: redis://localhost:6379
       - name: Upload coverage artifact
