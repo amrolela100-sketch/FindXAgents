@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-import { SPRING } from "@/lib/motion";
+import { SPRING, FADE_UP } from "@/lib/motion";
 
 const AGENT_META: Record<string, { icon: typeof Bot; accent: string; gradient: string }> = {
   discovery: {
