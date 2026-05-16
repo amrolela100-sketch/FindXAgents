@@ -242,9 +242,10 @@ export default function PipelinePage() {
             <h2 className="text-[10px] font-bold text-text-subtle uppercase tracking-[0.2em]">Funnel Stages</h2>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {STATUS_META.map((s) => (
-              <StatusChip key={s.key} count={statusCounts[s.key] ?? 0} {...s} />
-            ))}
+            {STATUS_META.map((s) => {
+              const { key: statusKey, ...rest } = s;
+              return <StatusChip key={statusKey} count={statusCounts[statusKey] ?? 0} {...rest} />;
+            })}
           </div>
         </motion.div>
 
