@@ -16,34 +16,41 @@ The FindX Design System is a layered token-based system providing:
 ## Architecture
 
 ```
-Layer 1: Primitive Tokens (raw hex values)
-  --findx-color-brand-500: #F59E0B
-  --findx-space-4: 1rem
-  --findx-radius-md: 0.5rem
-
-Layer 2: Semantic Tokens (purpose-based aliases)
-  --findx-accent: var(--findx-color-brand-500)
-  --findx-text-primary: var(--findx-color-neutral-900)
-
-Layer 3: Component Tokens (scoped to specific components)
-  --findx-button-height: var(--findx-space-9)
-
-Layer 4: Legacy Aliases (backward compatibility)
-  --brand: var(--findx-accent)    ← REMOVE in v2.0
+┌────────────────────────────────────────────────────────────────────────┐
+│ Layer 1: Primitive Tokens (raw hex values)                             │
+│   --findx-color-brand-500: #F59E0B                                     │
+│   --findx-space-4: 1rem                                                │
+│   --findx-radius-md: 0.5rem                                           │
+├────────────────────────────────────────────────────────────────────────┤
+│ Layer 2: Semantic Tokens (purpose-based aliases)                      │
+│   --findx-accent: var(--findx-color-brand-500)                        │
+│   --findx-text-primary: var(--findx-color-neutral-900)                │
+├────────────────────────────────────────────────────────────────────────┤
+│ Layer 3: Tailwind @theme (for className usage)                        │
+│   bg-brand, text-neutral-900, etc.                                    │
+├────────────────────────────────────────────────────────────────────────┤
+│ Layer 4: Legacy Aliases (backward compatibility)                      │
+│   --brand: var(--findx-accent)      ← REMOVE in v2.0                 │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
-### Import the CSS
+### 1. Import the CSS
 
 ```tsx
-// In your root layout or App.tsx
-import '@findx/design-system/index.css';
+// Option A: Import in main.tsx or App.tsx
+import '@findx/design-system/styles/foundation.css';
+import '@findx/design-system/index.css'; // component utilities
+
+// Option B: In your CSS file
+@import '@findx/design-system/styles/foundation.css';
 ```
 
-### Use Design Tokens
+### 2. Use Design Tokens
 
 ```tsx
+// Using the hook (recommended for dynamic theming)
 import { useDesignTokens } from '@/design-system/hooks';
 
 function MyComponent() {
@@ -61,6 +68,44 @@ function MyComponent() {
     </div>
   );
 }
+
+// Using CSS variables (recommended for static styles)
+<div className="bg-[var(--findx-accent)] text-[var(--findx-text-primary)]" />
+
+// Using Tailwind classes (for rapid development)
+<div className="bg-brand text-neutral-900 rounded-md" />
+```
+
+### 3. Use Components
+
+```tsx
+import { Button, Card, Badge, DataTable, FormBuilder } from '@/design-system';
+
+// Button with variants
+<Button variant="primary" size="md">Click me</Button>
+<Button variant="destructive" icon={Trash}>Delete</Button>
+
+// Card with glass effect
+<Card variant="glass" elevated padding="lg">
+  <CardHeader title="Statistics" />
+  <CardContent>...</CardContent>
+</Card>
+
+// Badge with status
+<Badge variant="success" dot>Active</Badge>
+
+// DataTable
+<DataTable
+  data={leads}
+  columns={columns}
+  pagination={{ page: 1, pageSize: 20, total: 100 }}
+/>
+
+// FormBuilder
+<FormBuilder
+  sections={formConfig}
+  onSubmit={handleSubmit}
+/>
 ```
 
 ## Token Categories
@@ -73,6 +118,17 @@ function MyComponent() {
 | `--findx-text-primary` | Main text | `#171717` | `#EEECFA` |
 | `--findx-bg-base` | Background | `#F0EFF8` | `#080810` |
 | `--findx-surface-glass` | Glass card | `rgba(255,255,255,0.65)` | `rgba(255,255,255,0.04)` |
+
+### Tailwind Color Classes
+
+These map to the semantic tokens for rapid development:
+
+| Class | Token |
+|-------|-------|
+| `bg-brand` | `--findx-accent` |
+| `text-neutral-900` | `--findx-text-primary` |
+| `bg-glass` | `--findx-surface-glass` |
+| `border-border` | `--findx-border-default` |
 
 ### Spacing Scale
 
@@ -93,46 +149,31 @@ function MyComponent() {
 
 ## Components
 
-### PageShell
+### Primitives
 
-```tsx
-import { PageShell } from '@/design-system/patterns';
+| Component | Variants | Sizes | Description |
+|-----------|----------|-------|-------------|
+| **Button** | 10 | 8 | Primary actions, loading, icons |
+| **Input** | 4 states | 3 | Text, error, success states |
+| **Card** | 7 | 5 padding | Glass, hover, elevation |
+| **Badge** | 10 | 3 | Status, dot, removable |
+| **Avatar** | 3 shapes | 6 | Image, initials, group |
 
-<PageShell
-  title="Leads"
-  description="Manage your business prospects"
-  breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Leads' }]}
-  header={<Button>Add Lead</Button>}
->
-  <DataTable columns={columns} data={leads} />
-</PageShell>
-```
+### Patterns
 
-### EmptyState
+| Component | Description |
+|-----------|-------------|
+| **PageShell** | Standard page layout wrapper |
+| **EmptyState** | Empty lists, skeleton loaders |
 
-```tsx
-import { EmptyState } from '@/design-system/patterns';
-import { Inbox } from 'lucide-react';
+### Advanced
 
-<EmptyState
-  icon={Inbox}
-  title="No leads yet"
-  description="Start by discovering new business prospects"
-  action={{ label: 'Discover Leads', onClick: () => openModal() }}
-/>
-```
-
-### Skeleton
-
-```tsx
-import { Skeleton, PageSkeleton } from '@/design-system/patterns';
-
-// Single skeleton
-<Skeleton width="100%" height="1rem" />
-
-// Full page loading
-<PageSkeleton rows={5} />
-```
+| Component | Description |
+|-----------|-------------|
+| **DataTable** | Sortable, filterable, paginated tables |
+| **FormBuilder** | Dynamic form generation with validation |
+| **MultiStepWizard** | Step-by-step workflows |
+| **Notification** | Toast system with provider |
 
 ## Hooks
 
@@ -142,10 +183,11 @@ Access all design tokens with theme awareness:
 
 ```tsx
 const tokens = useDesignTokens();
-// tokens.color.accent
-// tokens.spacing['4']
-// tokens.isDark
-// tokens.isRtl
+// tokens.color.accent          // → var(--findx-accent)
+// tokens.spacing['4']          // → var(--findx-space-4)
+// tokens.isDark                // → boolean
+// tokens.isRtl                 // → boolean
+// tokens.motion.durations.fast // → '100ms'
 ```
 
 ### useBreakpoint
@@ -157,38 +199,78 @@ const breakpoint = useBreakpoint();
 // 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 ```
 
+### useNotification
+
+Toast/notification system:
+
+```tsx
+const { success, error, info, loading } = useNotification();
+
+success('Saved successfully!');
+error('Something went wrong', 'Please try again');
+```
+
 ## Migration Guide
 
-| Legacy | Semantic | Status |
-|--------|----------|--------|
-| `--brand` | `--findx-accent` | ✓ Migrated |
-| `--text` | `--findx-text-primary` | ✓ Migrated |
-| `--bg` | `--findx-bg-base` | ✓ Migrated |
-| `--glass` | `--findx-surface-glass` | ✓ Migrated |
+### From Legacy Variables to Semantic Tokens
+
+| Legacy | Semantic | Tailwind Class |
+|--------|----------|----------------|
+| `--brand` | `--findx-accent` | `bg-brand` |
+| `--brand-hover` | `--findx-accent-hover` | `hover:bg-brand` |
+| `--text` | `--findx-text-primary` | `text-neutral-900` |
+| `--text-muted` | `--findx-text-secondary` | `text-neutral-600` |
+| `--bg` | `--findx-bg-base` | `bg-neutral-50` |
+| `--glass` | `--findx-surface-glass` | `bg-glass` |
+
+### Phase Schedule
+
+- **Phase 0** ✅ Foundation tokens & CSS architecture
+- **Phase 1** ✅ Primitives (Button, Input, Card, Badge, Avatar)
+- **Phase 2** ✅ Advanced (DataTable, FormBuilder, Wizard, Notification)
+- **Phase 3** 🔄 Page refactoring
+- **Phase 4** 📋 Motion & micro-interactions
+- **Phase 5** 📋 Accessibility audit
+- **Phase 6** 📋 Storybook + visual regression
+- **Phase 7** 📋 npm package publishing
 
 ## File Structure
 
 ```
 src/design-system/
 ├── tokens/           # Design token definitions (JSON + TS)
-├── styles/           # Foundation CSS
+├── styles/           # Foundation CSS (import this)
+├── primitives/       # Core UI components
 ├── patterns/         # Reusable UI patterns
+├── advanced/         # Complex components (DataTable, etc.)
 ├── hooks/            # React hooks
-└── index.ts          # Main exports
+├── index.ts          # Main exports
+├── index.css         # Component utilities
+└── README.md         # This file
 ```
 
 ## Version
 
-- **Version**: 1.0.0
+- **Version**: 1.2.0
 - **Last Updated**: 2026-05-16
-- **Status**: Phase 0 Complete — Foundation established
+- **Status**: Phase 0-2 Complete
 
-## Roadmap
+## Troubleshooting
 
-- [ ] Phase 1: Core Components refactoring
-- [ ] Phase 2: Advanced components (DataTable, FormBuilder)
-- [ ] Phase 3: Page refactoring
-- [ ] Phase 4: Motion & micro-interactions
-- [ ] Phase 5: Accessibility audit
-- [ ] Phase 6: Storybook + visual regression tests
-- [ ] Phase 7: npm package publishing
+### CSS Variables Not Working?
+
+1. Ensure foundation.css is imported
+2. Check for `@import` order (must be at top)
+3. Verify no conflicting variable names
+
+### TypeScript Errors?
+
+1. Ensure `@/` path alias is configured in tsconfig.json
+2. Check that all required dependencies are installed
+3. Verify React is imported in component files
+
+### Design System Not Taking Effect?
+
+1. Clear browser cache
+2. Check CSS specificity
+3. Verify z-index layering

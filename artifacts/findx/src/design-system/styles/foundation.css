@@ -16,7 +16,7 @@
    ✓ All new components should use semantic tokens only
    ✓ CSS variable names follow findx-* prefix convention
    
-   @version 1.0.0
+   @version 1.1.0
    @lastUpdated 2026-05-16
 ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -262,6 +262,8 @@
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
+  /* Foundation: Define base colors FIRST, then semantic aliases */
+  /* These reference the primitive tokens directly */
   --findx-accent:          var(--findx-color-brand-500);
   --findx-accent-hover:    var(--findx-color-brand-600);
   --findx-accent-subtle:   var(--findx-color-brand-50);
@@ -363,69 +365,9 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════════════════
-   LAYER 4: BACKWARD-COMPATIBILITY ALIASES
-═══════════════════════════════════════════════════════════════════════════════ */
-
-:root,
-.dark {
-  --brand:              var(--findx-accent);
-  --brand-hover:        var(--findx-accent-hover);
-  --brand-fg:           var(--findx-accent-foreground);
-  --brand-subtle:       var(--findx-accent-subtle);
-  --brand-subtle-fg:    var(--findx-color-brand-800);
-  --brand-glow:         var(--findx-accent-glow);
-
-  --text:               var(--findx-text-primary);
-  --text-muted:         var(--findx-text-secondary);
-  --text-subtle:        var(--findx-text-muted);
-  --text-inverted:      var(--findx-text-inverted);
-
-  --bg:                 var(--findx-bg-base);
-  --bg-subtle:          var(--findx-bg-subtle);
-  --bg-inset:           var(--findx-bg-inset);
-  --bg-mesh:            var(--findx-bg-base);
-
-  --glass:              var(--findx-surface-glass);
-  --glass-raised:       var(--findx-surface-glass-raised);
-  --glass-overlay:      var(--findx-surface-glass-overlay);
-  --glass-border:       var(--findx-surface-border);
-  --glass-border-strong: var(--findx-surface-border-strong);
-
-  --surface:            var(--findx-surface-glass);
-  --surface-raised:     var(--findx-surface-glass-raised);
-  --surface-overlay:    var(--findx-surface-glass-overlay);
-
-  --border:             var(--findx-surface-border);
-  --border-strong:      var(--findx-surface-border-strong);
-
-  --radius-sm:   var(--findx-radius-sm);
-  --radius-md:   var(--findx-radius-md);
-  --radius-lg:   var(--findx-radius-lg);
-  --radius-xl:   var(--findx-radius-xl);
-  --radius-2xl:  var(--findx-radius-2xl);
-  --radius-full: var(--findx-radius-full);
-
-  --color-brand:        var(--findx-accent);
-  --color-brand-hover:  var(--findx-accent-hover);
-  --color-brand-fg:     var(--findx-accent-foreground);
-  --color-brand-subtle: var(--findx-accent-subtle);
-  --color-bg:           var(--findx-bg-base);
-  --color-bg-subtle:    var(--findx-bg-subtle);
-  --color-bg-inset:     var(--findx-bg-inset);
-  --color-glass:        var(--findx-surface-glass);
-  --color-text:         var(--findx-text-primary);
-  --color-text-muted:   var(--findx-text-secondary);
-  --color-text-subtle:  var(--findx-text-muted);
-  --color-surface:      var(--findx-surface-glass);
-}
-
-.dark {
-  --brand-fg:           var(--findx-color-brand-800);
-  --brand-subtle-fg:    var(--findx-color-brand-200);
-}
-
-/* ════════════════════════════════════════════════════════════════════════════════
-   TAILWIND @theme CONFIGURATION
+   LAYER 4: TAILWIND @theme CONFIGURATION
+   Extend Tailwind with FindX design tokens for use in className
+   Note: These are ONLY for Tailwind className usage - DO NOT reference in CSS
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
@@ -433,6 +375,7 @@
   --font-mono: var(--findx-font-mono);
   --font-arabic: var(--findx-font-arabic);
 
+  /* Brand Colors - map to findx-* semantic tokens */
   --color-brand:           var(--findx-accent);
   --color-brand-hover:     var(--findx-accent-hover);
   --color-brand-fg:        var(--findx-accent-foreground);
@@ -440,32 +383,38 @@
   --color-brand-subtle-fg: var(--findx-color-brand-800);
   --color-brand-glow:      var(--findx-accent-glow);
 
+  /* Background Colors */
   --color-bg:              var(--findx-bg-base);
   --color-bg-subtle:       var(--findx-bg-subtle);
   --color-bg-inset:        var(--findx-bg-inset);
   --color-bg-elevated:     var(--findx-bg-elevated);
   --color-bg-mesh:         var(--findx-bg-base);
 
+  /* Glass / Surface Colors */
   --color-glass:           var(--findx-surface-glass);
   --color-glass-raised:    var(--findx-surface-glass-raised);
   --color-glass-overlay:   var(--findx-surface-glass-overlay);
   --color-glass-border:    var(--findx-surface-border);
   --color-glass-border-strong: var(--findx-surface-border-strong);
 
+  /* Surface aliases */
   --color-surface:         var(--findx-surface-glass);
   --color-surface-raised:  var(--findx-surface-glass-raised);
   --color-surface-overlay: var(--findx-surface-glass-overlay);
 
+  /* Text Colors */
   --color-text:            var(--findx-text-primary);
   --color-text-muted:      var(--findx-text-secondary);
   --color-text-subtle:     var(--findx-text-muted);
   --color-text-inverted:   var(--findx-text-inverted);
 
+  /* Border Colors */
   --color-border:          var(--findx-border-default);
   --color-border-strong:   var(--findx-border-strong);
   --color-border-focus:    var(--findx-border-focus);
   --color-border-alias:    var(--findx-surface-border);
 
+  /* Semantic / Feedback Colors */
   --color-success:         var(--findx-feedback-success);
   --color-success-bg:      var(--findx-feedback-success-bg);
   --color-success-border:  var(--findx-feedback-success-border);
@@ -482,6 +431,7 @@
   --color-accent:          var(--findx-accent);
   --color-accent-hover:    var(--findx-accent-hover);
 
+  /* Radius */
   --radius-sm:   var(--findx-radius-sm);
   --radius-xs:   var(--findx-radius-xs);
   --radius-md:   var(--findx-radius-md);
@@ -491,6 +441,7 @@
   --radius-3xl:  var(--findx-radius-3xl);
   --radius-full: var(--findx-radius-full);
 
+  /* Shadows */
   --shadow-xs:   var(--findx-shadow-xs);
   --shadow-sm:   var(--findx-shadow-sm);
   --shadow-md:   var(--findx-shadow-md);
@@ -503,6 +454,7 @@
   --shadow-glow-danger:  var(--findx-shadow-glow-danger);
   --shadow-glow-info:    var(--findx-shadow-glow-info);
 
+  /* Animation easings */
   --ease-spring:      var(--findx-ease-spring);
   --ease-spring-fast: var(--findx-ease-spring-fast);
   --ease-bounce:      var(--findx-ease-bounce);
