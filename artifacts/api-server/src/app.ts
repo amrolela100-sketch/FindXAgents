@@ -103,6 +103,10 @@ app.use(cors(buildCorsOptions()));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
+// MED-3 fix: /leads/import accepts CSV up to 5MB — override body limit for that route only.
+// Must be registered BEFORE the global router to take precedence.
+app.use("/api/leads/import", express.text({ type: ["text/csv", "application/csv", "text/plain"], limit: "5mb" }));
+
 import { globalLimiter } from "./middleware/rate-limit.js";
 
 app.use("/api", globalLimiter, router);

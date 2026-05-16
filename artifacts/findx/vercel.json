@@ -4,6 +4,9 @@
   "outputDirectory": "dist",
   "installCommand": "echo 'install handled by buildCommand'",
   "framework": null,
+  "env": {
+    "NODE_ENV": "production"
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

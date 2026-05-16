@@ -92,6 +92,13 @@
       "when": 1778885124622,
       "tag": "0012_default_workspace_race_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1747437600000,
+      "tag": "0013_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

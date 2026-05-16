@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, isNull, or } from "drizzle-orm";
 import { decryptSecret } from "./secret-crypto.js";
+import { GEMINI_FLASH_MODEL } from "./constants.js";
 import { type ScrapedWebsite, type ScrapyAuditResult, buildExtendedContext, calculateGroundedScore } from "./website-scraper.js";
 
 // ── Prompt boundary helpers ──────────────────────────────────────────────────
@@ -85,7 +86,8 @@ async function getClient(workspaceId?: string | null) {
   });
 }
 
-const MODEL = "google/gemini-2.5-flash";
+// MED-2 fix: use centralized constant instead of inline string literal
+const MODEL = GEMINI_FLASH_MODEL;
 
 export interface LeadForAnalysis {
   id: string;
