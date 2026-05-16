@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FindX — Offline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #1C1917;
+      color: #F5F5F4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      gap: 1.5rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    .icon { font-size: 3rem; }
+    h1 { font-size: 1.5rem; font-weight: 600; color: #F5F5F4; }
+    p  { font-size: 0.95rem; color: #A8A29E; max-width: 360px; line-height: 1.6; }
+    button {
+      margin-top: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      background: #D97706;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="icon">🔌</div>
+  <h1>You're offline</h1>
+  <p>It looks like you've lost your internet connection. Check your network and try again.</p>
+  <button onclick="window.location.reload()">Try again</button>
+</body>
+</html>

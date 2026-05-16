@@ -1,0 +1,86 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "artifacts/findx/src/**"
+      - "artifacts/findx/public/**"
+      - "artifacts/findx/package.json"
+      - "artifacts/findx/vite.config.ts"
+
+# LOW-11: Monitor frontend bundle size on every PR that touches frontend code.
+# Fails the check if any single chunk exceeds the defined limits,
+# so we get a CI failure before bundle bloat ships to production.
+
+jobs:
+  bundle-size:
+    name: CI / Bundle Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: "10" }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: "pnpm" }
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter @workspace/findx run build
+        env:
+          NODE_ENV: production
+
+      - name: Check bundle sizes
+        run: |
+          echo "=== Bundle size report ==="
+          # Print all JS chunks with their sizes
+          find artifacts/findx/dist/assets -name "*.js" -not -name "*.map"             | xargs ls -lh             | awk '{print $5, $9}'             | sort -hr
+
+          echo ""
+          echo "=== Total dist size ==="
+          du -sh artifacts/findx/dist/
+
+          # Enforce limits (LOW-11):
+          #   - No single JS chunk > 600 KB (post-minification)
+          #   - Total dist/ < 5 MB
+          MAX_CHUNK_KB=600
+          MAX_TOTAL_MB=5
+
+          VIOLATIONS=0
+
+          while IFS= read -r -d '' file; do
+            SIZE_KB=$(du -k "$file" | cut -f1)
+            BASENAME=$(basename "$file")
+            if [ "$SIZE_KB" -gt "$MAX_CHUNK_KB" ]; then
+              echo "❌ CHUNK TOO LARGE: $BASENAME = ${SIZE_KB}KB (limit: ${MAX_CHUNK_KB}KB)"
+              VIOLATIONS=$((VIOLATIONS + 1))
+            else
+              echo "✅ $BASENAME = ${SIZE_KB}KB"
+            fi
+          done < <(find artifacts/findx/dist/assets -name "*.js" -not -name "*.map" -print0)
+
+          TOTAL_KB=$(du -sk artifacts/findx/dist/ | cut -f1)
+          TOTAL_MB=$((TOTAL_KB / 1024))
+          if [ "$TOTAL_MB" -gt "$MAX_TOTAL_MB" ]; then
+            echo "❌ TOTAL DIST TOO LARGE: ${TOTAL_MB}MB (limit: ${MAX_TOTAL_MB}MB)"
+            VIOLATIONS=$((VIOLATIONS + 1))
+          else
+            echo "✅ Total dist: ${TOTAL_MB}MB"
+          fi
+
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo ""
+            echo "Bundle size check FAILED ($VIOLATIONS violation(s))."
+            echo "Consider:"
+            echo "  - Adding more manualChunks entries in vite.config.ts"
+            echo "  - Lazy-loading heavy components"
+            echo "  - Removing unused dependencies"
+            exit 1
+          fi
+
+          echo ""
+          echo "Bundle size check PASSED ✅"
