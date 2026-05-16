@@ -42,7 +42,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   /** Success state — shows green border and checkmark */
   success?: boolean;
   /** Size variant */
-  size?: "sm" | "md" | "lg";
+  inputSize?: "sm" | "md" | "lg";
   /** Full width */
   fullWidth?: boolean;
   /** Left icon */
@@ -520,4 +520,4 @@ FormField.displayName = "FormField";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export { Input, Textarea, Label, FormField };
-export type { InputProps, TextareaProps, LabelProps, FormFieldProps };
+// Types are exported inline above
