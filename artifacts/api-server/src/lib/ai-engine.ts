@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+import OpenAI, { type ClientOptions } from "openai";
+import type { ResponseFormatJSONSchema } from "openai/resources/shared.js";
 import { db } from "@workspace/db";
 import { aiProviders } from "@workspace/db";
 import { eq, isNull, or } from "drizzle-orm";
@@ -119,7 +120,10 @@ export interface OutreachResult {
   language: string;
 }
 
-const analysisResponseFormat = {
+// MED-7: use ResponseFormatJSONSchema type instead of `as any`.
+// The OpenAI SDK types response_format as a union — satisfying the type properly
+// avoids the `as any` cast and keeps TypeScript coverage intact.
+const analysisResponseFormat: ResponseFormatJSONSchema = {
   type: "json_schema",
   json_schema: {
     name: "findx_lead_analysis",
@@ -140,9 +144,9 @@ const analysisResponseFormat = {
       },
     },
   },
-} as const;
+};
 
-const outreachResponseFormat = {
+const outreachResponseFormat: ResponseFormatJSONSchema = {
   type: "json_schema",
   json_schema: {
     name: "findx_outreach_email",
@@ -158,7 +162,7 @@ const outreachResponseFormat = {
       },
     },
   },
-} as const;
+};
 
 /**
  * Analyze a lead using GROUNDED data from real website scraping.
@@ -235,7 +239,7 @@ Return only data matching the required JSON schema.`;
   const response = await client.chat.completions.create({
     model: MODEL,
     max_tokens: 1024,
-    response_format: analysisResponseFormat as any,
+    response_format: analysisResponseFormat,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: JSON.stringify(userPayload) },
@@ -351,7 +355,7 @@ Write a concise personalized cold outreach email and return only JSON matching t
   const response = await client.chat.completions.create({
     model: MODEL,
     max_tokens: 1024,
-    response_format: outreachResponseFormat as any,
+    response_format: outreachResponseFormat,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: JSON.stringify(userPayload) },

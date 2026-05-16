@@ -113,6 +113,10 @@ VITE_API_URL             = /api
 > Vercel rewrites `/api/*` → `https://findx-api.onrender.com/api/*` via `vercel.json`.
 > Setting the full Render URL here bypasses the proxy and **breaks CORS**.
 
+> 💡 **API Versioning (LOW-5):** The API now also accepts `/api/v1/*` (identical behavior).
+> To opt into versioned endpoints, set `VITE_API_URL=/api/v1` — both work in parallel.
+> The unversioned `/api` alias is kept for backward compatibility.
+
 4. Click **Deploy** — done in ~1 min ✅
 
 ### C. Update CORS on Render

@@ -4,6 +4,8 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { sentryRequestHandler, sentryErrorHandler } from "./lib/sentry.js";
+// LOW-3: request correlation IDs
+import { requestId } from "./middleware/request-id.js";
 
 const app: Express = express();
 
@@ -33,12 +35,17 @@ function buildCorsOptions(): cors.CorsOptions {
   };
 }
 
-// ── Sentry request tracing (must be first middleware) ─────────────────────────
+// LOW-3: attach X-Request-ID before everything else so Sentry + pino pick it up
+app.use(requestId);
+
+// ── Sentry request tracing (must be before routes) ────────────────────────────
 app.use(sentryRequestHandler());
 
 app.use(
   pinoHttp({
     logger,
+    // LOW-3: include X-Request-ID in every log line for correlation
+    genReqId: (req) => (req as express.Request).id,
     serializers: {
       req(req) {
         return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
@@ -84,7 +91,18 @@ app.use("/api/leads/import", express.text({ type: ["text/csv", "application/csv"
 
 import { globalLimiter } from "./middleware/rate-limit.js";
 
-app.use("/api", globalLimiter, router);
+// LOW-5: API versioning.
+// Mount all routes under /api/v1/ going forward.
+// /api/* is kept as a backward-compat alias (same router, no code duplication)
+// so existing Vercel rewrites, mobile apps, and integrations don't break.
+//
+// Migration path for clients:
+//   - New code:  use /api/v1/...
+//   - Old code:  /api/... still works (alias, identical behavior)
+//
+// When we're ready to drop the unversioned alias, remove the second app.use line.
+app.use("/api/v1", globalLimiter, router);
+app.use("/api",    globalLimiter, router);
 
 // ── Sentry error handler (must be after routes, before safeError) ─────────────
 app.use(sentryErrorHandler());

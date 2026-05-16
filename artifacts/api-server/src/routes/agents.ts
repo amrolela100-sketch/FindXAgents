@@ -368,7 +368,7 @@ router.get("/agents/tools", async (_req, res) => {
 function sanitizeAgentForUser(agent: Record<string, unknown>, adminUser: boolean): Record<string, unknown> {
   if (adminUser) return agent;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { systemPrompt, identityMd, soulMd, toolsMd, toolNames, ...publicFields } = agent as any;
+  const { systemPrompt: _sp, identityMd: _im, soulMd: _sm, toolsMd: _tm, toolNames: _tn, ...publicFields } = agent as Record<string, unknown>;
   return publicFields;
 }
 
@@ -449,8 +449,8 @@ router.patch("/agents/name/:name", requireAdmin, async (req, res) => {
     const updateData: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
     if (updateData.temperature !== undefined) updateData.temperature = updateData.temperature === null ? null : String(updateData.temperature);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [agent] = await db.update(agents).set(updateData as any).where(eq(agents.name, req.params["name"] as string)).returning();
+    // MED-7: use Partial<typeof agents.$inferInsert> instead of as any
+    const [agent] = await db.update(agents).set(updateData as Partial<typeof agents.$inferInsert>).where(eq(agents.name, req.params["name"] as string)).returning();
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {
@@ -534,8 +534,8 @@ router.patch("/agents/:id", requireAdmin, async (req, res) => {
   if (data.temperature !== undefined) data.temperature = data.temperature === null ? null : String(data.temperature);
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [agent] = await db.update(agents).set(data as any).where(eq(agents.id, req.params["id"] as string)).returning();
+    // MED-7: use Partial<typeof agents.$inferInsert> instead of as any
+    const [agent] = await db.update(agents).set(data as Partial<typeof agents.$inferInsert>).where(eq(agents.id, req.params["id"] as string)).returning();
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json({ agent });
   } catch (err) {

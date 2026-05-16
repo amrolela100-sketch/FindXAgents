@@ -22,8 +22,10 @@ import type {
 import { toast } from "../hooks/use-toast";
 import { supabase } from "./supabase";
 
-// Strategy: always proxy-based — VITE_API_URL is "/api" in production (Vercel proxy)
-// and "http://localhost:3000/api" in local dev. Never hardcode "/api".
+// LOW-5: API versioning.
+// VITE_API_URL defaults to "/api" (unversioned, backward-compat).
+// Set VITE_API_URL="/api/v1" in .env to opt into the versioned endpoint.
+// The API server accepts both /api/* and /api/v1/* (identical behavior).
 const BASE = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "");
 
 // MED-4: 401 debounce flag — prevents duplicate signOut/redirect when parallel

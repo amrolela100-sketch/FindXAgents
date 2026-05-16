@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, assertUser } from "../middleware/auth";
 import { db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { safeError } from "../lib/safe-error.js";
@@ -16,7 +16,7 @@ router.get("/onboarding/status", async (req, res) => {
         onboardingData: users.onboardingData 
       })
       .from(users)
-      .where(eq(users.id, req.user!.userId))
+      .where(eq(users.id, assertUser(req).userId))
       .limit(1);
 
     if (!user) {
@@ -43,7 +43,7 @@ router.post("/onboarding/complete", async (req, res) => {
         onboardingData,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, req.user!.userId));
+      .where(eq(users.id, assertUser(req).userId));
 
     return res.json({ completed: true });
   } catch (err) {

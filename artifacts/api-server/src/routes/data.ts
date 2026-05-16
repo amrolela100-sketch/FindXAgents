@@ -2,13 +2,13 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { outreaches, analyses, agentLogs, agentPipelineRuns, leads } from "@workspace/db";
 import { count, eq, inArray } from "drizzle-orm";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, assertUser } from "../middleware/auth";
 
 const router = Router();
 
 router.delete("/data/clear-all", requireAuth, async (req, res) => {
   // Any authenticated user can clear their own workspace data
-  const workspaceId = req.user!.activeWorkspaceId;
+  const workspaceId = assertUser(req).activeWorkspaceId;
 
   try {
     const result = await db.transaction(async (tx) => {

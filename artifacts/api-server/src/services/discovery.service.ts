@@ -3,6 +3,8 @@ import { leads, analyses, agents, agentPipelineRuns, agentLogs, searchConfigs } 
 import { eq, ilike, and, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { decryptSecret } from "../lib/secret-crypto.js";
+// LOW-1: import shared getDomain from utils — removed local duplicate definition
+import { getDomain } from "../lib/utils.js";
 
 export type DiscoveredLead = {
   businessName: string;
@@ -13,15 +15,8 @@ export type DiscoveredLead = {
   industry?: string;
 };
 
-export function getDomain(url?: string): string | null {
-  if (!url) return null;
-  try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
-    return u.hostname.replace(/^www\./, "").toLowerCase();
-  } catch {
-    return url.toLowerCase();
-  }
-}
+// LOW-1: getDomain() removed — now re-exported from lib/utils.ts for backward compat
+export { getDomain } from "../lib/utils.js";
 
 export async function getOrCreateDiscoveryAgent() {
   let [agent] = await db.select().from(agents).where(eq(agents.name, "discovery_bot")).limit(1);
