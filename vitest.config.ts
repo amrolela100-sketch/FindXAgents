@@ -35,11 +35,12 @@ export default defineConfig({
         "artifacts/api-server/src/middleware/**/*.ts",
         "artifacts/findx/src/lib/api.ts",
       ],
+      // TEST-4: raised from 55/45/50/55 → 70/60/65/70
       thresholds: {
-        lines: 55,
-        branches: 45,
-        functions: 50,
-        statements: 55,
+        lines:      70,
+        branches:   60,
+        functions:  65,
+        statements: 70,
       },
     },
   },
