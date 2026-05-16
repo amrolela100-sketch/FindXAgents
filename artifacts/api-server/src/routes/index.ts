@@ -3,7 +3,7 @@ import healthRouter from "./health.js";
 import authRouter from "./auth.js";
 import dashboardRouter from "./dashboard.js";
 import pipelineRouter from "./pipeline.js";
-import leadsRouter from "./leads.js";
+import leadsRouter from "./leads/index.js";
 import outreachesRouter from "./outreaches.js";
 import analysesRouter from "./analyses.js";
 import agentsRouter from "./agents.js";
