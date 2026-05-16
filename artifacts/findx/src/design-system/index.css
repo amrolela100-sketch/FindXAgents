@@ -1,0 +1,156 @@
+/* ════════════════════════════════════════════════════════════════════════════════
+   FINDX DESIGN SYSTEM — ENTRY POINT
+   
+   Import this CSS to use the design system:
+     import '@findx/design-system/index.css';
+   
+   Or in HTML:
+     <link rel="stylesheet" href="/dist/findx-design-system/index.css" />
+═══════════════════════════════════════════════════════════════════════════════ */
+
+@import './styles/foundation.css';
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   COMPONENT UTILITY CLASSES
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Card */
+.card {
+  background: var(--findx-surface-glass);
+  backdrop-filter: var(--findx-surface-blur);
+  -webkit-backdrop-filter: var(--findx-surface-blur);
+  border: 1px solid var(--findx-surface-border);
+  border-radius: var(--findx-radius-lg);
+  padding: var(--findx-space-4);
+}
+
+.card-elevated {
+  background: var(--findx-surface-glass-raised);
+  backdrop-filter: var(--findx-surface-blur);
+  -webkit-backdrop-filter: var(--findx-surface-blur);
+  border: 1px solid var(--findx-surface-border-strong);
+  border-radius: var(--findx-radius-lg);
+  box-shadow: var(--findx-shadow-lg);
+}
+
+/* Nav Link */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--findx-space-2);
+  padding: var(--findx-space-2) var(--findx-space-3);
+  border-radius: var(--findx-radius-md);
+  font-size: var(--findx-text-sm);
+  font-weight: 500;
+  color: var(--findx-text-secondary);
+  transition: all var(--findx-duration-fast) var(--findx-ease-out);
+}
+
+.nav-link:hover {
+  background: var(--findx-interactive-hover);
+  color: var(--findx-text-primary);
+}
+
+.nav-link.active {
+  background: var(--findx-accent-subtle);
+  color: var(--findx-accent);
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--findx-space-1);
+  padding: var(--findx-space-0.5) var(--findx-space-2);
+  border-radius: var(--findx-radius-full);
+  font-size: var(--findx-text-xs);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.badge-default { background: var(--findx-accent-subtle); color: var(--findx-accent); }
+.badge-success { background: var(--findx-feedback-success-bg); color: var(--findx-feedback-success); }
+.badge-warning { background: var(--findx-feedback-warning-bg); color: var(--findx-feedback-warning); }
+.badge-danger  { background: var(--findx-feedback-danger-bg); color: var(--findx-feedback-danger); }
+.badge-info    { background: var(--findx-feedback-info-bg); color: var(--findx-feedback-info); }
+
+/* Form */
+.form-label { display: block; font-size: var(--findx-text-sm); font-weight: 500; color: var(--findx-text-primary); margin-bottom: var(--findx-space-1); }
+.form-help { font-size: var(--findx-text-xs); color: var(--findx-text-muted); margin-top: var(--findx-space-1); }
+.form-error { font-size: var(--findx-text-xs); color: var(--findx-feedback-danger); margin-top: var(--findx-space-1); }
+
+/* Divider */
+.divider { height: 1px; background: var(--findx-border-default); margin: var(--findx-space-4) 0; }
+
+/* Status Dot */
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.status-dot-success  { background: var(--findx-feedback-success); }
+.status-dot-warning  { background: var(--findx-feedback-warning); }
+.status-dot-danger   { background: var(--findx-feedback-danger); }
+.status-dot-info     { background: var(--findx-feedback-info); }
+.status-dot-neutral  { background: var(--findx-text-muted); }
+
+/* Keyboard Shortcut */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--findx-space-1.5);
+  font-family: var(--findx-font-mono);
+  font-size: var(--findx-text-xs);
+  font-weight: 500;
+  color: var(--findx-text-secondary);
+  background: var(--findx-bg-inset);
+  border: 1px solid var(--findx-border-default);
+  border-radius: var(--findx-radius-sm);
+  box-shadow: 0 1px 0 var(--findx-border-default);
+}
+
+/* Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--findx-border-default);
+  border-top-color: var(--findx-accent);
+  border-radius: 50%;
+  animation: findx-spin 0.8s linear infinite;
+}
+
+/* Avatar */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--findx-accent-subtle);
+  color: var(--findx-accent);
+  font-weight: 600;
+  font-size: var(--findx-text-sm);
+  overflow: hidden;
+}
+
+.avatar-sm  { width: 32px; height: 32px; font-size: var(--findx-text-xs); }
+.avatar-md  { width: 40px; height: 40px; font-size: var(--findx-text-sm); }
+.avatar-lg  { width: 48px; height: 48px; font-size: var(--findx-text-base); }
+.avatar-xl  { width: 64px; height: 64px; font-size: var(--findx-text-lg); }
+
+/* Live Indicator */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--findx-space-1.5);
+  font-size: var(--findx-text-xs);
+  font-weight: 500;
+  color: var(--findx-feedback-success);
+}
+
+.live-indicator::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--findx-feedback-success);
+  border-radius: 50%;
+  animation: findx-pulse 2s ease-in-out infinite;
+}

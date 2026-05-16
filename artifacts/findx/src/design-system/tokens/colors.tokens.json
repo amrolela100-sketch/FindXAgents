@@ -1,0 +1,86 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "brand": {
+      "50": { "value": "#FFFBEB", "description": "Amber 50 - Lightest shade" },
+      "100": { "value": "#FEF3C7", "description": "Amber 100" },
+      "200": { "value": "#FDE68A", "description": "Amber 200" },
+      "300": { "value": "#FCD34D", "description": "Amber 300" },
+      "400": { "value": "#FBBF24", "description": "Amber 400" },
+      "500": { "value": "#F59E0B", "description": "Amber 500 - Primary brand" },
+      "600": { "value": "#D97706", "description": "Amber 600 - Primary hover" },
+      "700": { "value": "#B45309", "description": "Amber 700" },
+      "800": { "value": "#92400E", "description": "Amber 800" },
+      "900": { "value": "#78350F", "description": "Amber 900 - Darkest shade" }
+    },
+    "neutral": {
+      "50": { "value": "#FAFAFA", "description": "Neutral 50" },
+      "100": { "value": "#F5F5F5", "description": "Neutral 100" },
+      "200": { "value": "#E5E5E5", "description": "Neutral 200" },
+      "300": { "value": "#D4D4D4", "description": "Neutral 300" },
+      "400": { "value": "#A3A3A3", "description": "Neutral 400" },
+      "500": { "value": "#737373", "description": "Neutral 500" },
+      "600": { "value": "#525252", "description": "Neutral 600" },
+      "700": { "value": "#404040", "description": "Neutral 700" },
+      "800": { "value": "#262626", "description": "Neutral 800" },
+      "900": { "value": "#171717", "description": "Neutral 900" },
+      "950": { "value": "#0A0A0A", "description": "Neutral 950" }
+    },
+    "success": {
+      "50": { "value": "#ECFDF5" },
+      "100": { "value": "#D1FAE5" },
+      "200": { "value": "#A7F3D0" },
+      "500": { "value": "#10B981" },
+      "600": { "value": "#059669" },
+      "700": { "value": "#047857" },
+      "800": { "value": "#065F46" },
+      "900": { "value": "#064E3B" }
+    },
+    "warning": {
+      "50": { "value": "#FFFBEB" },
+      "100": { "value": "#FEF3C7" },
+      "200": { "value": "#FDE68A" },
+      "500": { "value": "#F59E0B" },
+      "600": { "value": "#D97706" },
+      "700": { "value": "#B45309" },
+      "800": { "value": "#92400E" },
+      "900": { "value": "#78350F" }
+    },
+    "danger": {
+      "50": { "value": "#FEF2F2" },
+      "100": { "value": "#FEE2E2" },
+      "200": { "value": "#FECACA" },
+      "500": { "value": "#EF4444" },
+      "600": { "value": "#DC2626" },
+      "700": { "value": "#B91C1C" },
+      "800": { "value": "#991B1B" },
+      "900": { "value": "#7F1D1D" }
+    },
+    "info": {
+      "50": { "value": "#EFF6FF" },
+      "100": { "value": "#DBEAFE" },
+      "200": { "value": "#BFDBFE" },
+      "500": { "value": "#3B82F6" },
+      "600": { "value": "#2563EB" },
+      "700": { "value": "#1D4ED8" },
+      "800": { "value": "#1E40AF" },
+      "900": { "value": "#1E3A8A" }
+    },
+    "purple": {
+      "50": { "value": "#FAF5FF" },
+      "100": { "value": "#F3E8FF" },
+      "200": { "value": "#E9D5FF" },
+      "500": { "value": "#A855F7" },
+      "600": { "value": "#9333EA" },
+      "700": { "value": "#7E22CE" }
+    },
+    "pink": {
+      "50": { "value": "#FDF2F8" },
+      "100": { "value": "#FCE7F3" },
+      "200": { "value": "#FBCFE8" },
+      "500": { "value": "#EC4899" },
+      "600": { "value": "#DB2777" },
+      "700": { "value": "#BE185D" }
+    }
+  }
+}
