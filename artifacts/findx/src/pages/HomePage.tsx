@@ -6,6 +6,7 @@ import { usePolling } from "../lib/hooks/use-polling";
 import { useLang } from "../lib/lang-context";
 import { useAuth } from "../lib/auth-context";
 import { getDashboardStats, getScoreDistribution, getAgentRuns } from "../lib/api";
+import { StatCardSkeleton } from "../components/ui/skeleton-patterns";
 import { Link } from "wouter";
 import {
   TrendingUp, Zap, ChevronRight, Target, Activity,
@@ -170,7 +171,7 @@ function SectionCard({ title, icon: Icon, children, action }: {
 export default function HomePage() {
   const { t }    = useLang();
   const { user } = useAuth();
-  const { data: statsData } = usePolling(() => getDashboardStats(), 15_000);
+  const { data: statsData, isLoading: statsLoading, error: statsError } = usePolling(() => getDashboardStats(), 15_000);
   const { data: scoreData } = usePolling(() => getScoreDistribution(), 30_000);
   const { data: runsData  } = usePolling(() => getAgentRuns(), 10_000);
 
@@ -262,7 +263,28 @@ export default function HomePage() {
         )}
 
         {/* ── KPI cards ───────────────────────────────────────────── */}
-        <DashboardCards />
+        {statsLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" aria-busy="true" aria-label="Loading KPI stats">
+            {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+          </div>
+        ) : statsError ? (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.20)", color: "#F87171" }}
+            role="alert"
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+            <span>Failed to load stats —</span>
+            <button
+              className="underline font-medium"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <DashboardCards />
+        )}
 
         {/* ── Bento grid ──────────────────────────────────────────── */}
         <motion.div

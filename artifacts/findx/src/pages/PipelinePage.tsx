@@ -7,6 +7,7 @@ import { useLang } from "../lib/lang-context";
 import type { Lead } from "../lib/types";
 import { getLeads, runAgentPipeline, getAgentRun, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
+import { KanbanCardSkeleton } from "../components/ui/skeleton-patterns";
 import { useCompletionSound } from "../lib/hooks/use-completion-sound";
 import { dispatchNotification } from "../lib/hooks/use-notifications";
 import {
@@ -127,12 +128,13 @@ export default function PipelinePage() {
   const activeRunsRef   = useRef<Map<string, string>>(new Map());
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data, refresh } = useRealtimeData(
+  const { data, isLoading, refresh } = useRealtimeData(
     () => getLeads({ pageSize: 500 }),
     ["leads", "pipeline"],
     20_000,
   );
   const leads = data?.leads ?? [];
+  const pipelineLoading = isLoading && leads.length === 0;
 
   useEffect(() => {
     return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };

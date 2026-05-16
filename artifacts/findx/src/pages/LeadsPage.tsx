@@ -10,6 +10,7 @@ import type { Lead } from "../lib/types";
 import { getLeads, discoverLeads, importLeads, exportLeads, toastError } from "../lib/api";
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { LayoutList, LayoutGrid, Zap, Upload, Download, RefreshCw } from "lucide-react";
+import { KanbanCardSkeleton } from "../components/ui/skeleton-patterns";
 
 const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -21,7 +22,7 @@ export default function LeadsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [discovering, setDiscovering] = useState(false);
 
-  const { data, refresh } = useRealtimeData(
+  const { data, isLoading, refresh } = useRealtimeData(
     () => getLeads({ pageSize: 200 }),
     ["leads"],
     30_000,
@@ -114,6 +115,8 @@ export default function LeadsPage() {
         onClick={handleDiscover}
         disabled={discovering}
         className="btn btn-primary text-[12px] px-3 py-1.5 gap-1.5 font-semibold"
+        aria-label={discovering ? "Discovering leads..." : t.leads.discover}
+        aria-busy={discovering}
       >
         {discovering
           ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -161,6 +164,16 @@ export default function LeadsPage() {
       >
         {view === "list" ? (
           <LeadList onSelectLead={(lead) => setSelectedId(lead.id)} />
+        ) : isLoading ? (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
+            aria-busy="true"
+            aria-label="Loading kanban board"
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <KanbanCardSkeleton key={`kanban-sk-${i}`} />
+            ))}
+          </div>
         ) : (
           <KanbanBoard
             leads={leads}
