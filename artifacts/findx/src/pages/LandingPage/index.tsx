@@ -12,8 +12,8 @@ import { getDashboardStats, toastError } from "@/lib/api";
 import { MagneticButton } from "@/components/magnetic-button";
 import { cn } from "@/lib/utils";
 
-const SPRING = { type: "spring", stiffness: 100, damping: 15 };
-const SPRING_FAST = { type: "spring", stiffness: 120, damping: 20 };
+const SPRING = { type: "spring" as const, stiffness: 100, damping: 15 };
+const SPRING_FAST = { type: "spring" as const, stiffness: 120, damping: 20 };
 
 const containerVariants = {
   hidden: {},
@@ -296,9 +296,10 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-40">
-             {features.map((f, i) => (
-                <FeatureRow key={i} index={i} step={i+1} icon={f.icon} title={t.landing.features[f.key].title} desc={t.landing.features[f.key].desc} {...f} />
-             ))}
+             {features.map((f, i) => {
+                const { key: featureKey, icon, ...rest } = f;
+                return <FeatureRow key={i} index={i} step={i+1} icon={icon} title={t.landing.features[featureKey].title} desc={t.landing.features[featureKey].desc} {...rest} />;
+             })}
           </div>
         </div>
       </section>
