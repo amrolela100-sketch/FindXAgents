@@ -83,6 +83,7 @@ export function Skeleton({ width, height, variant = 'text', delay = 0, className
       const timer = setTimeout(() => setVisible(true), delay);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [delay]);
 
   const styles: React.CSSProperties = {
