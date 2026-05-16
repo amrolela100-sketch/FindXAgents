@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageShell } from "../components/page-shell";
 import { LeadList } from "../components/lead-list";
 import { LeadDetailPanel } from "../components/lead-detail-panel";
@@ -11,6 +11,8 @@ import { getLeads, discoverLeads, importLeads, exportLeads, toastError } from ".
 import { useRealtimeData } from "../lib/hooks/use-realtime-data";
 import { LayoutList, LayoutGrid, Zap, Upload, Download, RefreshCw } from "lucide-react";
 import { KanbanCardSkeleton } from "../components/ui/skeleton-patterns";
+import { Button } from "../components/ui/button";
+import { cn } from "@/lib/utils";
 
 const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -63,10 +65,6 @@ export default function LeadsPage() {
       toastError(null, "File too large (max 5 MB)");
       return;
     }
-    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
-      toastError(null, "Please upload a CSV file");
-      return;
-    }
     const text = await file.text();
     try {
       await importLeads(text);
@@ -78,110 +76,102 @@ export default function LeadsPage() {
   }
 
   const toolbar = (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {/* View toggle */}
-      <div
-        className="flex items-center rounded-xl p-0.5"
-        style={{
-          background: "var(--glass-raised)",
-          border: "1px solid var(--glass-border)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        {([
-          ["list",   LayoutList, t.leads.list],
-          ["kanban", LayoutGrid, t.leads.kanban],
-        ] as const).map(([v, Icon, label]) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
-            style={{
-              background: view === v
-                ? "var(--glass)"
-                : "transparent",
-              color:      view === v ? "var(--text)" : "var(--text-muted)",
-              boxShadow:  view === v ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-              border:     view === v ? "1px solid var(--glass-border)" : "1px solid transparent",
-            }}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center rounded-xl p-1 bg-glass-raised border border-glass-border backdrop-blur-md">
+        <Button
+          variant={view === "list" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setView("list")}
+          className={cn("gap-1.5 h-8", view !== "list" && "text-text-muted hover:text-text")}
+        >
+          <LayoutList className="w-3.5 h-3.5" />
+          {t.leads.list}
+        </Button>
+        <Button
+          variant={view === "kanban" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setView("kanban")}
+          className={cn("gap-1.5 h-8", view !== "kanban" && "text-text-muted hover:text-text")}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          {t.leads.kanban}
+        </Button>
       </div>
 
-      <button
+      <div className="h-6 w-px bg-glass-border mx-1 hidden sm:block" />
+
+      <Button
+        variant="default"
+        size="sm"
         onClick={handleDiscover}
         disabled={discovering}
-        className="btn btn-primary text-[12px] px-3 py-1.5 gap-1.5 font-semibold"
-        aria-label={discovering ? "Discovering leads..." : t.leads.discover}
-        aria-busy={discovering}
+        className="gap-1.5 h-9 font-bold shadow-glow-brand"
       >
-        {discovering
-          ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-          : <Zap className="w-3.5 h-3.5" strokeWidth={2} />}
+        {discovering ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-current" />}
         {discovering ? t.leads.discovering : t.leads.discover}
-      </button>
+      </Button>
 
-      <label className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5 cursor-pointer"
-        style={{ border: "1px solid var(--glass-border)" }}>
-        <Upload className="w-3.5 h-3.5" />
-        {t.leads.importCsv}
-        <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+      <label className="flex items-center">
+        <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 font-bold cursor-pointer">
+          <span>
+            <Upload className="w-3.5 h-3.5" />
+            {t.leads.importCsv}
+            <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          </span>
+        </Button>
       </label>
 
-      <button
-        onClick={handleExport}
-        className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5"
-        style={{ border: "1px solid var(--glass-border)" }}
-      >
+      <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5 h-9 font-bold">
         <Download className="w-3.5 h-3.5" />
         {t.leads.export}
-      </button>
+      </Button>
     </div>
   );
 
   return (
-    <PageShell title={t.leads.title} subtitle={`${total} total`} actions={toolbar}>
+    <PageShell title={t.leads.title} subtitle={`${total} total leads found`} actions={toolbar}>
 
-      {/* ── KPI cards ─────────────────────────────────────────── */}
+      {/* KPI stats */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={SPRING}
-        className="mb-6"
+        className="mb-8"
       >
         <DashboardCards />
       </motion.div>
 
-      {/* ── Content ───────────────────────────────────────────── */}
-      <motion.div
-        key={view}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.18 }}
-      >
-        {view === "list" ? (
-          <LeadList onSelectLead={(lead) => setSelectedId(lead.id)} />
-        ) : isLoading ? (
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"
-            aria-busy="true"
-            aria-label="Loading kanban board"
+      {/* Main Content Area */}
+      <div className="relative min-h-[600px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
           >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <KanbanCardSkeleton key={`kanban-sk-${i}`} />
-            ))}
-          </div>
-        ) : (
-          <KanbanBoard
-            leads={leads}
-            onSelectLead={(l: Lead) => setSelectedId(l.id)}
-            onLeadMoved={refresh}
-          />
-        )}
-      </motion.div>
+            {view === "list" ? (
+              <div className="rounded-2xl border border-glass-border bg-glass overflow-hidden shadow-sm">
+                <LeadList onSelectLead={(lead) => setSelectedId(lead.id)} />
+              </div>
+            ) : isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <KanbanCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : (
+              <KanbanBoard
+                leads={leads}
+                onSelectLead={(l: Lead) => setSelectedId(l.id)}
+                onLeadMoved={refresh}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       <LeadDetailPanel
         leadId={selectedId}
