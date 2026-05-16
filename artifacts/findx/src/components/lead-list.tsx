@@ -207,7 +207,7 @@ export function LeadList({ onSelectLead }: LeadListProps) {
     return (
       <div className="py-4">
         <QueryError
-          error={error instanceof Error ? error : new Error(String(error))}
+          error={new Error(error)}
           resetErrorBoundary={refresh}
         />
       </div>
