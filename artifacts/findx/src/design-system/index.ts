@@ -4,7 +4,7 @@
  * A premium, production-ready design system for AI-powered B2B SaaS applications.
  * 
  * @example
- * import { Button, Card, Badge } from '@/design-system';
+ * import { Button, Card, Badge, DataTable, FormBuilder } from '@/design-system';
  * import '@/design-system/index.css';
  */
 
@@ -31,6 +31,12 @@ export * from './patterns';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export * from './primitives';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADVANCED COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export * from './advanced';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
