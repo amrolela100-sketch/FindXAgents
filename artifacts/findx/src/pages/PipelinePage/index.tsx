@@ -10,102 +10,59 @@ import { useRealtimeData } from "@/lib/hooks/use-realtime-data";
 import { KanbanCardSkeleton } from "@/components/ui/skeleton-patterns";
 import { useCompletionSound } from "@/lib/hooks/use-completion-sound";
 import { dispatchNotification } from "@/lib/hooks/use-notifications";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   Zap, Activity, RefreshCw, Search, Languages, Hash,
   Play, TrendingUp, Users, CheckCircle2, Star, Filter,
-  GitBranch, Circle, ArrowUpRight, SlidersHorizontal
+  GitBranch, Circle, ArrowUpRight
 } from "lucide-react";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-import { SPRING } from "@/lib/motion";
+import { FADE_UP, SPRING } from "@/lib/motion";
 
 const STATUS_META = [
-  { key: "discovered", label: "New",       color: "#94A3B8", icon: Circle },
-  { key: "analyzing",  label: "Analyzing", color: "#FBBF24", icon: Activity },
-  { key: "analyzed",   label: "Analyzed",  color: "#C084FC", icon: Star },
-  { key: "contacting", label: "Contacted", color: "#60A5FA", icon: ArrowUpRight },
-  { key: "responded",  label: "Responded", color: "#F97316", icon: TrendingUp },
-  { key: "qualified",  label: "Qualified", color: "#A78BFA", icon: CheckCircle2 },
-  { key: "won",        label: "Won",       color: "#34D399", icon: Star },
-  { key: "lost",       label: "Lost",      color: "#F87171", icon: Circle },
+  { key: "discovered", label: "New",       colorClass: "text-text-subtle", bgClass: "bg-glass-raised", borderClass: "border-glass-border", icon: Circle },
+  { key: "analyzing",  label: "Analyzing", colorClass: "text-warning", bgClass: "bg-warning/10", borderClass: "border-warning/20", icon: Activity },
+  { key: "analyzed",   label: "Analyzed",  colorClass: "text-primary", bgClass: "bg-primary/10", borderClass: "border-primary/20", icon: Star },
+  { key: "contacting", label: "Contacted", colorClass: "text-info", bgClass: "bg-info/10", borderClass: "border-info/20", icon: ArrowUpRight },
+  { key: "responded",  label: "Responded", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20", icon: TrendingUp },
+  { key: "qualified",  label: "Qualified", colorClass: "text-indigo-500", bgClass: "bg-indigo-500/10", borderClass: "border-indigo-500/20", icon: CheckCircle2 },
+  { key: "won",        label: "Won",       colorClass: "text-success", bgClass: "bg-success/10", borderClass: "border-success/20", icon: Star },
+  { key: "lost",       label: "Lost",      colorClass: "text-danger", bgClass: "bg-danger/10", borderClass: "border-danger/20", icon: Circle },
 ] as const;
 
-// ─── Status Chip ─────────────────────────────────────────────────────────────
-
-function StatusChip({
-  label,
-  color,
-  count,
-  icon: Icon,
-}: {
-  label: string;
-  color: string;
-  count: number;
-  icon: typeof Circle;
+function StatusChip({ label, colorClass, bgClass, borderClass, count, icon: Icon }: {
+  label: string; colorClass: string; bgClass: string; borderClass: string; count: number; icon: any;
 }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.03, y: -1 }}
-      transition={{ duration: 0.15 }}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-default select-none"
-      style={{
-        background: `${color}12`,
-        border: `1px solid ${color}25`,
-      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border cursor-default transition-all shadow-sm", bgClass, borderClass, colorClass)}
     >
-      <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ background: color, boxShadow: `0 0 5px ${color}` }}
-      />
-      <span className="text-[12px] font-medium" style={{ color }}>
-        {label}
-      </span>
-      <span
-        className="text-[11px] font-bold tabular-nums px-1.5 py-0 rounded-full"
-        style={{ background: `${color}20`, color }}
-      >
-        {count}
-      </span>
+      <Icon className="w-3.5 h-3.5" strokeWidth={2.5} />
+      <span className="text-xs font-bold uppercase tracking-tight">{label}</span>
+      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-white/20", colorClass)}>{count}</span>
     </motion.div>
   );
 }
 
-// ─── Pipeline Summary Card ────────────────────────────────────────────────────
-
-function SummaryCard({
-  label,
-  value,
-  sub,
-  accent,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  accent: string;
-  icon: typeof Zap;
+function SummaryCard({ label, value, sub, colorClass, bgClass, borderClass, icon: Icon }: {
+  label: string; value: string | number; sub?: string; colorClass: string; bgClass: string; borderClass: string; icon: any;
 }) {
   return (
-    <div
-      className="glass-card rounded-2xl p-4 flex items-center gap-3"
-    >
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}
-      >
-        <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={1.8} />
+    <div className="rounded-2xl p-4 bg-glass border border-glass-border shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+      <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center border shrink-0", bgClass, borderClass, colorClass)}>
+        <Icon className="w-6 h-6" strokeWidth={1.8} />
       </div>
       <div>
-        <p className="text-[11px] font-medium" style={{ color: "var(--text-subtle)" }}>{label}</p>
-        <p className="text-[18px] font-bold leading-tight" style={{ color: "var(--text)" }}>{value}</p>
-        {sub && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-subtle)" }}>{sub}</p>}
+        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{label}</p>
+        <p className="text-xl font-bold text-text leading-tight">{value}</p>
+        {sub && <p className="text-[10px] font-medium text-success uppercase mt-0.5 tracking-tighter">{sub}</p>}
       </div>
     </div>
   );
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PipelinePage() {
   const { t } = useLang();
@@ -126,7 +83,6 @@ export default function PipelinePage() {
     20_000,
   );
   const leads = data?.leads ?? [];
-  const pipelineLoading = isLoading && leads.length === 0;
 
   useEffect(() => {
     return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
@@ -152,16 +108,12 @@ export default function PipelinePage() {
               type: "pipeline_complete",
               title: "Pipeline complete ✨",
               body: `Found ${run.leadsFound ?? 0} leads · ${run.emailsDrafted ?? 0} emails drafted for "${q}"`,
-              query: q, leadsFound: run.leadsFound ?? 0, emailsDrafted: run.emailsDrafted ?? 0,
             });
           } else if (run.status === "failed") {
             activeRunsRef.current.delete(runId);
             refresh();
           }
-        } catch (err) {
-          // Log transient poll errors — don't toast since this runs every 4s
-          console.warn("[pipeline poll] error:", err instanceof Error ? err.message : err);
-        }
+        } catch (err) { console.warn("[pipeline poll] error:", err); }
       }
     }, 4_000);
   }
@@ -169,9 +121,6 @@ export default function PipelinePage() {
   async function handleRun() {
     if (!query.trim()) return;
     setRunning(true);
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().catch((err) => toastError(err, "Failed to request notification permission"));
-    }
     try {
       const savedQuery = query.trim();
       const result = await runAgentPipeline({ query: savedQuery, maxResults, language: lang });
@@ -187,229 +136,143 @@ export default function PipelinePage() {
     }
   }
 
-  // Compute counts
   const statusCounts: Record<string, number> = {};
   leads.forEach((l) => { statusCounts[l.status] = (statusCounts[l.status] ?? 0) + 1; });
 
-  const wonCount    = statusCounts["won"] ?? 0;
+  const wonCount = statusCounts["won"] ?? 0;
   const analyzedCount = statusCounts["analyzed"] ?? 0;
   const contactedCount = statusCounts["contacting"] ?? 0;
-  const convRate    = leads.length > 0 ? Math.round((wonCount / leads.length) * 100) : 0;
+  const convRate = leads.length > 0 ? Math.round((wonCount / leads.length) * 100) : 0;
 
-  // Actions slot in PageShell top bar
   const headerActions = (
     <div className="flex items-center gap-2">
-      <button
-        onClick={refresh}
-        className="btn btn-ghost px-2.5 py-2"
-        title={t.pipeline.refresh}
-      >
-        <RefreshCw className="w-3.5 h-3.5" />
-      </button>
-      <button
+      <Button variant="ghost" size="icon" onClick={refresh} title={t.pipeline.refresh}>
+        <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+      </Button>
+      <Button 
+        variant={showForm ? "secondary" : "default"} 
         onClick={() => setShowForm((v) => !v)}
-        className={`btn gap-2 px-4 py-2 text-[12px] font-semibold ${showForm ? "btn-secondary" : "btn-primary"}`}
+        className="gap-2 h-9 font-bold shadow-glow-brand"
       >
-        <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
-        {showForm ? "Close" : t.pipeline.runPipeline}
-      </button>
+        <Zap className="w-3.5 h-3.5 fill-current" />
+        {showForm ? "Close Form" : t.pipeline.runPipeline}
+      </Button>
     </div>
   );
 
   return (
-    <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads`} actions={headerActions}>
+    <PageShell title={t.pipeline.title} subtitle={`${leads.length} leads in funnel`} actions={headerActions}>
+      <div className="px-5 md:px-8 py-6 space-y-8">
 
-      {/* ── Summary Cards ────────────────────────────────────── */}
-      <motion.div
-        custom={0}
-        variants={FADE_UP}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"
-      >
-        <SummaryCard icon={Users}        label="Total Leads"  value={leads.length}     accent="#60A5FA" />
-        <SummaryCard icon={Star}         label="Analyzed"     value={analyzedCount}    accent="#C084FC" />
-        <SummaryCard icon={ArrowUpRight} label="Contacted"    value={contactedCount}   accent="#F97316" />
-        <SummaryCard icon={TrendingUp}   label="Conversion"   value={`${convRate}%`}   accent="#34D399" sub={`${wonCount} won`} />
-      </motion.div>
+        {/* Summary Statistics */}
+        <motion.div variants={FADE_UP} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <SummaryCard icon={Users} label="Total Leads" value={leads.length} colorClass="text-info" bgClass="bg-info/10" borderClass="border-info/20" />
+          <SummaryCard icon={Star} label="Analyzed" value={analyzedCount} colorClass="text-primary" bgClass="bg-primary/10" borderClass="border-primary/20" />
+          <SummaryCard icon={ArrowUpRight} label="Contacted" value={contactedCount} colorClass="text-warning" bgClass="bg-warning/10" borderClass="border-warning/20" />
+          <SummaryCard icon={TrendingUp} label="Conversion" value={`${convRate}%`} sub={`${wonCount} deals won`} colorClass="text-success" bgClass="bg-success/10" borderClass="border-success/20" />
+        </motion.div>
 
-      {/* ── Run Pipeline Form ────────────────────────────────── */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden mb-5"
-          >
-            <div className="glass-card rounded-2xl overflow-hidden">
-              <div
-                className="flex items-center gap-2.5 px-5 py-3.5"
-                style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
-              >
-                <GitBranch className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={2} />
-                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
-                  Launch AI Pipeline
-                </p>
-                <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>
-                  · Discovery → Analysis → Outreach
-                </p>
+        {/* Pipeline Launcher Form */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="rounded-2xl overflow-hidden bg-glass border border-glass-border shadow-xl"
+            >
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-glass-border bg-glass-raised/50">
+                <GitBranch className="w-5 h-5 text-primary" />
+                <div>
+                  <h3 className="text-sm font-bold text-text uppercase tracking-widest">Launch Smart Pipeline</h3>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-tighter mt-0.5">Discovery • Analysis • Smart Outreach</p>
+                </div>
               </div>
 
-              <div className="p-5 flex flex-col gap-3">
+              <div className="p-6 space-y-4">
                 <div className="relative">
-                  <Search
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "var(--text-subtle)" }}
-                    strokeWidth={1.8}
-                  />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none" />
+                  <Input 
+                    value={query} 
+                    onChange={(e) => setQuery(e.target.value)} 
                     onKeyDown={(e) => e.key === "Enter" && handleRun()}
                     placeholder={t.pipeline.placeholder}
-                    className="input pl-10 text-[13px]"
+                    className="pl-12"
                     autoFocus
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
-                  >
-                    <Hash className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-                    <label className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
-                      Max
-                    </label>
-                    <select
-                      value={maxResults}
-                      onChange={(e) => setMaxResults(Number(e.target.value))}
-                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-glass-raised border border-glass-border">
+                    <Hash className="w-4 h-4 text-text-subtle" />
+                    <span className="text-xs font-bold text-text-muted uppercase">Limit</span>
+                    <select value={maxResults} onChange={(e) => setMaxResults(Number(e.target.value))} className="bg-transparent text-sm font-bold text-text outline-none cursor-pointer">
+                      {[5, 10, 20, 50].map((n) => <option key={n} value={n} className="bg-background">{n}</option>)}
                     </select>
                   </div>
 
-                  <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
-                  >
-                    <Languages className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-                    <select
-                      value={lang}
-                      onChange={(e) => setLang(e.target.value as typeof lang)}
-                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                      style={{ color: "var(--text)" }}
-                    >
-                      <option value="ar">🇸🇦 Arabic</option>
-                      <option value="en">🇬🇧 English</option>
-                      <option value="nl">🇳🇱 Dutch</option>
-                      <option value="fr">🇫🇷 French</option>
-                      <option value="es">🇪🇸 Spanish</option>
-                      <option value="de">🇩🇪 German</option>
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-glass-raised border border-glass-border">
+                    <Languages className="w-4 h-4 text-text-subtle" />
+                    <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)} className="bg-transparent text-sm font-bold text-text outline-none cursor-pointer">
+                      <option value="ar" className="bg-background">🇸🇦 Arabic</option>
+                      <option value="en" className="bg-background">🇬🇧 English</option>
+                      <option value="nl" className="bg-background">🇳🇱 Dutch</option>
+                      <option value="fr" className="bg-background">🇫🇷 French</option>
+                      <option value="es" className="bg-background">🇪🇸 Spanish</option>
+                      <option value="de" className="bg-background">🇩🇪 German</option>
                     </select>
                   </div>
 
                   <div className="flex-1" />
 
-                  <button
-                    onClick={handleRun}
-                    disabled={running || !query.trim()}
-                    className="btn btn-primary px-5 py-2 text-[13px] font-semibold gap-2"
-                  >
-                    {running ? (
-                      <><Activity className="w-4 h-4 animate-spin" /> Running…</>
-                    ) : (
-                      <><Play className="w-4 h-4" strokeWidth={2.5} /> Run Pipeline</>
-                    )}
-                  </button>
+                  <Button onClick={handleRun} disabled={running || !query.trim()} className="h-11 px-8 font-bold gap-2 shadow-glow-brand">
+                    {running ? <Activity className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                    {running ? "Running..." : "Launch Pipeline"}
+                  </Button>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Status Strip ─────────────────────────────────────── */}
-      {leads.length > 0 && (
-        <motion.div
-          custom={1}
-          variants={FADE_UP}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-wrap items-center gap-2 mb-5"
-        >
-          <div className="flex items-center gap-1.5 mr-1" style={{ color: "var(--text-subtle)" }}>
-            <Filter className="w-3.5 h-3.5" strokeWidth={1.8} />
-            <span className="text-[11px] font-medium">Status</span>
-          </div>
-          {STATUS_META.map((s) => (
-            <StatusChip
-              key={s.key}
-              label={s.label}
-              color={s.color}
-              count={statusCounts[s.key] ?? 0}
-              icon={s.icon}
-            />
-          ))}
-        </motion.div>
-      )}
-
-      {/* ── Kanban Board / Empty ──────────────────────────────── */}
-      <motion.div
-        custom={2}
-        variants={FADE_UP}
-        initial="hidden"
-        animate="visible"
-      >
-        {leads.length === 0 ? (
-          <div
-            className="flex flex-col items-center justify-center py-28 rounded-2xl"
-            style={{
-              border: "2px dashed var(--glass-border-strong)",
-              background: "var(--glass-raised)",
-            }}
-          >
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-              style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.20)" }}
-            >
-              <GitBranch className="w-8 h-8" style={{ color: "#FBBF24", opacity: 0.7 }} strokeWidth={1.5} />
             </motion.div>
-            <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
-              {t.pipeline.noLeads}
-            </p>
-            <p className="text-[13px] mb-5" style={{ color: "var(--text-subtle)" }}>
-              {t.pipeline.noLeadsHint}
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
-            >
-              <Zap className="w-4 h-4" strokeWidth={2.5} />
-              Launch Pipeline
-            </button>
-          </div>
-        ) : (
-          <KanbanBoard
-            leads={leads}
-            onSelectLead={(l: Lead) => setSelectedId(l.id)}
-            onLeadMoved={refresh}
-          />
-        )}
-      </motion.div>
+          )}
+        </AnimatePresence>
 
-      <LeadDetailPanel
-        leadId={selectedId}
-        onClose={() => setSelectedId(null)}
-        onLeadUpdated={refresh}
-      />
+        {/* Pipeline Stages Filters */}
+        <motion.div variants={FADE_UP} initial="hidden" animate="visible" className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-text-subtle" />
+            <h2 className="text-[10px] font-bold text-text-subtle uppercase tracking-[0.2em]">Funnel Stages</h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {STATUS_META.map((s) => (
+              <StatusChip key={s.key} count={statusCounts[s.key] ?? 0} {...s} />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Kanban Board Area */}
+        <div className="min-h-[500px]">
+          {leads.length === 0 && !isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-glass-border bg-glass-raised/20">
+              <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2.5 }} className="w-20 h-20 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20 mb-6 shadow-glow-brand">
+                <GitBranch className="w-10 h-10 text-primary" strokeWidth={1.5} />
+              </motion.div>
+              <h3 className="text-lg font-bold text-text">{t.pipeline.noLeads}</h3>
+              <p className="text-sm text-text-muted mt-2 mb-8">{t.pipeline.noLeadsHint}</p>
+              <Button onClick={() => setShowForm(true)} className="h-12 px-10 font-bold gap-2 shadow-glow-brand">
+                <Zap className="w-4 h-4 fill-current" />
+                Start First Pipeline
+              </Button>
+            </div>
+          ) : isLoading && leads.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => <KanbanCardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <KanbanBoard leads={leads} onSelectLead={(l: Lead) => setSelectedId(l.id)} onLeadMoved={refresh} />
+          )}
+        </div>
+      </div>
+
+      <LeadDetailPanel leadId={selectedId} onClose={() => setSelectedId(null)} onLeadUpdated={refresh} />
     </PageShell>
   );
 }
