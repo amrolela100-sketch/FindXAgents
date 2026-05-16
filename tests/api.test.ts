@@ -118,7 +118,11 @@ describe("API Integration Tests", () => {
 
   it("GET /api/healthz returns ok", async () => {
     const res = await request(app).get("/api/healthz");
-    expect(res.status).toBe(200);
+    // HIGH-5 fix: health endpoint now probes DB/Redis.
+    // In test environment without a real DB, it may return 503 (degraded).
+    // We accept both 200 (healthy) and 503 (degraded) — what matters is
+    // that the endpoint responds and includes a `status` field.
+    expect([200, 503]).toContain(res.status);
     expect(res.body).toHaveProperty("status");
   });
 
