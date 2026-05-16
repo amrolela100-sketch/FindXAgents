@@ -83,12 +83,27 @@ router.post("/leads", async (req, res) => {
   }
 });
 
-router.get("/leads", async (req, res) => {
-  try {
-    const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
-    const pageSize = Math.min(500, Math.max(1, parseInt(String(req.query.pageSize ?? "25"), 10)));
-    const { city, industry, status, source, hasWebsite, search } = req.query as Record<string, string>;
+// HIGH-1 fix: Zod schema for GET /leads query params — explicit validation & coercion
+const leadsQuerySchema = z.object({
+  page:       z.coerce.number().int().positive().default(1),
+  pageSize:   z.coerce.number().int().min(1).max(500).default(25),
+  city:       z.string().max(200).optional(),
+  industry:   z.string().max(200).optional(),
+  status:     z.enum(["discovered", "analyzing", "analyzed", "contacting", "qualified", "won", "lost"]).optional(),
+  source:     z.string().max(100).optional(),
+  hasWebsite: z.enum(["true", "false"]).transform(v => v === "true").optional(),
+  search:     z.string().max(200).optional(),
+});
 
+router.get("/leads", async (req, res) => {
+  // HIGH-1 fix: validate query params with Zod before any DB access
+  const queryParsed = leadsQuerySchema.safeParse(req.query);
+  if (!queryParsed.success) {
+    return res.status(400).json({ error: "Invalid query parameters", details: queryParsed.error.flatten() });
+  }
+  const { page, pageSize, city, industry, status, source, hasWebsite, search } = queryParsed.data;
+
+  try {
     const conditions: ReturnType<typeof ilike>[] = [];
 
     // Scope by workspace — all data is workspace-isolated
@@ -98,7 +113,7 @@ router.get("/leads", async (req, res) => {
     if (industry) conditions.push(ilike(leads.industry, `%${industry}%`));
     if (status) conditions.push(sql`${leads.status} = ${status}`);
     if (source) conditions.push(ilike(leads.source, `%${source}%`));
-    if (hasWebsite !== undefined) conditions.push(sql`${leads.hasWebsite} = ${hasWebsite === "true"}`);
+    if (hasWebsite !== undefined) conditions.push(sql`${leads.hasWebsite} = ${hasWebsite}`);
     if (search) {
       conditions.push(
         sql`(${leads.businessName} ILIKE ${"%" + search + "%"} OR ${leads.city} ILIKE ${"%" + search + "%"} OR ${leads.industry} ILIKE ${"%" + search + "%"})`

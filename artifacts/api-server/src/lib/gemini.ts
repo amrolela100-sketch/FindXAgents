@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GEMINI_LEGACY_MODEL } from "./constants.js";
 
 let _client: GoogleGenerativeAI | null = null;
 
@@ -16,7 +17,7 @@ export function isGeminiConfigured(): boolean {
   return !!process.env.GEMINI_API_KEY;
 }
 
-export async function generateWithGemini(prompt: string, model = "gemini-1.5-flash"): Promise<string> {
+export async function generateWithGemini(prompt: string, model = GEMINI_LEGACY_MODEL): Promise<string> {
   const client = getGeminiClient();
   const genModel = client.getGenerativeModel({ model });
   const result = await genModel.generateContent(prompt);

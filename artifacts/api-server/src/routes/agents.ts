@@ -246,20 +246,18 @@ router.get("/agents/logs", requireWorkspace, async (req, res) => {
     const safePhase = phase && ALLOWED_PHASES.has(phase) ? phase : undefined;
     const safeLevel = level && ALLOWED_LEVELS.has(level) ? level : undefined;
 
-    // Scope logs to runs belonging to the active workspace
-    const wsRunIds = await db
-      .select({ id: agentPipelineRuns.id })
-      .from(agentPipelineRuns)
-      .where(eq(agentPipelineRuns.workspaceId, req.user!.activeWorkspaceId))
-      .then((rows) => rows.map((r) => r.id));
+    // PERF-3 fix: use JOIN subquery instead of fetching all wsRunIds into memory.
+    // Previous approach: select all runIds → huge IN(...) array → slow on large workspaces.
+    // New approach: filter via EXISTS subquery — single query, no client-side array.
+    const workspaceId = req.user!.activeWorkspaceId;
 
     const conditions: ReturnType<typeof eq>[] = [];
-    if (wsRunIds.length > 0) {
-      conditions.push(inArray(agentLogs.pipelineRunId, wsRunIds) as unknown as ReturnType<typeof eq>);
-    } else {
-      // No runs in this workspace — return empty immediately
-      return res.json({ logs: [], total: 0, page: 1, pageSize });
-    }
+    // Workspace scoping via subquery join (avoids large IN clause)
+    conditions.push(
+      sql`${agentLogs.pipelineRunId} IN (
+        SELECT id FROM agent_pipeline_runs WHERE workspace_id = ${workspaceId}
+      )` as unknown as ReturnType<typeof eq>
+    );
     if (agentId) conditions.push(eq(agentLogs.agentId, agentId));
     if (pipelineRunId) conditions.push(eq(agentLogs.pipelineRunId, pipelineRunId));
     if (safePhase) conditions.push(eq(agentLogs.phase, safePhase));
