@@ -216,8 +216,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       return React.cloneElement(
         children as React.ReactElement<React.HTMLAttributes<HTMLDivElement>>,
         {
-          className: cn(cardClasses, (children as React.ReactElement).props.className),
-          ref,
+          className: cn(cardClasses, (children as React.ReactElement<{ className?: string }>).props.className),
           ...props,
         }
       );
@@ -391,4 +390,4 @@ CardDivider.displayName = "CardDivider";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export { Card, CardHeader, CardContent, CardFooter, CardDivider };
-export type { CardProps, CardHeaderProps, CardContentProps, CardFooterProps, CardDividerProps, CardVariant, CardPadding, CardElevation };
+// Types are exported inline above
