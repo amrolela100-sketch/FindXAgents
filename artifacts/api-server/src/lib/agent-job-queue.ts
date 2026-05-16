@@ -1,5 +1,6 @@
 import { db, agentPipelineRuns } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
+import { timingSafeEqual } from "crypto";
 import { AgentRunner } from "./agent-runner.js";
 import { logger } from "./logger.js";
 
@@ -100,10 +101,18 @@ export async function enqueueAgentRun(payload: AgentRunJobPayload): Promise<{ mo
 }
 
 export function verifyInternalJobSecret(headerValue: string | string[] | undefined): boolean {
+  // CRIT-4 fix: use timing-safe comparison to prevent timing-oracle attacks
   const expected = process.env.INTERNAL_JOB_SECRET || process.env.QSTASH_JOB_SECRET;
   if (!expected) return false;
-  const actual = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-  return actual === expected;
+  const actual = Array.isArray(headerValue) ? headerValue[0] : (headerValue ?? "");
+  // Pad both buffers to the same fixed length to avoid length-leaking side channel
+  const MAX_LEN = 512;
+  const actualBuf   = Buffer.alloc(MAX_LEN);
+  const expectedBuf = Buffer.alloc(MAX_LEN);
+  Buffer.from(actual).copy(actualBuf);
+  Buffer.from(expected).copy(expectedBuf);
+  // Also check raw length equality to reject obviously wrong values fast (after safe compare)
+  return timingSafeEqual(actualBuf, expectedBuf) && actual.length === expected.length;
 }
 
 export async function markActiveAgentRunsInterrupted(reason: string): Promise<void> {

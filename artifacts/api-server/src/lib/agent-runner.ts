@@ -102,6 +102,8 @@ export class AgentRunner {
   constructor(private runId: string, private workspaceId: string | null = null) {}
 
   async run(query: string, maxResults: number = 10, userId: string | null, language: "ar" | "en" | "nl" | "fr" | "es" | "de" = "en") {
+    // BUG-2 fix: capture startTime before try block so it's available in catch for durationMs
+    const runStartTime = Date.now();
     try {
       await db.update(agentPipelineRuns)
         .set({ status: "running" })
@@ -197,7 +199,7 @@ export class AgentRunner {
       notifyPipelineFailed({
         query,
         error:      err.message ?? "Unknown error",
-        durationMs: Date.now() - (Date.now()), // best effort
+        durationMs: Date.now() - runStartTime, // BUG-2 fix: was Date.now() - Date.now() = 0
       }).catch(() => {});
 
       // ── In-app notification on failure ───────────────────────────────────
