@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Users, BarChart2, Zap, Shield, CheckCircle, XCircle, Loader2, RefreshCw, TrendingUp } from "lucide-react";
 import { PageShell } from "../components/page-shell";
 import { supabase } from "../lib/supabase";
@@ -25,9 +25,10 @@ interface AdminUser {
   isAdmin: boolean;
 }
 
-const fadeUp = {
+// Cast to Variants so TS accepts the custom resolver function
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
-  visible: (i = 0) => ({
+  visible: (i: number = 0) => ({
     opacity: 1, y: 0,
     transition: { duration: 0.35, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
   }),
