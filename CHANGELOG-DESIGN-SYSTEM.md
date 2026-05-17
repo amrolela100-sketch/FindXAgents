@@ -1,5 +1,50 @@
 # FindX Design System — Changelog
 
+## v2.1.0 — Brand Refresh + SSR Migration (2026-05-17)
+
+### 🎨 Brand Refresh — Amber → Teal
+
+**Motivation:** Amber/gold with lightning bolt icon is generic (used by hundreds of SaaS products). Deep Teal communicates intelligence, precision, and trust — better for B2B.
+
+#### Color Token Migration
+
+| Token | Old Value (Amber) | New Value (Teal) |
+|-------|-------------------|-----------------|
+| `--findx-color-brand-500` (PRIMARY) | `#F59E0B` | `#0D9488` |
+| `--findx-color-brand-600` (HOVER)   | `#D97706` | `#0F766E` |
+| `--findx-accent` (dark mode)        | `#FBBF24` | `#2DD4BF` |
+| `--findx-shadow-glow-brand`         | amber glow | teal glow |
+| `--findx-accent-foreground`         | `#1A1A1A` | `#FFFFFF`  |
+
+#### Icon Migration
+
+- `⚡ Zap` (lucide-react) → `RadarIcon` (custom SVG)
+- New component: `src/components/radar-icon.tsx`
+- Concept: radar sweep = intelligent scanning + discovery
+- Replaced in: `sidebar.tsx`, `LandingPage/index.tsx`, `LoginPage/index.tsx`, `PrivacyPage.tsx`, `TermsPage.tsx`, `not-found.tsx`, `OnboardingPage.tsx`, `LandingPage.tsx`
+
+#### Gradient Update
+- `bg-gradient-to-br from-primary to-orange-600` → `from-primary to-teal-600`
+
+---
+
+### 🚀 SSR Migration — New `findx-landing` Astro Package
+
+**New package:** `artifacts/findx-landing/` (`@workspace/findx-landing`)
+
+**Why:** The React/Vite landing page is CSR — Google, ChatGPT, and Perplexity can't index it properly. Astro generates static HTML at build time.
+
+**Features:**
+- Astro 4 + SSG (`output: "static"`)
+- Auto sitemap via `@astrojs/sitemap`
+- Full JSON-LD structured data (SoftwareApplication, FAQPage)
+- OpenGraph + Twitter card meta
+- Zero JS by default → fast TTFB + Core Web Vitals
+- Routes: `/` (landing) + `/pricing`
+- Teal brand tokens baked in
+
+---
+
 ## v2.0.0 — Phase 0.5: Token System Unification (2026-05-16)
 
 ### 🎯 Mission

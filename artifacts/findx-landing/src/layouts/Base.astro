@@ -1,0 +1,117 @@
+---
+export interface Props {
+  title:       string;
+  description: string;
+  canonical?:  string;
+  ogImage?:    string;
+}
+
+const {
+  title,
+  description,
+  canonical = "https://findx.nl",
+  ogImage   = "https://findx.nl/og.png",
+} = Astro.props;
+
+const siteUrl = "https://findx.nl";
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title"       content={title} />
+    <meta name="description" content={description} />
+    <link rel="canonical"    href={canonical} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content={canonical} />
+    <meta property="og:title"       content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image"       content={ogImage} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:url"         content={canonical} />
+    <meta name="twitter:title"       content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image"       content={ogImage} />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "FindX",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "AI-powered B2B prospecting platform. Discover, analyze, and reach out to high-probability leads automatically.",
+        "url": "https://findx.nl",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR",
+          "description": "Free tier available"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "reviewCount": "40"
+        }
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is FindX?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "FindX is an AI-powered B2B prospecting tool that discovers, analyzes, and outreaches to high-probability leads using a 3-stage AI pipeline: Discover (Tavily), Analyze (Gemini AI), and Outreach (Resend)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does FindX score leads?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "FindX uses Gemini 2.5 Flash AI to scrape and analyze company websites in real-time, scoring them from 0-100 based on service gaps, digital presence, and conversion probability."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is FindX GDPR compliant?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. FindX is GDPR compliant with right-to-deletion support, data encrypted at rest, and no password storage (Google OAuth only)."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <style is:global>
+      @import "../styles/global.css";
+    </style>
+  </head>
+  <body class="bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
+    <slot />
+  </body>
+</html>

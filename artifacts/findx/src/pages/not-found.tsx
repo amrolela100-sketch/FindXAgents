@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { FADE_UP, SPRING } from "@/lib/motion";
 import { Home, Zap } from "lucide-react";
+import { RadarIcon } from "@/components/radar-icon";
 import { Link } from "wouter";
 import { useLang } from "@/lib/lang-context";
 
@@ -22,7 +23,7 @@ export default function NotFound() {
         className="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 shadow-glow-brand"
         style={{ background: "var(--primary)" }}
       >
-        <Zap className="w-7 h-7 text-white fill-current" />
+        <RadarIcon className="w-7 h-7 text-white" />
       </motion.div>
 
       {/* 404 number */}

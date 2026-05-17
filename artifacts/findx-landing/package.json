@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/findx-landing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev":       "astro dev",
+    "build":     "astro build",
+    "preview":   "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/tailwind": "^5.1.4",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}

@@ -1,0 +1,95 @@
+---
+import Base from "../layouts/Base.astro";
+
+const APP_URL = "https://find-x-agents-findx.vercel.app";
+---
+
+<Base
+  title="FindX Pricing — Free, Pro & Agency Plans"
+  description="Start free with FindX. Upgrade to Pro (€49/mo) for 100 pipeline runs, or Agency (€149/mo) for unlimited. All plans include AI-powered B2B prospecting."
+  canonical="https://findx.nl/pricing"
+>
+  <section class="min-h-screen py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <a href="/" class="inline-flex items-center gap-2 mb-12 font-bold text-lg" style="color: var(--text);">
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: var(--primary);">
+            <svg viewBox="0 0 24 24" fill="none" class="w-3.5 h-3.5 text-white" style="color:white" aria-hidden="true">
+              <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.35"/>
+              <circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.55"/>
+              <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.75"/>
+              <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+              <line x1="12" y1="12" x2="19.8" y2="5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="19.8" cy="5.5" r="1.1" fill="currentColor"/>
+            </svg>
+          </div>
+          FindX
+        </a>
+        <h1 class="text-5xl font-bold tracking-tighter mb-4" style="color: var(--text);">Simple, transparent pricing</h1>
+        <p class="text-xl" style="color: var(--text-muted);">Start free. Scale as you grow.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Free -->
+        <div class="rounded-2xl p-8 flex flex-col" style="background: var(--glass); border: 1px solid var(--glass-border);">
+          <div class="mb-6">
+            <h2 class="text-xl font-bold mb-2" style="color: var(--text);">Free</h2>
+            <div class="text-4xl font-bold tracking-tighter" style="color: var(--text);">€0<span class="text-lg font-normal">/mo</span></div>
+          </div>
+          <ul class="space-y-3 mb-8 flex-1 text-sm" style="color: var(--text-muted);">
+            {["10 pipeline runs/month", "50 leads", "1 workspace", "Email support (48h)"].map(f => (
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a href={`${APP_URL}/login`} class="block text-center py-3 rounded-xl font-bold text-sm transition-all hover:opacity-80" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text);">
+            Start Free
+          </a>
+        </div>
+
+        <!-- Pro — Most Popular -->
+        <div class="rounded-2xl p-8 flex flex-col relative" style="background: color-mix(in srgb, var(--primary) 8%, var(--glass)); border: 2px solid var(--primary);">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white" style="background: var(--primary);">
+            Most Popular
+          </div>
+          <div class="mb-6">
+            <h2 class="text-xl font-bold mb-2" style="color: var(--text);">Pro</h2>
+            <div class="text-4xl font-bold tracking-tighter" style="color: var(--primary);">€49<span class="text-lg font-normal" style="color: var(--text-muted);">/mo</span></div>
+          </div>
+          <ul class="space-y-3 mb-8 flex-1 text-sm" style="color: var(--text-muted);">
+            {["100 runs/month", "500 leads", "3 workspaces", "Priority support (8h)", "CSV export"].map(f => (
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a href={`${APP_URL}/login`} class="block text-center py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90" style="background: var(--primary);">
+            Get Pro
+          </a>
+        </div>
+
+        <!-- Agency -->
+        <div class="rounded-2xl p-8 flex flex-col" style="background: var(--glass); border: 1px solid var(--glass-border);">
+          <div class="mb-6">
+            <h2 class="text-xl font-bold mb-2" style="color: var(--text);">Agency</h2>
+            <div class="text-4xl font-bold tracking-tighter" style="color: var(--text);">€149<span class="text-lg font-normal">/mo</span></div>
+          </div>
+          <ul class="space-y-3 mb-8 flex-1 text-sm" style="color: var(--text-muted);">
+            {["Unlimited runs", "Unlimited leads", "Unlimited workspaces", "API access", "White-label", "Dedicated support"].map(f => (
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a href="mailto:sales@findx.nl" class="block text-center py-3 rounded-xl font-bold text-sm transition-all hover:opacity-80" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text);">
+            Contact Sales
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

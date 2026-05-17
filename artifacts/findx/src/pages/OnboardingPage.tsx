@@ -5,6 +5,7 @@ import {
   Zap, Key, Play, ChevronRight, ChevronLeft,
   CheckCircle2, XCircle, Loader2, ExternalLink, Eye, EyeOff,
 } from "lucide-react";
+import { RadarIcon } from "@/components/radar-icon";
 import { SPRING, FADE_UP } from "@/lib/motion";
 import { saveSearchConfig, saveResendConfig, runAgentPipeline } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -504,7 +505,7 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-glow-brand">
-            <Zap className="w-4 h-4 text-white fill-current" />
+            <RadarIcon className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-lg tracking-tight text-text">FindX</span>
         </div>

@@ -88,7 +88,7 @@
   --blur-glass-lg: var(--findx-blur-glass-lg);
 
   /* Brand glow shadow utility — light mode subtle, overridden to stronger in dark */
-  --shadow-glow-brand: 0 0 12px rgba(245, 158, 11, 0.20), 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-glow-brand: 0 0 12px rgba(13, 148, 136, 0.25), 0 2px 8px rgba(0,0,0,0.08);
   
   /* Animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;

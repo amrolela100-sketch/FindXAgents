@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Bot, GitBranch, Users, Building2,
   Layers, Settings, ShieldCheck, LogOut, HelpCircle,
-  Menu, X, ChevronRight, Zap, PanelLeftClose, PanelLeftOpen
+  Menu, X, ChevronRight, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RadarIcon } from "@/components/radar-icon";
 
 interface SidebarProps {
   isAdmin: boolean;
@@ -118,8 +119,8 @@ function SidebarContent({
       <div className={cn("py-6 mb-2", collapsed ? "flex justify-center" : "px-5")}>
         <Link href="/">
           <a onClick={onClose} className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center flex-shrink-0 shadow-glow-brand transition-transform group-hover:scale-105">
-              <Zap className="w-5 h-5 text-white fill-current" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center flex-shrink-0 shadow-glow-brand transition-transform group-hover:scale-105">
+              <RadarIcon className="w-5 h-5 text-white" />
             </div>
             {!collapsed && (
               <div className="flex flex-col">
@@ -215,7 +216,7 @@ function SidebarContent({
             "flex items-center gap-3 p-2 rounded-2xl bg-glass-raised border border-glass-border",
             collapsed && "justify-center p-1.5"
           )}>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0">
               {initial}
             </div>
             {!collapsed && (
@@ -271,7 +272,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         <Link href="/">
           <a className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-glow-brand">
-              <Zap className="w-4 h-4 text-white fill-current" />
+              <RadarIcon className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-sm text-text">FindX</span>
           </a>

@@ -9,12 +9,12 @@
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .dark {
-  /* Brand — brighter amber in dark */
-  --findx-accent:              #FBBF24;
-  --findx-accent-hover:        #F59E0B;
-  --findx-accent-foreground:   #0F0E12;
-  --findx-accent-subtle:       rgba(251, 191, 36, 0.10);
-  --findx-accent-glow:         rgba(251, 191, 36, 0.25);
+  /* Brand — brighter teal in dark */
+  --findx-accent:              #2DD4BF;
+  --findx-accent-hover:        #0D9488;
+  --findx-accent-foreground:   #042F2E;
+  --findx-accent-subtle:       rgba(45, 212, 191, 0.10);
+  --findx-accent-glow:         rgba(45, 212, 191, 0.25);
 
   /* Text — inverted for dark canvas */
   --findx-text-primary:   #EEECFA;
@@ -61,7 +61,7 @@
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: #FDE68A;
+  --brand-subtle-fg: #99F6E4;
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);

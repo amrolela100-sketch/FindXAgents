@@ -5,11 +5,35 @@ import { motion, useInView } from "framer-motion";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
 import {
-  Zap, Search, BarChart3, Mail,
+  Search, BarChart3, Mail,
   ArrowRight, ArrowLeft, Sun, Moon, Globe,
   CheckCircle, TrendingUp, Users, Clock,
   ShieldCheck, Lock, Globe2, Wifi, Share2,
 } from "lucide-react";
+
+// ─── RadarSweep brand icon ───────────────────────────────────────────────────
+function RadarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Outer ring */}
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4" />
+      {/* Middle ring */}
+      <circle cx="12" cy="12" r="6.5" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.6" />
+      {/* Inner dot */}
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+      {/* Sweep arm */}
+      <line x1="12" y1="12" x2="20.5" y2="5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      {/* Ping dot at tip of sweep */}
+      <circle cx="20.5" cy="5.5" r="1.2" fill="currentColor" strokeOpacity="0.9" />
+    </svg>
+  );
+}
 import { getDashboardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -287,7 +311,7 @@ export default function LandingPage() {
         <Link href="/">
           <a className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-glow-brand transition-transform group-hover:scale-105">
-              <Zap className="w-4 h-4 text-white fill-current" />
+              <RadarIcon className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight text-text">FindX</span>
           </a>
@@ -503,7 +527,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Zap className="w-4 h-4 fill-current" />
+              <RadarIcon className="w-4 h-4" />
             </div>
             <span className="font-bold text-text">© {new Date().getFullYear()} FindX Intelligence.</span>
           </div>
