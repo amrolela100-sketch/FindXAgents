@@ -23,30 +23,31 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const primitiveColors = {
-  // Brand (Amber)
-  brand50:  '#FFFBEB',
-  brand100: '#FEF3C7',
-  brand200: '#FDE68A',
-  brand300: '#FCD34D',
-  brand400: '#FBBF24',
-  brand500: '#F59E0B', // Primary
-  brand600: '#D97706', // Primary Hover
-  brand700: '#B45309',
-  brand800: '#92400E',
-  brand900: '#78350F',
+  // Brand (Indigo — Precision Dark accent)
+  brand50:  '#EEF2FF',
+  brand100: '#E0E7FF',
+  brand200: '#C7D2FE',
+  brand300: '#A5B4FC',
+  brand400: '#818CF8',
+  brand500: '#6366F1', // Primary — Indigo
+  brand600: '#4F46E5', // Primary Hover
+  brand700: '#4338CA',
+  brand800: '#3730A3',
+  brand900: '#312E81',
+  brand950: '#1E1B4B',
 
-  // Neutral (Gray)
+  // Neutral (Zinc — cooler, matches Precision Dark)
   neutral50:  '#FAFAFA',
-  neutral100: '#F5F5F5',
-  neutral200: '#E5E5E5',
-  neutral300: '#D4D4D4',
-  neutral400: '#A3A3A3',
-  neutral500: '#737373',
-  neutral600: '#525252',
-  neutral700: '#404040',
-  neutral800: '#262626',
-  neutral900: '#171717',
-  neutral950: '#0A0A0A',
+  neutral100: '#F4F4F5',
+  neutral200: '#E4E4E7',
+  neutral300: '#D4D4D8',
+  neutral400: '#A1A1AA',
+  neutral500: '#71717A',
+  neutral600: '#52525B',
+  neutral700: '#3F3F46',
+  neutral800: '#27272A',
+  neutral900: '#18181B',
+  neutral950: '#09090B',
 
   // Semantic
   success50:  '#ECFDF5',
@@ -89,12 +90,12 @@ export const primitiveColors = {
 export const semanticTokens = {
   // Brand / Accent
   accent: {
-    DEFAULT:  'var(--findx-color-brand-500)',
-    hover:    'var(--findx-color-brand-600)',
-    subtle:   'var(--findx-color-brand-100)',
-    muted:    'var(--findx-color-brand-200)',
-    foreground: '#FFFFFF',
-    glow:     'rgba(245, 158, 11, 0.35)',
+    DEFAULT:  'var(--findx-accent)',          // #6366F1 — Indigo
+    hover:    'var(--findx-accent-hover)',     // #4F46E5
+    subtle:   'var(--findx-accent-subtle)',    // rgba(99,102,241,0.12)
+    muted:    'var(--findx-accent-muted)',     // rgba(99,102,241,0.20)
+    foreground: 'var(--findx-accent-foreground)', // #FFFFFF
+    glow:     'var(--findx-accent-glow)',      // rgba(99,102,241,0.20)
   },
 
   // Text

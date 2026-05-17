@@ -1,52 +1,63 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Primitive Tokens (Layer 1)
+   FINDX DESIGN SYSTEM — Primitive Tokens (Layer 1) — Precision Dark Edition
    
    Raw design values. Never reference these directly in components.
    Use semantic tokens (--findx-*) instead.
    
-   @version 2.0.0
+   @version 3.0.0 — Precision Dark (Indigo accent, near-black surfaces)
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     BRAND — Deep Teal (The FindX signature color)
-     Migrated from Amber → Teal for brand refresh (phase/ssr-brand-refresh)
+     BRAND — Indigo (Precision accent, Linear-style)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-brand-50:  #F0FDFA;
-  --findx-color-brand-100: #CCFBF1;
-  --findx-color-brand-200: #99F6E4;
-  --findx-color-brand-300: #5EEAD4;
-  --findx-color-brand-400: #2DD4BF;
-  --findx-color-brand-500: #0D9488;  /* PRIMARY BRAND */
-  --findx-color-brand-600: #0F766E;  /* PRIMARY HOVER */
-  --findx-color-brand-700: #115E59;
-  --findx-color-brand-800: #134E4A;
-  --findx-color-brand-900: #042F2E;
+  --findx-color-brand-50:  #EEF2FF;
+  --findx-color-brand-100: #E0E7FF;
+  --findx-color-brand-200: #C7D2FE;
+  --findx-color-brand-300: #A5B4FC;
+  --findx-color-brand-400: #818CF8;
+  --findx-color-brand-500: #6366F1;  /* PRIMARY BRAND — Indigo */
+  --findx-color-brand-600: #4F46E5;  /* PRIMARY HOVER */
+  --findx-color-brand-700: #4338CA;
+  --findx-color-brand-800: #3730A3;
+  --findx-color-brand-900: #312E81;
+  --findx-color-brand-950: #1E1B4B;
 
   /* ═══════════════════════════════════════════════════════════════════
-     NEUTRAL — Gray scale
+     NEUTRAL — Zinc (cooler than gray, matches Precision Dark)
   ═══════════════════════════════════════════════════════════════════ */
   --findx-color-neutral-50:  #FAFAFA;
-  --findx-color-neutral-100: #F5F5F5;
-  --findx-color-neutral-200: #E5E5E5;
-  --findx-color-neutral-300: #D4D4D4;
-  --findx-color-neutral-400: #A3A3A3;
-  --findx-color-neutral-500: #737373;
-  --findx-color-neutral-600: #525252;
-  --findx-color-neutral-700: #404040;
-  --findx-color-neutral-800: #262626;
-  --findx-color-neutral-900: #171717;
-  --findx-color-neutral-950: #0A0A0A;
+  --findx-color-neutral-100: #F4F4F5;
+  --findx-color-neutral-200: #E4E4E7;
+  --findx-color-neutral-300: #D4D4D8;
+  --findx-color-neutral-400: #A1A1AA;
+  --findx-color-neutral-500: #71717A;
+  --findx-color-neutral-600: #52525B;
+  --findx-color-neutral-700: #3F3F46;
+  --findx-color-neutral-800: #27272A;
+  --findx-color-neutral-900: #18181B;
+  --findx-color-neutral-950: #09090B;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     PRECISION DARK SURFACES
+     near-black, not pure black — matches Linear/Vercel aesthetic
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-color-surface-base:    #0C0C0E;  /* Main canvas */
+  --findx-color-surface-card:    #141416;  /* Card background */
+  --findx-color-surface-raised:  #1C1C1F;  /* Elevated elements */
+  --findx-color-surface-overlay: #222226;  /* Modals/popovers */
+  --findx-color-surface-border:  #222226;  /* Subtle separator */
+  --findx-color-surface-border-strong: #2E2E32; /* Visible border */
 
   /* ═══════════════════════════════════════════════════════════════════
      SEMANTIC COLORS — Feedback states
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-success-50:  #ECFDF5;
-  --findx-color-success-100: #D1FAE5;
-  --findx-color-success-500: #10B981;
-  --findx-color-success-600: #059669;
-  --findx-color-success-700: #047857;
+  --findx-color-success-50:  #F0FDF4;
+  --findx-color-success-100: #DCFCE7;
+  --findx-color-success-500: #22C55E;
+  --findx-color-success-600: #16A34A;
+  --findx-color-success-700: #15803D;
 
   --findx-color-warning-50:  #FFFBEB;
   --findx-color-warning-100: #FEF3C7;
@@ -54,11 +65,11 @@
   --findx-color-warning-600: #D97706;
   --findx-color-warning-700: #B45309;
 
-  --findx-color-danger-50:  #FEF2F2;
-  --findx-color-danger-100: #FEE2E2;
-  --findx-color-danger-500: #EF4444;
-  --findx-color-danger-600: #DC2626;
-  --findx-color-danger-700: #B91C1C;
+  --findx-color-danger-50:  #FFF1F2;
+  --findx-color-danger-100: #FFE4E6;
+  --findx-color-danger-500: #F43F5E;
+  --findx-color-danger-600: #E11D48;
+  --findx-color-danger-700: #BE123C;
 
   --findx-color-info-50:  #EFF6FF;
   --findx-color-info-100: #DBEAFE;
@@ -66,148 +77,66 @@
   --findx-color-info-600: #2563EB;
   --findx-color-info-700: #1D4ED8;
 
-  /* Accent — Purple for mesh effects */
-  --findx-color-purple-50:  #FAF5FF;
-  --findx-color-purple-200: #E9D5FF;
-  --findx-color-purple-500: #A855F7;
-  --findx-color-purple-600: #9333EA;
-
-  /* Pink */
-  --findx-color-pink-50:  #FDF2F8;
-  --findx-color-pink-200: #FBCFE8;
-  --findx-color-pink-500: #EC4899;
-  --findx-color-pink-600: #DB2777;
-
   /* ═══════════════════════════════════════════════════════════════════
      TYPOGRAPHY
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-font-display: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --findx-font-body: "Noto Sans Arabic", "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --findx-font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --findx-font-arabic: "Noto Sans Arabic", "Outfit", sans-serif;
-
-  /* Type Scale */
-  --findx-text-xs:     0.75rem;    /* 12px */
-  --findx-text-sm:     0.875rem;   /* 14px */
-  --findx-text-base:   1rem;       /* 16px */
-  --findx-text-lg:     1.125rem;   /* 18px */
-  --findx-text-xl:     1.25rem;    /* 20px */
-  --findx-text-2xl:    1.5rem;     /* 24px */
-  --findx-text-3xl:    1.875rem;   /* 30px */
-  --findx-text-4xl:    2.25rem;    /* 36px */
-
-  /* Line Heights */
-  --findx-leading-none:   1;
-  --findx-leading-tight:  1.25;
-  --findx-leading-snug:   1.375;
-  --findx-leading-normal: 1.5;
-  --findx-leading-relaxed: 1.625;
+  --findx-font-sans:  "Inter", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --findx-font-mono:  "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --findx-font-arabic: "Noto Sans Arabic", "Inter", sans-serif;
 
   /* ═══════════════════════════════════════════════════════════════════
-     SPACING (4px base grid)
+     SPACING SCALE
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-space-0:   0;
-  --findx-space-0.5: 0.125rem;
-  --findx-space-1:   0.25rem;
-  --findx-space-1.5: 0.375rem;
-  --findx-space-2:   0.5rem;
-  --findx-space-2.5: 0.625rem;
-  --findx-space-3:   0.75rem;
-  --findx-space-3.5: 0.875rem;
-  --findx-space-4:   1rem;
-  --findx-space-5:   1.25rem;
-  --findx-space-6:   1.5rem;
-  --findx-space-7:   1.75rem;
-  --findx-space-8:   2rem;
-  --findx-space-9:   2.25rem;
-  --findx-space-10:  2.5rem;
-  --findx-space-11:  2.75rem;
-  --findx-space-12:  3rem;
-  --findx-space-14:  3.5rem;
-  --findx-space-16:  4rem;
-  --findx-space-20:  5rem;
-  --findx-space-24:  6rem;
-  --findx-space-32:  8rem;
-  --findx-space-40:  10rem;
-  --findx-space-48:  12rem;
-  --findx-space-56:  14rem;
-  --findx-space-64:  16rem;
-  --findx-space-80:  20rem;
-  --findx-space-96:  24rem;
+  --findx-space-1:  4px;
+  --findx-space-2:  8px;
+  --findx-space-3:  12px;
+  --findx-space-4:  16px;
+  --findx-space-5:  20px;
+  --findx-space-6:  24px;
+  --findx-space-7:  28px;
+  --findx-space-8:  32px;
+  --findx-space-9:  36px;
+  --findx-space-10: 40px;
+  --findx-space-12: 48px;
+  --findx-space-16: 64px;
 
   /* ═══════════════════════════════════════════════════════════════════
      BORDER RADIUS
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-radius-none: 0;
-  --findx-radius-sm:   0.25rem;    /* 4px */
-  --findx-radius-xs:   0.375rem;   /* 6px */
-  --findx-radius-md:   0.5rem;     /* 8px */
-  --findx-radius-lg:   0.75rem;    /* 12px */
-  --findx-radius-xl:   1rem;       /* 16px */
-  --findx-radius-2xl:  1.5rem;     /* 24px */
-  --findx-radius-3xl:  2rem;       /* 32px */
+  --findx-radius-xs:   2px;
+  --findx-radius-sm:   4px;
+  --findx-radius-md:   6px;
+  --findx-radius-lg:   8px;
+  --findx-radius-xl:   12px;
+  --findx-radius-2xl:  16px;
+  --findx-radius-3xl:  24px;
   --findx-radius-full: 9999px;
 
   /* ═══════════════════════════════════════════════════════════════════
-     SHADOWS
+     SHADOWS — Precision Dark (no glow spam, just depth)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-shadow-xs:  0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --findx-shadow-sm:  0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --findx-shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --findx-shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --findx-shadow-xl:  0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --findx-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --findx-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-
-  /* Glow shadows */
-  --findx-shadow-glow-brand:   0 0 20px rgba(13, 148, 136, 0.35);
-  --findx-shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.35);
-  --findx-shadow-glow-danger:  0 0 20px rgba(239, 68, 68, 0.35);
-  --findx-shadow-glow-info:    0 0 20px rgba(59, 130, 246, 0.35);
+  --findx-shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.4);
+  --findx-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --findx-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --findx-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+  --findx-shadow-xl:  0 16px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
+  --findx-shadow-brand: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 4px 16px rgba(99, 102, 241, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════
-     MOTION & ANIMATION
+     BLUR — minimal, precision
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-duration-instant: 0ms;
-  --findx-duration-fast:    100ms;
-  --findx-duration-quick:   150ms;
-  --findx-duration-normal:  200ms;
-  --findx-duration-slow:    300ms;
-  --findx-duration-slower:  400ms;
-  --findx-duration-slowest: 500ms;
-
-  --findx-ease-linear: linear;
-  --findx-ease:             cubic-bezier(0.4, 0, 0.2, 1);
-  --findx-ease-in:          cubic-bezier(0.4, 0, 1, 1);
-  --findx-ease-out:         cubic-bezier(0, 0, 0.2, 1);
-  --findx-ease-in-out:      cubic-bezier(0.4, 0, 0.2, 1);
-  --findx-ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
-  --findx-ease-spring-fast: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --findx-ease-bounce:      cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-  /* Stagger delays */
-  --findx-delay-stagger1: 50ms;
-  --findx-delay-stagger2: 100ms;
-  --findx-delay-stagger3: 150ms;
-  --findx-delay-stagger4: 200ms;
-  --findx-delay-stagger5: 250ms;
+  --findx-blur-sm:    blur(4px);
+  --findx-blur-md:    blur(8px);
+  --findx-blur-lg:    blur(16px);
+  /* Keep glass alias for backward compat — but we no longer rely on blur */
+  --findx-blur-glass:    blur(0px);
+  --findx-blur-glass-sm: blur(0px);
+  --findx-blur-glass-lg: blur(4px);
 
   /* ═══════════════════════════════════════════════════════════════════
-     Z-INDEX SCALE
+     TRANSITIONS
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-z-base:     0;
-  --findx-z-above:    10;
-  --findx-z-sticky:   20;
-  --findx-z-overlay:  30;
-  --findx-z-modal:    40;
-  --findx-z-popover:  50;
-  --findx-z-toast:    60;
-  --findx-z-command:  70;
-
-  /* ═══════════════════════════════════════════════════════════════════
-     GLASS BLUR VALUES
-  ═══════════════════════════════════════════════════════════════════ */
-  --findx-blur-glass:    blur(20px) saturate(180%);
-  --findx-blur-glass-sm: blur(12px) saturate(160%);
-  --findx-blur-glass-lg: blur(32px) saturate(200%);
+  --findx-transition-fast:   100ms ease;
+  --findx-transition-base:   150ms ease;
+  --findx-transition-slow:   250ms ease;
 }

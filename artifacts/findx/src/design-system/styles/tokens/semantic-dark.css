@@ -1,67 +1,103 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Dark Mode Semantic Overrides
+   FINDX DESIGN SYSTEM — Dark Mode Semantic Tokens (Precision Dark Edition)
    
-   Only override tokens that change in dark mode.
-   Primitive tokens remain the same across themes.
+   FindX is dark-first. This is the primary theme.
+   Light mode is a secondary override — see semantic-light.css.
    
-   @version 2.0.0
+   @version 3.0.0 — Precision Dark
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
+:root,
 .dark {
-  /* Brand — brighter teal in dark */
-  --findx-accent:              #2DD4BF;
-  --findx-accent-hover:        #0D9488;
-  --findx-accent-foreground:   #042F2E;
-  --findx-accent-subtle:       rgba(45, 212, 191, 0.10);
-  --findx-accent-glow:         rgba(45, 212, 191, 0.25);
+  /* ═══════════════════════════════════════════════════════════════════
+     ACCENT — Indigo (Precision, single-accent discipline)
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-accent:              #6366F1;
+  --findx-accent-hover:        #4F46E5;
+  --findx-accent-foreground:   #FFFFFF;
+  --findx-accent-subtle:       rgba(99, 102, 241, 0.12);
+  --findx-accent-muted:        rgba(99, 102, 241, 0.20);
+  --findx-accent-glow:         rgba(99, 102, 241, 0.20);
 
-  /* Text — inverted for dark canvas */
-  --findx-text-primary:   #EEECFA;
-  --findx-text-secondary: #8B87A8;
-  --findx-text-muted:     #4D4A65;
-  --findx-text-subtle:    #4D4A65;
-  --findx-text-inverted:  #080810;
+  /* ═══════════════════════════════════════════════════════════════════
+     TEXT — High contrast on dark
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-text-primary:   #FAFAFA;
+  --findx-text-secondary: #A1A1AA;
+  --findx-text-muted:     #71717A;
+  --findx-text-subtle:    #52525B;
+  --findx-text-inverted:  #0C0C0E;
 
-  /* Backgrounds — deep cosmic dark */
-  --findx-bg-base:     #080810;
-  --findx-bg-subtle:   #0E0D1A;
-  --findx-bg-inset:    #141228;
-  --findx-bg-elevated: #1A1930;
+  /* ═══════════════════════════════════════════════════════════════════
+     BACKGROUNDS — near-black precision surfaces
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-bg-base:     var(--findx-color-surface-base);    /* #0C0C0E */
+  --findx-bg-subtle:   var(--findx-color-surface-card);    /* #141416 */
+  --findx-bg-inset:    var(--findx-color-surface-raised);  /* #1C1C1F */
+  --findx-bg-elevated: var(--findx-color-surface-overlay); /* #222226 */
 
-  /* Glass — true transparent glass on dark */
-  --findx-surface-glass:          rgba(255, 255, 255, 0.04);
-  --findx-surface-glass-raised:   rgba(255, 255, 255, 0.07);
-  --findx-surface-glass-overlay:  rgba(12, 11, 22, 0.85);
-  --findx-surface-border:         rgba(255, 255, 255, 0.08);
-  --findx-surface-border-strong:  rgba(255, 255, 255, 0.14);
+  /* ═══════════════════════════════════════════════════════════════════
+     SURFACES — Flat cards, NO glass morphism
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-surface-glass:          var(--findx-color-surface-card);
+  --findx-surface-glass-raised:   var(--findx-color-surface-raised);
+  --findx-surface-glass-overlay:  var(--findx-color-surface-overlay);
+  --findx-surface-border:         var(--findx-color-surface-border);
+  --findx-surface-border-strong:  var(--findx-color-surface-border-strong);
+  --findx-surface-blur:           blur(0px); /* No blur on dark */
+  --findx-surface-elevated:       var(--findx-color-surface-card);
 
-  /* Borders */
-  --findx-border-default: rgba(255, 255, 255, 0.10);
-  --findx-border-strong:  rgba(255, 255, 255, 0.16);
+  /* ═══════════════════════════════════════════════════════════════════
+     BORDERS — crisp, visible
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-border-default: var(--findx-color-surface-border);       /* #222226 */
+  --findx-border-strong:  var(--findx-color-surface-border-strong); /* #2E2E32 */
+  --findx-border-focus:   var(--findx-accent);
 
-  /* Interactive */
-  --findx-interactive-hover:    rgba(255, 255, 255, 0.06);
-  --findx-interactive-disabled: rgba(255, 255, 255, 0.05);
+  /* ═══════════════════════════════════════════════════════════════════
+     INTERACTIVE STATES
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-interactive-hover:    rgba(255, 255, 255, 0.04);
+  --findx-interactive-active:   rgba(255, 255, 255, 0.06);
+  --findx-interactive-disabled: rgba(255, 255, 255, 0.04);
 
-  /* Feedback — slightly muted backgrounds for dark */
-  --findx-feedback-success-bg:     rgba(16, 185, 129, 0.10);
+  /* ═══════════════════════════════════════════════════════════════════
+     FEEDBACK — Semantic states
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-feedback-success:        var(--findx-color-success-500);
+  --findx-feedback-success-bg:     rgba(34, 197, 94, 0.10);
+  --findx-feedback-success-border: rgba(34, 197, 94, 0.20);
+
+  --findx-feedback-warning:        var(--findx-color-warning-500);
   --findx-feedback-warning-bg:     rgba(245, 158, 11, 0.10);
-  --findx-feedback-danger-bg:      rgba(239, 68, 68, 0.10);
+  --findx-feedback-warning-border: rgba(245, 158, 11, 0.20);
+
+  --findx-feedback-danger:         var(--findx-color-danger-500);
+  --findx-feedback-danger-bg:      rgba(244, 63, 94, 0.10);
+  --findx-feedback-danger-border:  rgba(244, 63, 94, 0.20);
+
+  --findx-feedback-info:           var(--findx-color-info-500);
   --findx-feedback-info-bg:        rgba(59, 130, 246, 0.10);
+  --findx-feedback-info-border:    rgba(59, 130, 246, 0.20);
 
-  /* Scrollbar */
-  --findx-scrollbar-thumb:       rgba(255, 255, 255, 0.14);
-  --findx-scrollbar-thumb-hover: rgba(255, 255, 255, 0.20);
+  /* ═══════════════════════════════════════════════════════════════════
+     SCROLLBAR
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-scrollbar-thumb:       var(--findx-color-surface-border-strong);
+  --findx-scrollbar-thumb-hover: var(--findx-text-muted);
+  --findx-scrollbar-track:       transparent;
 
-  /* ═══════════════════════════════════════════════════════════════
-     LEGACY ALIASES — Dark mode overrides
-  ═══════════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════════════════════
+     BACKWARD-COMPAT ALIASES — Legacy short names
+     Kept so existing components still compile.
+     DO NOT use in new code — use --findx-* directly.
+  ═══════════════════════════════════════════════════════════════════ */
   --brand:           var(--findx-accent);
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: #99F6E4;
+  --brand-subtle-fg: #A5B4FC;
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);
@@ -69,24 +105,22 @@
   --bg-inset:        var(--findx-bg-inset);
   --bg-mesh:         var(--findx-bg-base);
 
-  --glass:           var(--findx-surface-glass);
-  --glass-raised:    var(--findx-surface-glass-raised);
-  --glass-overlay:   var(--findx-surface-glass-overlay);
-  --glass-border:    var(--findx-surface-border);
+  /* Glass aliases → now just flat surfaces */
+  --glass:               var(--findx-surface-glass);
+  --glass-raised:        var(--findx-surface-glass-raised);
+  --glass-overlay:       var(--findx-surface-glass-overlay);
+  --glass-border:        var(--findx-surface-border);
   --glass-border-strong: var(--findx-surface-border-strong);
 
-  --text:            var(--findx-text-primary);
-  --text-muted:      var(--findx-text-secondary);
-  --text-subtle:     var(--findx-text-muted);
-  --text-inverted:   var(--findx-text-inverted);
+  --text:          var(--findx-text-primary);
+  --text-muted:    var(--findx-text-secondary);
+  --text-subtle:   var(--findx-text-muted);
+  --text-inverted: var(--findx-text-inverted);
 
-  --border:          var(--findx-surface-border);
+  --border: var(--findx-border-default);
 
-  /* Semantic Tailwind overrides for dark */
-  --color-success-bg:    rgba(16, 185, 129, 0.10);
-  --color-warning-bg:    rgba(245, 158, 11, 0.10);
-  --color-danger-bg:     rgba(239, 68, 68, 0.10);
-  --color-info-bg:       rgba(59, 130, 246, 0.10);
+  --primary:        var(--findx-accent);
+  --primary-hover:  var(--findx-accent-hover);
 
   color-scheme: dark;
 }

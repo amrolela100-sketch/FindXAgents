@@ -1,98 +1,134 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Navigation Components
+   FINDX DESIGN SYSTEM — Navigation Components — Precision Dark Edition
    
-   Sidebar, topbar, nav-link — all using glass morphism.
+   Sidebar, topbar, nav-link — flat precision style.
+   No glass blur. Depth via background color hierarchy + borders.
    
-   @version 2.0.0
+   @version 3.0.0 — Precision Dark
    @layer components
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SIDEBAR NAV LINK — Glass style
+   NAV LINK — Precision style (Linear-inspired)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  font-size: 13.5px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--findx-radius-md);
+  color: var(--findx-text-secondary);
+  font-size: 13px;
   font-weight: 500;
-  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  letter-spacing: -0.01em;
+  transition: background var(--findx-transition-fast), color var(--findx-transition-fast);
   cursor: pointer;
   text-decoration: none;
   border: 1px solid transparent;
+  line-height: 1.4;
 }
 
 .nav-link:hover {
-  background: var(--glass);
-  backdrop-filter: var(--blur-glass-sm);
-  -webkit-backdrop-filter: var(--blur-glass-sm);
-  border-color: var(--glass-border);
-  color: var(--text);
+  background: var(--findx-interactive-hover);
+  color: var(--findx-text-primary);
 }
 
+/* Active state — Indigo accent, precise */
 .nav-link.active {
-  /* Light mode — solid bg, no glow, high contrast amber text */
-  background: rgba(245, 158, 11, 0.10);
-  border-color: rgba(245, 158, 11, 0.20);
-  color: #B45309; /* darker amber for contrast on light bg */
+  background: var(--findx-accent-subtle);
+  border-color: rgba(99, 102, 241, 0.15);
+  color: var(--findx-accent);
   font-weight: 600;
-  box-shadow: none; /* no glow on light */
 }
 
-.dark .nav-link.active {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.20);
-  color: var(--brand);
-  box-shadow:
-    0 2px 12px rgba(251, 191, 36, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+/* Light mode active */
+.light .nav-link.active,
+[data-theme="light"] .nav-link.active {
+  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(79, 70, 229, 0.15);
+  color: #4338CA;
+}
+
+/* Nav link icon */
+.nav-link .nav-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity var(--findx-transition-fast);
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  opacity: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SIDEBAR GLASS
+   SIDEBAR — Precision Dark
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .sidebar-glass {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-right: 1px solid rgba(255, 255, 255, 0.65);
-}
-
-.dark .sidebar-glass {
-  background: rgba(8, 8, 16, 0.75);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--findx-bg-subtle);         /* #141416 */
+  border-right: 1px solid var(--findx-border-default); /* #222226 */
 }
 
 .sidebar-glass-rtl {
   border-right: none !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.65);
+  border-left: 1px solid var(--findx-border-default);
 }
 
-.dark .sidebar-glass-rtl {
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
+/* Light mode sidebar */
+.light .sidebar-glass,
+[data-theme="light"] .sidebar-glass {
+  background: #FAFAFA;
+  border-right-color: var(--findx-border-default);
+}
+
+.light .sidebar-glass-rtl,
+[data-theme="light"] .sidebar-glass-rtl {
+  border-right: none !important;
+  border-left-color: var(--findx-border-default);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   TOPBAR GLASS
+   TOPBAR — Precision Dark
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .topbar-glass {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.60);
+  background: var(--findx-bg-base);           /* #0C0C0E */
+  border-bottom: 1px solid var(--findx-border-default); /* #222226 */
 }
 
-.dark .topbar-glass {
-  background: rgba(8, 8, 16, 0.70);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+/* Light mode topbar */
+.light .topbar-glass,
+[data-theme="light"] .topbar-glass {
+  background: #FFFFFF;
+  border-bottom-color: var(--findx-border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAV SECTION HEADER — Editorial micro-label
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.nav-section-label {
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--findx-text-subtle);
+  padding: 0 10px;
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAV DIVIDER
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.nav-divider {
+  height: 1px;
+  background: var(--findx-border-default);
+  margin: 8px 0;
+  border: none;
 }
