@@ -1,6 +1,5 @@
 import React from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import { Button } from "./ui/button";
+import { AlertCircle, RefreshCw, RotateCcw } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -25,8 +24,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error("ErrorBoundary caught an error", error, errorInfo);
   }
 
-  handleRetry = () => {
+  // Reset state without a full page reload — allows React to re-render cleanly
+  handleReset = () => {
     this.setState({ hasError: false, error: null });
+  };
+
+  handleReload = () => {
     window.location.reload();
   };
 
@@ -50,19 +53,29 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             >
               <AlertCircle className="w-6 h-6" style={{ color: "#F87171" }} />
             </div>
-            <h2 className="text-2xl font-serif font-bold mb-2" style={{ color: "var(--text)" }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text)" }}>
               Something went wrong
             </h2>
             <p className="text-sm mb-6 whitespace-pre-wrap" style={{ color: "var(--text-muted)" }}>
               {this.state.error?.message || "An unexpected error occurred while rendering this page."}
             </p>
-            <button
-              onClick={this.handleRetry}
-              className="btn btn-primary w-full gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try again
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={this.handleReset}
+                className="btn btn-primary w-full gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try again
+              </button>
+              <button
+                onClick={this.handleReload}
+                className="btn btn-ghost w-full gap-2 text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reload page
+              </button>
+            </div>
           </div>
         </div>
       );

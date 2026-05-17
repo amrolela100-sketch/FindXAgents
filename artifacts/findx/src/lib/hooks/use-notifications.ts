@@ -18,7 +18,7 @@ export type { ApiNotification as AppNotification };
  * Falls back silently if the API call fails — non-critical.
  */
 export async function dispatchNotification(data: {
-  id?: string;         // optional — ignored (DB generates its own id)
+  id?: string;
   type: string;
   title: string;
   body: string;
@@ -45,14 +45,23 @@ export async function dispatchNotification(data: {
 
 /**
  * useNotifications
- * Fetches notifications from the API (DB-backed, cross-device).
- * Subscribes to Supabase realtime for instant updates across devices.
+ *
+ * FIX: Each hook instance gets a UNIQUE channel name via useRef.
+ * Previously the hardcoded name "notifications:realtime" caused Supabase to
+ * throw "cannot add postgres_changes callbacks after subscribe" whenever
+ * two components (TopBar + NotificationPanel) both mounted this hook.
  */
 export function useNotifications() {
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const fetchedRef = useRef(false);
+
+  // Unique channel name per hook instance — prevents collision when multiple
+  // components call useNotifications() simultaneously.
+  const channelName = useRef(
+    `notifications:rt:${Math.random().toString(36).slice(2)}`
+  );
 
   const load = useCallback(async () => {
     try {
@@ -66,36 +75,45 @@ export function useNotifications() {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch — run once
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
     load();
   }, [load]);
 
-  // Supabase realtime — refresh when notifications table changes for this user
+  // Supabase realtime — unique channel per instance
   useEffect(() => {
-    const channel = supabase
-      .channel("notifications:realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
-        () => { load(); }
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel(channelName.current)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "notifications" },
+          () => { load(); }
+        )
+        .subscribe();
+    } catch (err) {
+      // Non-fatal: realtime unavailable, polling will still work
+      console.warn("[useNotifications] Realtime subscription failed:", err);
+    }
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {/* ignore */});
+      }
+    };
   }, [load]);
 
   const markAllRead = useCallback(async () => {
-    // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
     try {
       await markAllNotificationsRead();
     } catch (err) {
       toastError(err, "Failed to mark notifications as read");
-      load(); // revert on error
+      load();
     }
   }, [load]);
 
