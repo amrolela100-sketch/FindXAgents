@@ -10,18 +10,19 @@
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     BRAND — Amber Gold (The FindX signature color)
+     BRAND — Deep Teal (The FindX signature color)
+     Migrated from Amber → Teal for brand refresh (phase/ssr-brand-refresh)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-brand-50:  #FFFBEB;
-  --findx-color-brand-100: #FEF3C7;
-  --findx-color-brand-200: #FDE68A;
-  --findx-color-brand-300: #FCD34D;
-  --findx-color-brand-400: #FBBF24;
-  --findx-color-brand-500: #F59E0B;  /* PRIMARY BRAND */
-  --findx-color-brand-600: #D97706;  /* PRIMARY HOVER */
-  --findx-color-brand-700: #B45309;
-  --findx-color-brand-800: #92400E;
-  --findx-color-brand-900: #78350F;
+  --findx-color-brand-50:  #F0FDFA;
+  --findx-color-brand-100: #CCFBF1;
+  --findx-color-brand-200: #99F6E4;
+  --findx-color-brand-300: #5EEAD4;
+  --findx-color-brand-400: #2DD4BF;
+  --findx-color-brand-500: #0D9488;  /* PRIMARY BRAND */
+  --findx-color-brand-600: #0F766E;  /* PRIMARY HOVER */
+  --findx-color-brand-700: #115E59;
+  --findx-color-brand-800: #134E4A;
+  --findx-color-brand-900: #042F2E;
 
   /* ═══════════════════════════════════════════════════════════════════
      NEUTRAL — Gray scale
@@ -159,7 +160,7 @@
   --findx-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
 
   /* Glow shadows */
-  --findx-shadow-glow-brand:   0 0 20px rgba(245, 158, 11, 0.35);
+  --findx-shadow-glow-brand:   0 0 20px rgba(13, 148, 136, 0.35);
   --findx-shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.35);
   --findx-shadow-glow-danger:  0 0 20px rgba(239, 68, 68, 0.35);
   --findx-shadow-glow-info:    0 0 20px rgba(59, 130, 246, 0.35);

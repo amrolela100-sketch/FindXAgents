@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useLang } from "../lib/lang-context";
 import { useTheme } from "../lib/theme-context";
 import { Zap, Sun, Moon, Globe, ArrowLeft, ArrowRight, Lock } from "lucide-react";
+import { RadarIcon } from "@/components/radar-icon";
 
 export default function PrivacyPage() {
   const { t, lang, toggleLang, isRtl } = useLang();
@@ -31,7 +32,7 @@ export default function PrivacyPage() {
         <Link href="/">
           <a className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+              <RadarIcon className="w-3.5 h-3.5 text-white" />
             </div>
             <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
           </a>

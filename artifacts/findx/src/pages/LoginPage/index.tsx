@@ -8,6 +8,7 @@ import {
   Zap, Sun, Moon, Globe, ArrowLeft, ArrowRight,
   Shield, Search, BarChart3, Mail, CheckCircle2,
 } from "lucide-react";
+import { RadarIcon } from "@/components/radar-icon";
 import { MagneticButton } from "@/components/magnetic-button";
 
 /* ─── Spring config ─── */
@@ -129,7 +130,7 @@ export default function LoginPage() {
             className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center"
             style={{ boxShadow: "0 4px 12px var(--brand-glow)" }}
           >
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <RadarIcon className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-base tracking-tight" style={{ color: "var(--text)" }}>
             FindX
@@ -265,7 +266,7 @@ export default function LoginPage() {
           <Link href="/">
             <a className="md:hidden flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                <RadarIcon className="w-3.5 h-3.5 text-white" />
               </div>
               <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
             </a>
@@ -300,7 +301,7 @@ export default function LoginPage() {
                 className="w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center"
                 style={{ boxShadow: "0 4px 16px var(--brand-glow)" }}
               >
-                <Zap className="w-6 h-6 text-white" strokeWidth={2.5} />
+                <RadarIcon className="w-6 h-6 text-white" />
               </div>
             </motion.div>
 

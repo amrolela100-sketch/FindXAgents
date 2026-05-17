@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base ─────────────────────────────────────────────────────────── */
+:root {
+  --primary:        #0D9488;
+  --primary-hover:  #0F766E;
+  --primary-light:  #2DD4BF;
+  --primary-glow:   rgba(13, 148, 136, 0.25);
+
+  --bg:             #F0EFF8;
+  --bg-subtle:      #E8E6F4;
+  --text:           #1A1825;
+  --text-muted:     #6B6580;
+  --text-subtle:    #A09CB8;
+
+  --glass:          rgba(255, 255, 255, 0.65);
+  --glass-border:   rgba(200, 195, 220, 0.5);
+  --shadow-brand:   0 0 20px rgba(13, 148, 136, 0.3);
+}
+
+.dark {
+  --primary:       #2DD4BF;
+  --primary-hover: #0D9488;
+  --primary-glow:  rgba(45, 212, 191, 0.25);
+
+  --bg:            #080810;
+  --bg-subtle:     #0E0D1A;
+  --text:          #EEECFA;
+  --text-muted:    #8B87A8;
+  --text-subtle:   #4D4A65;
+
+  --glass:         rgba(255, 255, 255, 0.04);
+  --glass-border:  rgba(255, 255, 255, 0.08);
+  --shadow-brand:  0 0 20px rgba(45, 212, 191, 0.25);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

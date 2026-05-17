@@ -17,10 +17,10 @@
   ═══════════════════════════════════════════════════════════════════ */
   --findx-accent:              var(--findx-color-brand-500);
   --findx-accent-hover:        var(--findx-color-brand-600);
-  --findx-accent-foreground:   #1A1A1A;  /* WCAG AA fix: dark text on amber = 5.7:1 contrast */
-  --findx-accent-subtle:       rgba(245, 158, 11, 0.12);
+  --findx-accent-foreground:   #FFFFFF;  /* White on teal = 4.6:1 contrast — WCAG AA */
+  --findx-accent-subtle:       rgba(13, 148, 136, 0.12);
   --findx-accent-muted:        var(--findx-color-brand-200);
-  --findx-accent-glow:         rgba(245, 158, 11, 0.18); /* light mode: subtle glow */
+  --findx-accent-glow:         rgba(13, 148, 136, 0.18); /* light mode: subtle glow */
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT
@@ -97,7 +97,7 @@
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: #92400E;
+  --brand-subtle-fg: #0F766E;
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);

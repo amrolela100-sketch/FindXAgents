@@ -96,7 +96,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="relative ms-1">
           <button
             onClick={() => { setUserMenuOpen(v => !v); setNotifOpen(false); }}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all hover:scale-105 bg-gradient-to-br from-primary to-orange-600 text-white shadow-glow-brand"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all hover:scale-105 bg-gradient-to-br from-primary to-teal-600 text-white shadow-glow-brand"
             title={user?.email}
           >
             {initial}

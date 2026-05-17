@@ -8,6 +8,7 @@ import {
   ArrowRight, ArrowLeft, Sun, Moon, Globe,
   CheckCircle, TrendingUp, Users, Clock,
 } from "lucide-react";
+import { RadarIcon } from "@/components/radar-icon";
 import { getDashboardStats, toastError } from "../lib/api";
 import { MagneticButton } from "../components/magnetic-button";
 
@@ -218,7 +219,7 @@ export default function LandingPage() {
               className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center"
               style={{ boxShadow: "0 2px 8px var(--brand-glow)" }}
             >
-              <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+              <RadarIcon className="w-3.5 h-3.5 text-white" />
             </div>
             <span className="font-bold text-sm tracking-tight" style={{ color: "var(--text)" }}>
               FindX
@@ -574,7 +575,7 @@ export default function LandingPage() {
       >
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded gradient-brand flex items-center justify-center">
-            <Zap className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+            <RadarIcon className="w-2.5 h-2.5 text-white" />
           </div>
           <span>© {new Date().getFullYear()} FindX</span>
         </div>
