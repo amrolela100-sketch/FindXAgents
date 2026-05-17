@@ -27,7 +27,7 @@ const itemVariants = {
 function StatCounter({ value, label }: { value: string; label: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(containerRef, { once: true, margin: "-60px" });
+  const inView = useInView(containerRef, { once: true, margin: "0px 0px 0px 0px" });
   const done = useRef(false);
 
   useEffect(() => {
@@ -177,7 +177,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <motion.div
             initial="hidden"
-            animate={heroInView ? "visible" : "hidden"}
+            animate="visible"
             variants={containerVariants}
             className="text-center md:text-left rtl:md:text-right"
           >
@@ -254,10 +254,21 @@ export default function LandingPage() {
                 <div className="p-4 rounded-xl bg-glass-raised border border-glass-border">
                   <div className="h-1.5 w-20 rounded bg-primary/20 mb-4" />
                   <div className="grid grid-cols-4 gap-4 h-32 items-end">
-                    {[60, 80, 45, 95].map((h, i) => (
-                       <div key={i} className="w-full bg-primary/10 rounded-lg relative overflow-hidden group" style={{ height: `${h}%` }}>
-                          <div className="absolute bottom-0 left-0 right-0 bg-primary/40 h-full transform translate-y-1/2 group-hover:translate-y-0 transition-transform duration-500" />
-                       </div>
+                    {[
+                      { h: 60, opacity: 0.5 },
+                      { h: 80, opacity: 0.7 },
+                      { h: 45, opacity: 0.4 },
+                      { h: 95, opacity: 1.0 },
+                    ].map((bar, i) => (
+                      <div
+                        key={i}
+                        className="w-full rounded-lg"
+                        style={{
+                          height: `${bar.h}%`,
+                          background: `var(--color-primary)`,
+                          opacity: bar.opacity,
+                        }}
+                      />
                     ))}
                   </div>
                 </div>
