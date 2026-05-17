@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
+import { SPRING } from "@/lib/motion";
 import { motion, useInView } from "framer-motion";
 import { useLang } from "@/lib/lang-context";
 import { useTheme } from "@/lib/theme-context";
@@ -12,7 +13,7 @@ import {
 import { getDashboardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const SPRING = { type: "spring" as const, stiffness: 100, damping: 15 };
+
 
 const containerVariants = {
   hidden: {},
