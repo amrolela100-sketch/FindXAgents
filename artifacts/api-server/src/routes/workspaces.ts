@@ -183,4 +183,158 @@ router.delete("/workspaces/:id", requireWorkspace, async (req, res) => {
   }
 });
 
+// ─── List workspace members ───────────────────────────────────────────────────
+router.get("/workspaces/:id/members", requireWorkspace, async (req, res) => {
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch" });
+  }
+  try {
+    const members = await db
+      .select({
+        userId:    workspaceMembers.userId,
+        role:      workspaceMembers.role,
+        joinedAt:  workspaceMembers.joinedAt,
+        email:     users.email,
+      })
+      .from(workspaceMembers)
+      .innerJoin(users, eq(users.id, workspaceMembers.userId))
+      .where(eq(workspaceMembers.workspaceId, req.params.id));
+
+    return res.json({ members });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
+// ─── Invite member by email ───────────────────────────────────────────────────
+const inviteSchema = z.object({
+  email: z.string().email(),
+  role:  z.enum(["admin", "member"]).default("member"),
+});
+
+router.post("/workspaces/:id/invite", requireWorkspace, async (req, res) => {
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch" });
+  }
+  const ws = req.workspace!;
+  if (ws.role !== "owner" && ws.role !== "admin") {
+    return res.status(403).json({ error: "Only owner/admin can invite members" });
+  }
+
+  const parsed = inviteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
+  }
+
+  try {
+    // Find user by email
+    const [invitee] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, parsed.data.email))
+      .limit(1);
+
+    if (!invitee) {
+      return res.status(404).json({ error: "No FindX account found with that email address" });
+    }
+
+    // Check if already a member
+    const [existing] = await db
+      .select()
+      .from(workspaceMembers)
+      .where(and(
+        eq(workspaceMembers.workspaceId, req.params.id),
+        eq(workspaceMembers.userId, invitee.id),
+      ))
+      .limit(1);
+
+    if (existing) {
+      return res.status(409).json({ error: "User is already a member of this workspace" });
+    }
+
+    // Add member
+    await db.insert(workspaceMembers).values({
+      workspaceId: req.params.id,
+      userId:      invitee.id,
+      role:        parsed.data.role,
+    });
+
+    return res.status(201).json({
+      message: `${invitee.email} added to workspace`,
+      member: {
+        userId:   invitee.id,
+        email:    invitee.email,
+        role:     parsed.data.role,
+        joinedAt: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
+// ─── Update member role ───────────────────────────────────────────────────────
+router.patch("/workspaces/:id/members/:userId/role", requireWorkspace, async (req, res) => {
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch" });
+  }
+  const ws = req.workspace!;
+  if (ws.role !== "owner") {
+    return res.status(403).json({ error: "Only workspace owner can change roles" });
+  }
+  // Owner cannot change their own role
+  const targetUserId = String(req.params.userId);
+  if (targetUserId === req.user!.userId) {
+    return res.status(400).json({ error: "Cannot change your own role" });
+  }
+
+  const roleSchema = z.object({ role: z.enum(["admin", "member"]) });
+  const parsed = roleSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid role" });
+
+  try {
+    await db.update(workspaceMembers)
+      .set({ role: parsed.data.role })
+      .where(and(
+        eq(workspaceMembers.workspaceId, req.params.id),
+        eq(workspaceMembers.userId, targetUserId),
+      ));
+    return res.json({ updated: true });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
+// ─── Remove member ────────────────────────────────────────────────────────────
+router.delete("/workspaces/:id/members/:userId", requireWorkspace, async (req, res) => {
+  if (req.params.id !== req.workspace!.id) {
+    return res.status(403).json({ error: "Workspace ID mismatch" });
+  }
+  const ws = req.workspace!;
+  const removeUserId = String(req.params.userId);
+  const isSelf = removeUserId === req.user!.userId;
+
+  // Owner can remove anyone; member can only remove themselves (leave)
+  if (!isSelf && ws.role !== "owner" && ws.role !== "admin") {
+    return res.status(403).json({ error: "Only owner/admin can remove members" });
+  }
+  // Owner cannot remove themselves (would orphan workspace)
+  if (isSelf && ws.role === "owner") {
+    return res.status(400).json({ error: "Owner cannot leave their own workspace. Transfer ownership or delete the workspace." });
+  }
+
+  try {
+    await db.delete(workspaceMembers).where(
+      and(
+        eq(workspaceMembers.workspaceId, req.params.id),
+        eq(workspaceMembers.userId, removeUserId),
+      ),
+    );
+    return res.json({ removed: true });
+  } catch (err) {
+    return safeError(res, err, "Internal server error");
+  }
+});
+
 export default router;
+

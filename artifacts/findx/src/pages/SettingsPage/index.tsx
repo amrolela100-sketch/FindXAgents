@@ -7,6 +7,8 @@ import { EmailTab } from "./EmailTab";
 import { SearchTab } from "./SearchTab";
 import { NotificationsTab } from "./NotificationsTab";
 import { DataTab } from "./DataTab";
+import { TeamTab } from "./TeamTab";
+import { WebhooksTab } from "./WebhooksTab";
 import { cn } from "@/lib/utils";
 import { PageShell } from "@/components/page-shell";
 
@@ -16,6 +18,8 @@ const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
   search:        SearchTab,
   notifications: NotificationsTab,
   data:          DataTab,
+  team:          TeamTab,
+  webhooks:      WebhooksTab,
 };
 
 // Map provider colors to Tailwind semantic classes where possible, 
@@ -26,6 +30,8 @@ const TAB_COLOR_MAP: Record<TabId, string> = {
   search:        "text-warning",
   notifications: "text-orange-500",
   data:          "text-danger",
+  team:          "text-purple-500",
+  webhooks:      "text-violet-500",
 };
 
 export default function SettingsPage() {
