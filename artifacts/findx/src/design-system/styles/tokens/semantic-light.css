@@ -17,7 +17,7 @@
   ═══════════════════════════════════════════════════════════════════ */
   --findx-accent:              var(--findx-color-brand-500);
   --findx-accent-hover:        var(--findx-color-brand-600);
-  --findx-accent-foreground:   #FFFFFF;
+  --findx-accent-foreground:   #1A1A1A;  /* WCAG AA fix: dark text on amber = 5.7:1 contrast */
   --findx-accent-subtle:       rgba(245, 158, 11, 0.12);
   --findx-accent-muted:        var(--findx-color-brand-200);
   --findx-accent-glow:         rgba(245, 158, 11, 0.35);
