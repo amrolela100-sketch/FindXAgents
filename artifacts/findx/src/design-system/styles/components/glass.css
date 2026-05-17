@@ -1,178 +1,209 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Glass Components
+   FINDX DESIGN SYSTEM — Precision Card Components
    
-   Glass card, glass variants, brand glow, skeleton.
-   The core visual identity of FindX's Liquid Glass Design System.
+   Replaces glass morphism with Precision Dark flat cards.
+   Linear/Vercel/Stripe aesthetic: flat surfaces + crisp borders + depth hierarchy.
    
-   @version 2.0.0
+   The "glass-card" class name is kept for backward compat but the visual
+   is now a flat precision card — no blur, no frosted glass.
+   
+   @version 3.0.0 — Precision Dark (glass → flat precision)
    @layer components
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   GLASS CARD — Core component
+   PRECISION CARD — Base (replaces glass-card)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-.glass-card {
-  background: var(--glass);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid rgba(200, 195, 220, 0.5); /* light mode: visible border on white bg */
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+.glass-card,
+.precision-card {
+  background: var(--findx-surface-glass);      /* #141416 */
+  border: 1px solid var(--findx-border-default); /* #222226 */
+  border-radius: var(--findx-radius-lg);
+  box-shadow: var(--findx-shadow-sm);
+  transition:
+    border-color var(--findx-transition-base),
+    box-shadow   var(--findx-transition-base);
 }
 
-.dark .glass-card {
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    0 4px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+/* ─── Hover — border brightens slightly ─────────────────────────────────────── */
+.glass-card-hover:hover,
+.precision-card-hover:hover {
+  border-color: var(--findx-border-strong);     /* #2E2E32 */
+  box-shadow:   var(--findx-shadow-md);
 }
 
-.glass-card-hover:hover {
-  border-color: rgba(245, 158, 11, 0.35);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(245, 158, 11, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
+/* ─── Active accent highlight ───────────────────────────────────────────────── */
+.glass-card-accent:hover,
+.precision-card-accent:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow:   0 0 0 1px rgba(99, 102, 241, 0.12), var(--findx-shadow-md);
 }
 
-.dark .glass-card-hover:hover {
-  border-color: rgba(251, 191, 36, 0.25);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(251, 191, 36, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
+/* ─── Raised card — one step up in hierarchy ────────────────────────────────── */
+.glass-card-raised,
+.precision-card-raised {
+  background: var(--findx-surface-glass-raised); /* #1C1C1F */
+  border: 1px solid var(--findx-border-strong);
+  border-radius: var(--findx-radius-lg);
+  box-shadow: var(--findx-shadow-md);
 }
 
-/* Legacy alias — .card */
+/* ─── Legacy .card alias ────────────────────────────────────────────────────── */
 .card {
-  background: var(--glass);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  background: var(--findx-surface-glass);
+  border: 1px solid var(--findx-border-default);
+  border-radius: var(--findx-radius-lg);
+  box-shadow: var(--findx-shadow-sm);
+  transition:
+    border-color var(--findx-transition-base),
+    box-shadow   var(--findx-transition-base);
 }
 
-.dark .card {
-  box-shadow:
-    0 4px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+/* ─── Light mode overrides ──────────────────────────────────────────────────── */
+.light .glass-card,
+.light .precision-card,
+.light .card,
+[data-theme="light"] .glass-card,
+[data-theme="light"] .precision-card,
+[data-theme="light"] .card {
+  background: var(--findx-surface-glass);       /* #FFFFFF */
+  border-color: var(--findx-border-default);    /* #E4E4E7 */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
-.card-hover:hover {
-  border-color: rgba(245, 158, 11, 0.35);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(245, 158, 11, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
-}
-
-.dark .card-hover:hover {
-  border-color: rgba(251, 191, 36, 0.22);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(251, 191, 36, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  transform: translateY(-1px);
-}
-
-.card-lift:hover {
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  transform: translateY(-2px);
+.light .glass-card-hover:hover,
+.light .precision-card-hover:hover,
+[data-theme="light"] .glass-card-hover:hover,
+[data-theme="light"] .precision-card-hover:hover {
+  border-color: var(--findx-border-strong);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   GLASS VARIANTS
+   SURFACE HIERARCHY — depth via background layering
+   
+   base     → #0C0C0E  (body)
+   card     → #141416  (primary surface)
+   raised   → #1C1C1F  (secondary surface, elevated panels)
+   overlay  → #222226  (modals, dropdowns)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-.glass-sm {
-  background: var(--glass);
-  backdrop-filter: var(--blur-glass-sm);
-  -webkit-backdrop-filter: var(--blur-glass-sm);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-}
-
-.glass-raised {
-  background: var(--glass-raised);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-
-.dark .glass-raised {
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
+.surface-base    { background: var(--findx-bg-base);     }
+.surface-card    { background: var(--findx-bg-subtle);   }
+.surface-raised  { background: var(--findx-bg-inset);    }
+.surface-overlay { background: var(--findx-bg-elevated); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BRAND GLOW — The FindX signature
+   BRAND ACCENT CHIP — Indigo pill (editorial detail)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-.brand-glow {
-  /* light mode: subtle glow */
-  box-shadow:
-    0 0 12px rgba(245, 158, 11, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.dark .brand-glow {
-  box-shadow:
-    0 0 30px var(--brand-glow),
-    0 0 60px rgba(251, 191, 36, 0.10),
-    0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LIFT CARD — glass with colored accent hover
-═══════════════════════════════════════════════════════════════════════════════ */
-
-.lift-card {
-  transition: transform 200ms ease, box-shadow 200ms ease;
-}
-
-.lift-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.dark .lift-card:hover {
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: var(--findx-radius-full);
+  background: var(--findx-accent-subtle);
+  color: var(--findx-accent);
+  border: 1px solid rgba(99, 102, 241, 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SKELETON — glass shimmer
+   SKELETON — Precision Dark shimmer
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--glass-border) 25%,
-    rgba(255, 255, 255, 0.12) 50%,
-    var(--glass-border) 75%
+    var(--findx-bg-subtle)  0%,
+    var(--findx-bg-inset)   50%,
+    var(--findx-bg-subtle)  100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
-  border-radius: var(--radius-md);
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--findx-radius-md);
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BRAND ICON CONTAINER — Radar icon wrapper
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--findx-accent);
+  border-radius: var(--findx-radius-md);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.30);
+  transition: box-shadow var(--findx-transition-base);
+}
+
+.brand-icon:hover {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.50), 0 4px 16px rgba(99, 102, 241, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DIVIDER — precision horizontal line
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.precision-divider {
+  height: 1px;
+  background: var(--findx-border-default);
+  border: none;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATUS BADGE — precision style
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.precision-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: var(--findx-radius-sm);
+  border: 1px solid transparent;
+}
+
+.precision-badge-success {
+  background: var(--findx-feedback-success-bg);
+  color:       var(--findx-feedback-success);
+  border-color: var(--findx-feedback-success-border);
+}
+
+.precision-badge-warning {
+  background: var(--findx-feedback-warning-bg);
+  color:       var(--findx-feedback-warning);
+  border-color: var(--findx-feedback-warning-border);
+}
+
+.precision-badge-danger {
+  background: var(--findx-feedback-danger-bg);
+  color:       var(--findx-feedback-danger);
+  border-color: var(--findx-feedback-danger-border);
+}
+
+.precision-badge-info {
+  background: var(--findx-feedback-info-bg);
+  color:       var(--findx-feedback-info);
+  border-color: var(--findx-feedback-info-border);
+}
+
+.precision-badge-accent {
+  background:   var(--findx-accent-subtle);
+  color:        var(--findx-accent);
+  border-color: rgba(99, 102, 241, 0.20);
 }

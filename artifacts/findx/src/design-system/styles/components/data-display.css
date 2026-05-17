@@ -1,27 +1,100 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Data Display Components
+   FINDX DESIGN SYSTEM — Data Display Components — Precision Dark Edition
    
-   Badge, kanban scroll, status pulse — data presentation styles.
+   Badge, table, kanban, status pulse — data presentation with precision style.
    
-   @version 2.0.0
+   @version 3.0.0 — Precision Dark
    @layer components
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BADGE
+   BADGE — Precision flat badges
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: var(--findx-radius-sm);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  backdrop-filter: var(--blur-glass-sm);
-  -webkit-backdrop-filter: var(--blur-glass-sm);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+/* Badge variants */
+.badge-default {
+  background: var(--findx-bg-inset);
+  color: var(--findx-text-secondary);
+  border-color: var(--findx-border-default);
+}
+
+.badge-accent {
+  background: var(--findx-accent-subtle);
+  color: var(--findx-accent);
+  border-color: rgba(99, 102, 241, 0.20);
+}
+
+.badge-success {
+  background: var(--findx-feedback-success-bg);
+  color: var(--findx-feedback-success);
+  border-color: var(--findx-feedback-success-border);
+}
+
+.badge-warning {
+  background: var(--findx-feedback-warning-bg);
+  color: var(--findx-feedback-warning);
+  border-color: var(--findx-feedback-warning-border);
+}
+
+.badge-danger {
+  background: var(--findx-feedback-danger-bg);
+  color: var(--findx-feedback-danger);
+  border-color: var(--findx-feedback-danger-border);
+}
+
+.badge-info {
+  background: var(--findx-feedback-info-bg);
+  color: var(--findx-feedback-info);
+  border-color: var(--findx-feedback-info-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABLE — Precision data table
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.precision-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.precision-table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--findx-text-muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--findx-border-default);
+  text-align: left;
+}
+
+.precision-table td {
+  padding: 10px 12px;
+  color: var(--findx-text-primary);
+  border-bottom: 1px solid var(--findx-border-default);
+  font-variant-numeric: tabular-nums;
+}
+
+.precision-table tr:last-child td {
+  border-bottom: none;
+}
+
+.precision-table tr:hover td {
+  background: var(--findx-interactive-hover);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -30,18 +103,22 @@
 
 .kanban-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--glass-border) transparent;
+  scrollbar-color: var(--findx-border-strong) transparent;
 }
 
-.kanban-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
-
+.kanban-scroll::-webkit-scrollbar       { width: 4px; height: 4px; }
+.kanban-scroll::-webkit-scrollbar-track  { background: transparent; }
 .kanban-scroll::-webkit-scrollbar-thumb {
-  background: var(--glass-border-strong);
+  background: var(--findx-border-strong);
   border-radius: 4px;
 }
 
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--findx-text-muted);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
-   STATUS PULSE
+   STATUS PULSE — live indicator dot
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .pulse-dot {
@@ -55,6 +132,85 @@
   inset: -3px;
   border-radius: 50%;
   background: currentColor;
-  opacity: 0.3;
+  opacity: 0.25;
   animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.4; }
+  70%  { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   METRIC CARD — data summary card (editorial style from open-design)
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: var(--findx-surface-glass);
+  border: 1px solid var(--findx-border-default);
+  border-radius: var(--findx-radius-lg);
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--findx-text-muted);
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--findx-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.metric-delta {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.metric-delta.up   { color: var(--findx-feedback-success); }
+.metric-delta.down { color: var(--findx-feedback-danger); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: var(--findx-text-muted);
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.4;
+}
+
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--findx-text-secondary);
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  color: var(--findx-text-muted);
+  max-width: 280px;
 }

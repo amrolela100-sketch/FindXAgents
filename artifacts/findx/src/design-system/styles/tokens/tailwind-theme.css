@@ -1,22 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Tailwind v4 Theme Bridge
+   FINDX DESIGN SYSTEM — Tailwind v4 Theme Bridge — Precision Dark Edition
    
    Maps design tokens to Tailwind's @theme so utilities like
-   bg-primary, text-muted, rounded-lg work with our token values.
+   bg-primary, text-muted, border-border etc. work with Precision Dark tokens.
    
-   @version 2.1.0 (Fixed for Shadcn/UI Compatibility)
+   @version 3.0.0 — Inter font + Precision Dark color system
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  /* Font families */
-  --font-sans: "Outfit", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  --font-arabic: "Noto Sans Arabic", "Outfit", sans-serif;
+  /* ─── TYPOGRAPHY — Inter (precision, data-dense) ─────────────────────────── */
+  --font-sans:   "Inter", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:   "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-arabic: "Noto Sans Arabic", "Inter", sans-serif;
 
   /* ─── SHADCN / CORE SEMANTIC COLORS ───────────────────────────────────────── */
-  /* These map our tokens to standard Tailwind/Shadcn utility names */
-  
   --color-background:      var(--findx-bg-base);
   --color-foreground:      var(--findx-text-primary);
 
@@ -38,9 +36,15 @@
   --color-destructive-foreground: var(--findx-text-inverted);
   --color-destructive-border:     var(--findx-feedback-danger-border);
 
-  --color-border:  var(--findx-border-default);
-  --color-input:   var(--findx-border-default);
-  --color-ring:    var(--findx-accent);
+  --color-border: var(--findx-border-default);
+  --color-input:  var(--findx-border-default);
+  --color-ring:   var(--findx-accent);
+
+  --color-card:            var(--findx-surface-glass);
+  --color-card-foreground: var(--findx-text-primary);
+
+  --color-popover:            var(--findx-surface-glass-overlay);
+  --color-popover-foreground: var(--findx-text-primary);
 
   /* ─── BRAND / LEGACY ALIASES ─────────────────────────────────────────────── */
   --color-brand:           var(--brand);
@@ -50,47 +54,63 @@
   --color-brand-subtle-fg: var(--brand-subtle-fg);
   --color-brand-glow:      var(--brand-glow);
 
-  /* ─── SURFACE LAYERS (Glass) ─────────────────────────────────────────────── */
-  --color-glass:           var(--glass);
-  --color-glass-raised:    var(--glass-raised);
-  --color-glass-overlay:   var(--glass-overlay);
-  --color-glass-border:    var(--glass-border);
+  /* ─── SURFACE LAYERS (Flat — no glass morphism in Precision Dark) ─────────── */
+  --color-glass:               var(--glass);
+  --color-glass-raised:        var(--glass-raised);
+  --color-glass-overlay:       var(--glass-overlay);
+  --color-glass-border:        var(--glass-border);
   --color-glass-border-strong: var(--glass-border-strong);
 
   /* ─── FEEDBACK COLORS ────────────────────────────────────────────────────── */
   --color-success:         var(--findx-feedback-success);
   --color-success-bg:      var(--findx-feedback-success-bg);
   --color-success-border:  var(--findx-feedback-success-border);
-  
+
   --color-warning:         var(--findx-feedback-warning);
   --color-warning-bg:      var(--findx-feedback-warning-bg);
   --color-warning-border:  var(--findx-feedback-warning-border);
-  
+
   --color-danger:          var(--findx-feedback-danger);
   --color-danger-bg:       var(--findx-feedback-danger-bg);
   --color-danger-border:   var(--findx-feedback-danger-border);
-  
+
   --color-info:            var(--findx-feedback-info);
   --color-info-bg:         var(--findx-feedback-info-bg);
   --color-info-border:     var(--findx-feedback-info-border);
 
-  /* Radius */
+  /* ─── TEXT SEMANTIC UTILITIES ────────────────────────────────────────────── */
+  --color-text-primary:   var(--findx-text-primary);
+  --color-text-secondary: var(--findx-text-secondary);
+  --color-text-muted:     var(--findx-text-muted);
+  --color-text-subtle:    var(--findx-text-subtle);
+
+  /* ─── RADIUS ─────────────────────────────────────────────────────────────── */
+  --radius-xs:   var(--findx-radius-xs);
   --radius-sm:   var(--findx-radius-sm);
   --radius-md:   var(--findx-radius-md);
   --radius-lg:   var(--findx-radius-lg);
   --radius-xl:   var(--findx-radius-xl);
   --radius-2xl:  var(--findx-radius-2xl);
+  --radius-3xl:  var(--findx-radius-3xl);
   --radius-full: 9999px;
 
-  /* Glass blur values */
+  /* ─── BLUR (minimal in Precision Dark) ──────────────────────────────────── */
   --blur-glass:    var(--findx-blur-glass);
   --blur-glass-sm: var(--findx-blur-glass-sm);
   --blur-glass-lg: var(--findx-blur-glass-lg);
 
-  /* Brand glow shadow utility — light mode subtle, overridden to stronger in dark */
-  --shadow-glow-brand: 0 0 12px rgba(13, 148, 136, 0.25), 0 2px 8px rgba(0,0,0,0.08);
-  
-  /* Animations */
+  /* ─── SHADOWS ─────────────────────────────────────────────────────────────── */
+  --shadow-xs:         var(--findx-shadow-xs);
+  --shadow-sm:         var(--findx-shadow-sm);
+  --shadow-md:         var(--findx-shadow-md);
+  --shadow-lg:         var(--findx-shadow-lg);
+  --shadow-xl:         var(--findx-shadow-xl);
+  --shadow-brand:      var(--findx-shadow-brand);
+  --shadow-glow-brand: var(--findx-shadow-brand);
+
+  /* ─── ANIMATIONS ─────────────────────────────────────────────────────────── */
   --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-accordion-up:   accordion-up   0.2s ease-out;
+  --animate-fade-in:        fade-in 0.2s ease-out;
+  --animate-slide-up:       slide-up 0.2s ease-out;
 }
