@@ -193,10 +193,8 @@ router.get("/workspaces/:id/members", requireWorkspace, async (req, res) => {
       .select({
         userId:    workspaceMembers.userId,
         role:      workspaceMembers.role,
-        joinedAt:  workspaceMembers.createdAt,
+        joinedAt:  workspaceMembers.joinedAt,
         email:     users.email,
-        name:      users.name,
-        avatarUrl: users.avatarUrl,
       })
       .from(workspaceMembers)
       .innerJoin(users, eq(users.id, workspaceMembers.userId))
@@ -262,11 +260,10 @@ router.post("/workspaces/:id/invite", requireWorkspace, async (req, res) => {
     });
 
     return res.status(201).json({
-      message: `${invitee.name || invitee.email} added to workspace`,
+      message: `${invitee.email} added to workspace`,
       member: {
         userId:   invitee.id,
         email:    invitee.email,
-        name:     invitee.name,
         role:     parsed.data.role,
         joinedAt: new Date().toISOString(),
       },
@@ -286,7 +283,8 @@ router.patch("/workspaces/:id/members/:userId/role", requireWorkspace, async (re
     return res.status(403).json({ error: "Only workspace owner can change roles" });
   }
   // Owner cannot change their own role
-  if (req.params.userId === req.user!.userId) {
+  const targetUserId = String(req.params.userId);
+  if (targetUserId === req.user!.userId) {
     return res.status(400).json({ error: "Cannot change your own role" });
   }
 
@@ -299,7 +297,7 @@ router.patch("/workspaces/:id/members/:userId/role", requireWorkspace, async (re
       .set({ role: parsed.data.role })
       .where(and(
         eq(workspaceMembers.workspaceId, req.params.id),
-        eq(workspaceMembers.userId, req.params.userId),
+        eq(workspaceMembers.userId, targetUserId),
       ));
     return res.json({ updated: true });
   } catch (err) {
@@ -313,7 +311,8 @@ router.delete("/workspaces/:id/members/:userId", requireWorkspace, async (req, r
     return res.status(403).json({ error: "Workspace ID mismatch" });
   }
   const ws = req.workspace!;
-  const isSelf = req.params.userId === req.user!.userId;
+  const removeUserId = String(req.params.userId);
+  const isSelf = removeUserId === req.user!.userId;
 
   // Owner can remove anyone; member can only remove themselves (leave)
   if (!isSelf && ws.role !== "owner" && ws.role !== "admin") {
@@ -328,7 +327,7 @@ router.delete("/workspaces/:id/members/:userId", requireWorkspace, async (req, r
     await db.delete(workspaceMembers).where(
       and(
         eq(workspaceMembers.workspaceId, req.params.id),
-        eq(workspaceMembers.userId, req.params.userId),
+        eq(workspaceMembers.userId, removeUserId),
       ),
     );
     return res.json({ removed: true });

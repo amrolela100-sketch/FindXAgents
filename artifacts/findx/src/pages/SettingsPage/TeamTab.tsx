@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, UserPlus, Loader2, Trash2, Shield,
-  Crown, User as UserIcon, ChevronDown, CheckCircle, AlertCircle
+  Crown, User as UserIcon, ChevronDown
 } from "lucide-react";
 import { FADE_UP } from "./provider-config";
 import { SectionCard, SectionHeader, Alert } from "./shared";
@@ -19,8 +19,6 @@ import { useWorkspace } from "@/lib/workspace-context";
 interface Member {
   userId:   string;
   email:    string;
-  name:     string | null;
-  avatarUrl?: string | null;
   role:     "owner" | "admin" | "member";
   joinedAt: string;
 }
@@ -227,14 +225,14 @@ export function TeamTab() {
                     {/* Avatar */}
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0"
                       style={{ background: `${roleInfo.color}22`, color: roleInfo.color, border: `1px solid ${roleInfo.color}44` }}>
-                      {(member.name || member.email).charAt(0).toUpperCase()}
+                      {member.email.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>
-                          {member.name || member.email}
+                          {member.email}
                         </span>
                         {isCurrentUser && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"

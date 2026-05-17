@@ -8,8 +8,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Webhook, Plus, Trash2, Loader2, RefreshCw,
-  CheckCircle, XCircle, Zap, Radio, Copy, Eye, EyeOff
+  Webhook, Plus, Trash2, Loader2,
+  CheckCircle, XCircle, Zap, Radio, Copy
 } from "lucide-react";
 import { FADE_UP } from "./provider-config";
 import { SectionCard, SectionHeader, Alert } from "./shared";
@@ -73,7 +73,7 @@ export function WebhooksTab() {
   // Per-webhook state
   const [testingId,    setTestingId]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
-  const [revealedId,   setRevealedId]   = useState<string | null>(null);
+
   const [copiedId,     setCopiedId]     = useState<string | null>(null);
   const [newSecret,    setNewSecret]    = useState<{ id: string; secret: string } | null>(null);
 

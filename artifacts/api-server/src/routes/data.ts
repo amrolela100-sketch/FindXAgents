@@ -101,7 +101,7 @@ router.get("/data/export", requireAuth, async (req, res) => {
       user: {
         id:        user?.id,
         email:     user?.email,
-        name:      user?.name,
+        metadata:  user?.metadata,
         createdAt: user?.createdAt,
       },
       workspaces: userWorkspaces.map(w => ({ ...w.workspace, role: w.role })),
