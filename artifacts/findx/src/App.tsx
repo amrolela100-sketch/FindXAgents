@@ -43,6 +43,9 @@ const CommandPalette = lazy(() =>
 const ChatWidget = lazy(() =>
   import("./components/chat-widget").then(m => ({ default: m.ChatWidget }))
 );
+const CookieConsent = lazy(() =>
+  import("./components/cookie-consent").then(m => ({ default: m.CookieConsent }))
+);
 
 function PageSpinner() {
   return (
@@ -144,6 +147,10 @@ function AuthGuard() {
       <Suspense fallback={<NullFallback />}>
         <ChatWidget />
       </Suspense>
+
+          <Suspense fallback={<NullFallback />}>
+            <CookieConsent />
+          </Suspense>
     </WorkspaceProvider>
   );
 }

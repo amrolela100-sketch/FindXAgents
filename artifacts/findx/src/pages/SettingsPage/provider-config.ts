@@ -9,7 +9,7 @@
 
 import type { AiProviderType } from "@/lib/types";
 import {
-  Bot, Mail, Search, Bell, Database,
+  Bot, Mail, Search, Bell, Database, Users, Webhook,
 } from "lucide-react";
 
 // ─── Animation presets ──────────────────────────────────────────────────────
@@ -27,6 +27,8 @@ export const TABS = [
   { id: "search",        label: "Search",         icon: Search,        color: "#FBBF24" },
   { id: "notifications", label: "Notifications",  icon: Bell,          color: "#F97316" },
   { id: "data",          label: "Data",           icon: Database,      color: "#F87171" },
+  { id: "team",          label: "Team",           icon: Users,         color: "#A855F7" },
+  { id: "webhooks",      label: "Webhooks",       icon: Webhook,       color: "#8B5CF6" },
 ] as const;
 
 export type TabId = typeof TABS[number]["id"];
