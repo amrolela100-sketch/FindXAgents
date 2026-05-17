@@ -15,44 +15,8 @@
 /* ─── Google Fonts — Inter replaces Outfit ───────────────────────────────── */
 /* (Import moved to Base.astro — this file handles CSS variables only) */
 
-/* ─── Precision Dark — PRIMARY THEME ─────────────────────────────────────── */
-:root,
-.dark,
-html.dark {
-  /* Accent — Indigo */
-  --primary:        #6366F1;
-  --primary-hover:  #4F46E5;
-  --primary-light:  #818CF8;
-  --primary-glow:   rgba(99, 102, 241, 0.20);
-  --shadow-brand:   0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 16px rgba(99, 102, 241, 0.15);
-
-  /* Surfaces — near-black, NOT pure black */
-  --bg:             #0C0C0E;
-  --bg-subtle:      #141416;
-  --bg-inset:       #1C1C1F;
-  --bg-elevated:    #222226;
-
-  /* Text */
-  --text:           #FAFAFA;
-  --text-muted:     #A1A1AA;
-  --text-subtle:    #71717A;
-
-  /* Flat surfaces (glass aliases kept for backward compat) */
-  --glass:          #141416;
-  --glass-border:   #222226;
-  --glass-border-strong: #2E2E32;
-
-  /* Borders */
-  --border:         #222226;
-  --border-strong:  #2E2E32;
-
-  color-scheme: dark;
-}
-
-/* ─── Light Mode ─────────────────────────────────────────────────────────── */
-.light,
-html.light,
-[data-theme="light"] {
+/* ─── Light Mode (default :root) ─────────────────────────────────────────── */
+:root {
   --primary:        #4F46E5;
   --primary-hover:  #4338CA;
   --primary-light:  #6366F1;
@@ -78,6 +42,34 @@ html.light,
   color-scheme: light;
 }
 
+/* ─── Dark Mode override ─────────────────────────────────────────────────── */
+.dark,
+html.dark {
+  --primary:        #6366F1;
+  --primary-hover:  #4F46E5;
+  --primary-light:  #818CF8;
+  --primary-glow:   rgba(99, 102, 241, 0.20);
+  --shadow-brand:   0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 16px rgba(99, 102, 241, 0.15);
+
+  --bg:             #0C0C0E;
+  --bg-subtle:      #141416;
+  --bg-inset:       #1C1C1F;
+  --bg-elevated:    #222226;
+
+  --text:           #FAFAFA;
+  --text-muted:     #A1A1AA;
+  --text-subtle:    #71717A;
+
+  --glass:          #141416;
+  --glass-border:   #222226;
+  --glass-border-strong: #2E2E32;
+
+  --border:         #222226;
+  --border-strong:  #2E2E32;
+
+  color-scheme: dark;
+}
+
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
@@ -94,23 +86,23 @@ body {
   padding: 0;
 }
 
-/* Single, very subtle top glow — anchors eye, doesn't distract */
+/* Subtle Indigo glow — dark only */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  background-image: none;
+}
+
+.dark body::before,
+html.dark body::before {
   background-image: radial-gradient(
     ellipse 70% 25% at 50% -2%,
     rgba(99, 102, 241, 0.08) 0%,
     transparent 60%
   );
-}
-
-.light body::before,
-[data-theme="light"] body::before {
-  background-image: none;
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────── */
