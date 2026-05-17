@@ -137,15 +137,17 @@ function SidebarContent({
 
       {/* Upgrade button */}
       <div className={cn("px-3 mb-6", collapsed ? "flex justify-center" : "px-4")}>
-        <button className={cn(
-          "relative overflow-hidden group transition-all duration-300",
-          collapsed 
-            ? "h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-glow-brand"
-            : "w-full py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-glow-brand flex items-center justify-center gap-2"
-        )}>
-          <span className="relative z-10">{collapsed ? "✦" : `✦ ${t.nav.upgrade}`}</span>
-          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-        </button>
+        <Link href="/pricing">
+          <a className={cn(
+            "relative overflow-hidden group transition-all duration-300",
+            collapsed 
+              ? "h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-glow-brand"
+              : "w-full py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-glow-brand flex items-center justify-center gap-2"
+          )}>
+            <span className="relative z-10">{collapsed ? "✦" : `✦ ${t.nav.upgrade}`}</span>
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+          </a>
+        </Link>
       </div>
 
       {/* Nav Section */}
@@ -186,13 +188,16 @@ function SidebarContent({
       {/* Footer / User Profile */}
       <div className={cn("mt-auto py-4 border-t border-glass-border bg-glass-raised/30", collapsed ? "px-2" : "px-3")}>
         <div className="space-y-1 mb-4">
-            <a href="mailto:support@findx.nl" className={cn(
+            <Link href="/help">
+              <a className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-text-muted hover:bg-glass-raised hover:text-text transition-all",
+                isActive("/help") && "bg-primary text-primary-foreground shadow-glow-brand",
                 collapsed && "justify-center !px-0"
-            )}>
-              <HelpCircle className="w-4 h-4" />
-              {!collapsed && <span>{t.nav.help}</span>}
-            </a>
+              )}>
+                <HelpCircle className="w-4 h-4" />
+                {!collapsed && <span>{t.nav.help}</span>}
+              </a>
+            </Link>
             <button 
                 onClick={() => authLogout()} 
                 className={cn(
