@@ -8,17 +8,12 @@
    @layer base
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Force dark mode by default ───────────────────────────────────────────── */
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
 html {
   min-height: 100%;
   scroll-behavior: smooth;
   text-size-adjust: 100%;
-  background-color: var(--findx-color-surface-base); /* Prevents white flash */
-}
-
-/* Apply dark class to root by default — app toggle can override */
-:root:not(.light):not([data-theme="light"]) {
-  color-scheme: dark;
+  background-color: var(--findx-bg-base);
 }
 
 body {
@@ -36,31 +31,23 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ─── Precision Subtle Noise Texture (optional, ultra-subtle) ──────────────── */
-/* 
-   No mesh gradients in Precision Dark.
-   The depth comes from border hierarchy and surface layers, not gradients.
-   We add one very subtle, static gradient at the very top to anchor the eye.
-*/
+/* ─── Subtle top glow — only in dark mode ───────────────────────────────────── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  /* Single, subtle top accent — like Linear's purple glow at top-left */
+  background-image: none;
+}
+
+.dark body::before {
   background-image:
     radial-gradient(
       ellipse 60% 30% at 50% -5%,
       rgba(99, 102, 241, 0.07) 0%,
       transparent 60%
     );
-}
-
-/* Light mode: no gradient overlay needed */
-.light body::before,
-[data-theme="light"] body::before {
-  background-image: none;
 }
 
 /* ─── Typography ────────────────────────────────────────────────────────────── */

@@ -1,17 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Light Mode Semantic Overrides (Precision Light)
+   FINDX DESIGN SYSTEM — Light Mode Semantic Tokens (Layer 2)
    
-   FindX is dark-first. Light mode is a secondary theme.
-   Only tokens that differ from dark mode are listed here.
+   :root = light mode default.
+   .dark overrides these in semantic-dark.css.
    
-   @version 3.0.0 — Precision Dark / Light override
+   @version 3.1.0 — Precision Light (default :root)
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-.light,
-[data-theme="light"] {
+:root {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Same Indigo, slightly darker for light bg contrast
+     ACCENT — Indigo (slightly darker for light bg contrast)
   ═══════════════════════════════════════════════════════════════════ */
   --findx-accent:              #4F46E5;
   --findx-accent-hover:        #4338CA;
@@ -65,19 +64,19 @@
   /* ═══════════════════════════════════════════════════════════════════
      FEEDBACK
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-feedback-success:        var(--findx-color-success-600);
+  --findx-feedback-success:        #16A34A;
   --findx-feedback-success-bg:     rgba(22, 163, 74, 0.08);
   --findx-feedback-success-border: rgba(22, 163, 74, 0.20);
 
-  --findx-feedback-warning:        var(--findx-color-warning-600);
+  --findx-feedback-warning:        #D97706;
   --findx-feedback-warning-bg:     rgba(217, 119, 6, 0.08);
   --findx-feedback-warning-border: rgba(217, 119, 6, 0.20);
 
-  --findx-feedback-danger:         var(--findx-color-danger-600);
+  --findx-feedback-danger:         #E11D48;
   --findx-feedback-danger-bg:      rgba(225, 29, 72, 0.08);
   --findx-feedback-danger-border:  rgba(225, 29, 72, 0.20);
 
-  --findx-feedback-info:           var(--findx-color-info-600);
+  --findx-feedback-info:           #2563EB;
   --findx-feedback-info-bg:        rgba(37, 99, 235, 0.08);
   --findx-feedback-info-border:    rgba(37, 99, 235, 0.20);
 
@@ -86,9 +85,10 @@
   ═══════════════════════════════════════════════════════════════════ */
   --findx-scrollbar-thumb:       #D4D4D8;
   --findx-scrollbar-thumb-hover: #A1A1AA;
+  --findx-scrollbar-track:       transparent;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BACKWARD-COMPAT ALIASES — Light overrides
+     BACKWARD-COMPAT ALIASES — Light mode
   ═══════════════════════════════════════════════════════════════════ */
   --brand:           var(--findx-accent);
   --brand-hover:     var(--findx-accent-hover);
