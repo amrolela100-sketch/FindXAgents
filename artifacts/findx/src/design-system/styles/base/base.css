@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Base Styles — Precision Dark Edition
+   FINDX DESIGN SYSTEM — Base Styles — Moclaw Monochrome Edition
    
-   Dark-first. Clean. No mesh gradients. No glow spam.
-   Inspired by Linear, Vercel, Stripe aesthetics.
+   Dark-first. Pure black. No mesh gradients. No glow spam.
+   Moclaw monochrome: black base, white accents, Inter font.
    
-   @version 3.0.0
+   @version 4.0.0
    @layer base
 ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -21,8 +21,9 @@ body {
   background-color: var(--findx-bg-base);
   color: var(--findx-text-primary);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -31,7 +32,7 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ─── Subtle top glow — only in dark mode ───────────────────────────────────── */
+/* ─── No background glow — pure black ───────────────────────────────────────── */
 body::before {
   content: '';
   position: fixed;
@@ -42,12 +43,7 @@ body::before {
 }
 
 .dark body::before {
-  background-image:
-    radial-gradient(
-      ellipse 60% 30% at 50% -5%,
-      rgba(99, 102, 241, 0.07) 0%,
-      transparent 60%
-    );
+  background-image: none;
 }
 
 /* ─── Typography ────────────────────────────────────────────────────────────── */
@@ -63,7 +59,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
-/* Editorial heading style — precise, no serif */
+/* Heading scale */
 h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.04em; }
 h2 { font-size: 1.5rem;  font-weight: 600; letter-spacing: -0.03em; }
 h3 { font-size: 1.125rem; font-weight: 600; }
@@ -87,13 +83,13 @@ h4 { font-size: 0.9375rem; font-weight: 600; }
 
 /* ─── Selection ─────────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: var(--findx-accent-subtle);
+  background-color: rgba(255, 255, 255, 0.15);
   color: var(--findx-text-primary);
 }
 
-/* ─── Focus Ring — Precision ────────────────────────────────────────────────── */
+/* ─── Focus Ring — white ────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--findx-accent);
+  outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
 
@@ -122,13 +118,13 @@ code, pre {
 
 code {
   background: var(--findx-bg-inset);
-  color: var(--findx-accent);
+  color: var(--findx-text-primary);
   padding: 1px 5px;
-  border-radius: var(--findx-radius-sm);
+  border-radius: var(--findx-radius-xs);
   border: 1px solid var(--findx-border-default);
 }
 
-/* ─── Utility: Section Label (editorial micro-typography from open-design) ─── */
+/* ─── Utility: Section Label ────────────────────────────────────────────────── */
 .section-label {
   font-size: 0.6875rem; /* 11px */
   font-weight: 600;
@@ -137,7 +133,7 @@ code {
   color: var(--findx-text-muted);
 }
 
-/* ─── Utility: Metadata hint (open-design editorial style) ─────────────────── */
+/* ─── Utility: Metadata hint ────────────────────────────────────────────────── */
 .meta-hint {
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -145,11 +141,11 @@ code {
   letter-spacing: -0.01em;
 }
 
-/* ─── Utility: Numbered section (editorial) ─────────────────────────────────── */
+/* ─── Utility: Numbered section ─────────────────────────────────────────────── */
 .section-number {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--findx-accent);
+  color: var(--findx-text-subtle);
   text-transform: uppercase;
 }

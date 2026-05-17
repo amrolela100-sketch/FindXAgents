@@ -5,21 +5,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // FindX Teal brand palette (migrated from Amber — brand refresh)
+        // Moclaw monochrome primary palette — white/grey scale
         primary: {
-          DEFAULT: "#0D9488",
-          hover:   "#0F766E",
-          light:   "#2DD4BF",
-          50:  "#F0FDFA",
-          100: "#CCFBF1",
-          200: "#99F6E4",
-          300: "#5EEAD4",
-          400: "#2DD4BF",
-          500: "#0D9488",
-          600: "#0F766E",
-          700: "#115E59",
-          800: "#134E4A",
-          900: "#042F2E",
+          DEFAULT: "#ffffff",
+          hover:   "oklch(0.9 0 0)",
+          light:   "oklch(0.85 0 0)",
+          50:  "#FAFAFA",
+          100: "#F4F4F5",
+          200: "#E4E4E7",
+          300: "#D4D4D8",
+          400: "#A1A1AA",
+          500: "#71717A",
+          600: "#52525B",
+          700: "#3F3F46",
+          800: "#27272A",
+          900: "#18181B",
         },
         // Amber kept as accent / warning only
         amber: {
@@ -28,7 +28,7 @@ export default {
         },
       },
       fontFamily: {
-        sans:  ["Outfit", "system-ui", "sans-serif"],
+        sans:  ["Inter", "system-ui", "sans-serif"],
         mono:  ["JetBrains Mono", "Fira Code", "ui-monospace", "monospace"],
       },
       animation: {

@@ -4,55 +4,55 @@
    .dark overrides :root (light) values.
    ThemeProvider adds/removes .dark on <html>.
    
-   @version 3.1.0 — Precision Dark override
+   @version 4.0.0 — Moclaw Monochrome (pure black + white accents)
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .dark {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Indigo bright on dark
+     ACCENT — White on black (Moclaw monochrome)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-accent:              #6366F1;
-  --findx-accent-hover:        #4F46E5;
-  --findx-accent-foreground:   #FFFFFF;
-  --findx-accent-subtle:       rgba(99, 102, 241, 0.12);
-  --findx-accent-muted:        rgba(99, 102, 241, 0.20);
-  --findx-accent-glow:         rgba(99, 102, 241, 0.20);
+  --findx-accent:              #ffffff;
+  --findx-accent-hover:        oklch(0.9 0 0);
+  --findx-accent-foreground:   #000000;
+  --findx-accent-subtle:       rgba(255, 255, 255, 0.08);
+  --findx-accent-muted:        rgba(255, 255, 255, 0.15);
+  --findx-accent-glow:         rgba(255, 255, 255, 0.08);
 
   /* ═══════════════════════════════════════════════════════════════════
-     TEXT — High contrast on dark
+     TEXT — High contrast on pure black
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-text-primary:   #FAFAFA;
-  --findx-text-secondary: #A1A1AA;
-  --findx-text-muted:     #71717A;
-  --findx-text-subtle:    #52525B;
-  --findx-text-inverted:  #0C0C0E;
+  --findx-text-primary:   oklch(0.985 0 0);
+  --findx-text-secondary: oklch(0.85 0 0);
+  --findx-text-muted:     oklch(0.708 0 0);
+  --findx-text-subtle:    oklch(0.55 0 0);
+  --findx-text-inverted:  #000000;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BACKGROUNDS — near-black precision surfaces
+     BACKGROUNDS — pure black + monochrome surfaces
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-bg-base:     #0C0C0E;
-  --findx-bg-subtle:   #141416;
-  --findx-bg-inset:    #1C1C1F;
-  --findx-bg-elevated: #222226;
+  --findx-bg-base:     #000000;
+  --findx-bg-subtle:   oklch(0.145 0 0);
+  --findx-bg-inset:    oklch(0.18 0 0);
+  --findx-bg-elevated: oklch(0.269 0 0);
 
   /* ═══════════════════════════════════════════════════════════════════
      SURFACES — Flat dark cards
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-surface-glass:          #141416;
-  --findx-surface-glass-raised:   #1C1C1F;
-  --findx-surface-glass-overlay:  #222226;
-  --findx-surface-border:         #222226;
-  --findx-surface-border-strong:  #2E2E32;
+  --findx-surface-glass:          oklch(0.145 0 0);
+  --findx-surface-glass-raised:   oklch(0.18 0 0);
+  --findx-surface-glass-overlay:  oklch(0.269 0 0);
+  --findx-surface-border:         rgba(255, 255, 255, 0.1);
+  --findx-surface-border-strong:  rgba(255, 255, 255, 0.2);
   --findx-surface-blur:           blur(0px);
-  --findx-surface-elevated:       #141416;
+  --findx-surface-elevated:       oklch(0.145 0 0);
 
   /* ═══════════════════════════════════════════════════════════════════
-     BORDERS — crisp, visible
+     BORDERS — white alpha
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-border-default: #222226;
-  --findx-border-strong:  #2E2E32;
-  --findx-border-focus:   #6366F1;
+  --findx-border-default: rgba(255, 255, 255, 0.1);
+  --findx-border-strong:  rgba(255, 255, 255, 0.2);
+  --findx-border-focus:   #ffffff;
 
   /* ═══════════════════════════════════════════════════════════════════
      INTERACTIVE STATES
@@ -83,8 +83,8 @@
   /* ═══════════════════════════════════════════════════════════════════
      SCROLLBAR
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-scrollbar-thumb:       #2E2E32;
-  --findx-scrollbar-thumb-hover: #71717A;
+  --findx-scrollbar-thumb:       rgba(255, 255, 255, 0.15);
+  --findx-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
   --findx-scrollbar-track:       transparent;
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -94,7 +94,7 @@
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: #A5B4FC;
+  --brand-subtle-fg: oklch(0.85 0 0);
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);
@@ -115,8 +115,8 @@
 
   --border: var(--findx-border-default);
 
-  --primary:        var(--findx-accent);
-  --primary-hover:  var(--findx-accent-hover);
+  --primary:        #ffffff;
+  --primary-hover:  oklch(0.9 0 0);
 
   color-scheme: dark;
 }
