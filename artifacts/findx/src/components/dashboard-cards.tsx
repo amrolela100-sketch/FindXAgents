@@ -1,11 +1,12 @@
 import { useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Users, Search, Mail, TrendingUp, ArrowUpRight, Minus } from "lucide-react";
-import { getDashboardStats } from "../lib/api";
+import { Users, Search, Mail, TrendingUp, ArrowUpRight, Minus, MailCheck } from "lucide-react";
+import { getDashboardStats, getOutreaches } from "../lib/api";
 import type { DashboardStats } from "../lib/types";
 import { usePolling } from "../lib/hooks/use-polling";
 import { useLang } from "../lib/lang-context";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 // ── Animated counter hook ───────────────────────────────────────────────────
 function useAnimatedCounter(target: number | string, duration = 1200): React.RefObject<HTMLSpanElement | null> {
@@ -204,14 +205,61 @@ function KpiCard({ def, stats, index }: { def: CardDef; stats: DashboardStats; i
   );
 }
 
+// ── Pending Approval KPI card ────────────────────────────────────────────────
+function PendingApprovalCard({ index }: { index: number }) {
+  const { data, isLoading } = usePolling(
+    () => getOutreaches({ status: "pending_approval", pageSize: 100 }),
+    20_000,
+  );
+  const count = data?.outreaches?.length ?? 0;
+
+  return (
+    <motion.div
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="group relative rounded-2xl p-5 bg-glass backdrop-blur-glass border border-glass-border shadow-sm transition-all hover:shadow-xl hover:border-warning/30"
+    >
+      <Link href="/pipeline?status=pending_approval">
+        <a className="block h-full">
+          <div className="flex items-start justify-between mb-5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-warning/10 border-warning/20 text-warning">
+              <MailCheck className="w-5 h-5" strokeWidth={2} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-2xl font-bold tracking-tighter text-text leading-none">
+              {isLoading ? "—" : count}
+            </h4>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">
+              Pending Approval
+            </p>
+          </div>
+          <div className="mt-5 pt-4 border-t border-glass-border/50">
+            <div className={cn(
+              "flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-tight",
+              count > 0 ? "text-warning" : "text-text-subtle",
+            )}>
+              <MailCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+              {count > 0 ? `${count} need${count === 1 ? "s" : ""} review` : "All clear"}
+            </div>
+          </div>
+        </a>
+      </Link>
+    </motion.div>
+  );
+}
+
 export function DashboardCards() {
   const { data, isLoading } = usePolling(() => getDashboardStats(), 15_000);
   const stats = data?.stats ?? null;
 
   if (isLoading || !stats) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
           <div key={i} className="h-40 rounded-2xl bg-glass-raised animate-pulse border border-glass-border" />
         ))}
       </div>
@@ -219,10 +267,11 @@ export function DashboardCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
       {CARD_DEFS.map((def, i) => (
         <KpiCard key={i} def={def} stats={stats} index={i} />
       ))}
+      <PendingApprovalCard index={CARD_DEFS.length} />
     </div>
   );
 }

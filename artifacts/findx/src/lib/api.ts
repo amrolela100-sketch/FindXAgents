@@ -187,6 +187,15 @@ export function getLeadOutreaches(id: string): Promise<{ outreaches: Outreach[] 
   return fetchApi(`/leads/${id}/outreaches`);
 }
 
+export function getOutreaches(params: { status?: string; leadId?: string; page?: number; pageSize?: number } = {}): Promise<{ outreaches: Outreach[]; page: number; pageSize: number }> {
+  const q = new URLSearchParams();
+  if (params.status)   q.set("status",   params.status);
+  if (params.leadId)   q.set("leadId",   params.leadId);
+  if (params.page)     q.set("page",     String(params.page));
+  if (params.pageSize) q.set("pageSize", String(params.pageSize));
+  return fetchApi(`/outreaches?${q.toString()}`);
+}
+
 /**
  * exportLeads — Bug fix: fetchApi() always calls res.json() which breaks binary/CSV
  * downloads. Use a dedicated blob fetch instead.
