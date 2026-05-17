@@ -13,6 +13,7 @@ import { env, isEnvValid, envErrors } from "./lib/env";
 // Only components needed before auth resolves (< 100 ms render).
 import LoginPage from "./pages/LoginPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+const NotFoundPage = lazy(() => import("./pages/not-found"));
 
 // ── Lazy-loaded pages — split into separate async chunks ─────────────────────
 // Every page that isn't needed until the user navigates goes here.
@@ -30,6 +31,8 @@ const ClientsPage        = lazy(() => import("./pages/ClientsPage"));
 const OnboardingPage     = lazy(() => import("./pages/OnboardingPage"));
 const TermsPage          = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage        = lazy(() => import("./pages/PrivacyPage"));
+const HelpPage           = lazy(() => import("./pages/HelpPage"));
+const PricingPage        = lazy(() => import("./pages/PricingPage"));
 
 // ── Lazy-loaded global widgets — heavy, only rendered after auth ──────────────
 // CommandPalette pulls in cmdk + framer-motion variants.
@@ -117,15 +120,14 @@ function AuthGuard() {
                 <Route path="/workspaces"  component={WorkspacePage} />
                 <Route path="/owner"       component={OwnerDashboardPage} />
                 <Route path="/settings"    component={SettingsPage} />
+                <Route path="/help"        component={HelpPage} />
+                <Route path="/pricing"     component={PricingPage} />
                 <Route path="/onboarding">{() => <OnboardingPage />}</Route>
                 {isAdmin && <Route path="/admin" component={AdminPage} />}
                 <Route>
-                  <div
-                    className="min-h-[100dvh] flex flex-col items-center justify-center gap-2"
-                  >
-                    <p className="text-5xl font-bold" style={{ color: "var(--text)" }}>404</p>
-                    <p style={{ color: "var(--text-muted)" }}>Page not found</p>
-                  </div>
+                  <Suspense fallback={<PageSpinner />}>
+                    <NotFoundPage />
+                  </Suspense>
                 </Route>
               </Switch>
             </Suspense>
