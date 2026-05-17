@@ -10,6 +10,12 @@ import { QueryError } from "./QueryError";
 
 interface LeadListProps {
   onSelectLead: (lead: Lead) => void;
+  /** Pre-filtered leads from parent — skips internal fetch when provided */
+  leads?: Lead[];
+  /** Selected IDs for bulk operations (controlled from parent) */
+  selectedIds?: Set<string>;
+  /** Toggle individual lead selection */
+  onToggleSelect?: (id: string) => void;
 }
 
 type SortKey = "discoveredAt" | "businessName" | "city" | "status";
@@ -118,10 +124,10 @@ function EmptyLeads({ onDiscover }: { onDiscover?: () => void }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function LeadList({ onSelectLead }: LeadListProps) {
+export function LeadList({ onSelectLead, leads: externalLeads, selectedIds: externalSelectedIds, onToggleSelect: externalToggleSelect }: LeadListProps) {
   const { t } = useLang();
   const { data, isLoading, error, refresh } = useRealtimeData(() => getLeads({ pageSize: 200 }), ["leads"], 30_000);
-  const leads = data?.leads ?? [];
+  const leads = externalLeads ?? data?.leads ?? [];
 
   const [sortKey, setSortKey] = useState<SortKey>("discoveredAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
