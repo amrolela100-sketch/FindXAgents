@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { STAGGER_CONTAINER as containerVariants, STAGGER_CHILD as itemVariants } from "@/lib/motion";
+import { STAGGER_CONTAINER as containerVariants, STAGGER_CHILD as itemVariants, SPRING } from "@/lib/motion";
 
-const SPRING = { type: "spring" as const, stiffness: 100, damping: 15 };
+
 
 // ── Donut chart ───────────────────────────────────────────────────────────────
 function DonutChart({ hot, warm, cold, unscored, total }: {
