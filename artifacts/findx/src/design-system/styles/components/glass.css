@@ -16,15 +16,16 @@
   background: var(--glass);
   backdrop-filter: var(--blur-glass);
   -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(200, 195, 220, 0.5); /* light mode: visible border on white bg */
   border-radius: var(--radius-lg);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 2px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .dark .glass-card {
+  border: 1px solid var(--glass-border);
   box-shadow:
     0 4px 32px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -126,9 +127,10 @@
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .brand-glow {
+  /* light mode: subtle glow */
   box-shadow:
-    0 0 20px var(--brand-glow),
-    0 4px 16px rgba(0, 0, 0, 0.2);
+    0 0 12px rgba(245, 158, 11, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .dark .brand-glow {

@@ -20,7 +20,7 @@
   --findx-accent-foreground:   #1A1A1A;  /* WCAG AA fix: dark text on amber = 5.7:1 contrast */
   --findx-accent-subtle:       rgba(245, 158, 11, 0.12);
   --findx-accent-muted:        var(--findx-color-brand-200);
-  --findx-accent-glow:         rgba(245, 158, 11, 0.35);
+  --findx-accent-glow:         rgba(245, 158, 11, 0.18); /* light mode: subtle glow */
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT
@@ -38,6 +38,9 @@
   --findx-bg-subtle:  #E8E6F4;
   --findx-bg-inset:   #DDD9EE;
   --findx-bg-elevated: #FFFFFF;
+
+  /* Elevated surface for light mode components */
+  --findx-surface-elevated: #FFFFFF;
 
   /* ═══════════════════════════════════════════════════════════════════
      SURFACES (Glass morphism layers)
