@@ -1,31 +1,31 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Primitive Tokens (Layer 1) — Moclaw Monochrome Edition
+   FINDX DESIGN SYSTEM — Primitive Tokens (Layer 1) — Precision Dark Edition
    
    Raw design values. Never reference these directly in components.
    Use semantic tokens (--findx-*) instead.
    
-   @version 4.0.0 — Moclaw Monochrome (pure black base, white accents)
+   @version 3.0.0 — Precision Dark (Indigo accent, near-black surfaces)
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     BRAND — White/Grey scale (Moclaw monochrome)
+     BRAND — Indigo (Precision accent, Linear-style)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-brand-50:  #FAFAFA;
-  --findx-color-brand-100: #F4F4F5;
-  --findx-color-brand-200: #E4E4E7;
-  --findx-color-brand-300: #D4D4D8;
-  --findx-color-brand-400: #A1A1AA;
-  --findx-color-brand-500: #ffffff;  /* PRIMARY BRAND — White */
-  --findx-color-brand-600: oklch(0.9 0 0);  /* PRIMARY HOVER */
-  --findx-color-brand-700: oklch(0.85 0 0);
-  --findx-color-brand-800: oklch(0.708 0 0);
-  --findx-color-brand-900: oklch(0.55 0 0);
-  --findx-color-brand-950: oklch(0.269 0 0);
+  --findx-color-brand-50:  #EEF2FF;
+  --findx-color-brand-100: #E0E7FF;
+  --findx-color-brand-200: #C7D2FE;
+  --findx-color-brand-300: #A5B4FC;
+  --findx-color-brand-400: #818CF8;
+  --findx-color-brand-500: #6366F1;  /* PRIMARY BRAND — Indigo */
+  --findx-color-brand-600: #4F46E5;  /* PRIMARY HOVER */
+  --findx-color-brand-700: #4338CA;
+  --findx-color-brand-800: #3730A3;
+  --findx-color-brand-900: #312E81;
+  --findx-color-brand-950: #1E1B4B;
 
   /* ═══════════════════════════════════════════════════════════════════
-     NEUTRAL — Zinc (cooler than gray)
+     NEUTRAL — Zinc (cooler than gray, matches Precision Dark)
   ═══════════════════════════════════════════════════════════════════ */
   --findx-color-neutral-50:  #FAFAFA;
   --findx-color-neutral-100: #F4F4F5;
@@ -40,15 +40,15 @@
   --findx-color-neutral-950: #09090B;
 
   /* ═══════════════════════════════════════════════════════════════════
-     MOCLAW MONOCHROME SURFACES
-     pure black base — maximum contrast
+     PRECISION DARK SURFACES
+     near-black, not pure black — matches Linear/Vercel aesthetic
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-surface-base:    #000000;          /* Pure black canvas */
-  --findx-color-surface-card:    oklch(0.145 0 0); /* ≈ #1F1F1F Card background */
-  --findx-color-surface-raised:  oklch(0.18 0 0);  /* Elevated elements */
-  --findx-color-surface-overlay: oklch(0.269 0 0); /* ≈ #383838 Modals/popovers */
-  --findx-color-surface-border:  rgba(255, 255, 255, 0.1);  /* Subtle separator */
-  --findx-color-surface-border-strong: rgba(255, 255, 255, 0.2); /* Visible border */
+  --findx-color-surface-base:    #0C0C0E;  /* Main canvas */
+  --findx-color-surface-card:    #141416;  /* Card background */
+  --findx-color-surface-raised:  #1C1C1F;  /* Elevated elements */
+  --findx-color-surface-overlay: #222226;  /* Modals/popovers */
+  --findx-color-surface-border:  #222226;  /* Subtle separator */
+  --findx-color-surface-border-strong: #2E2E32; /* Visible border */
 
   /* ═══════════════════════════════════════════════════════════════════
      SEMANTIC COLORS — Feedback states
@@ -85,58 +85,58 @@
   --findx-font-arabic: "Noto Sans Arabic", "Inter", sans-serif;
 
   /* ═══════════════════════════════════════════════════════════════════
-     SPACING SCALE — Moclaw tokens
+     SPACING SCALE
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-space-1:   2px;
-  --findx-space-2:   4px;
-  --findx-space-3:   8px;
-  --findx-space-4:  10px;
-  --findx-space-5:  12px;
-  --findx-space-6:  16px;
-  --findx-space-7:  20px;
-  --findx-space-8:  24px;
+  --findx-space-1:  4px;
+  --findx-space-2:  8px;
+  --findx-space-3:  12px;
+  --findx-space-4:  16px;
+  --findx-space-5:  20px;
+  --findx-space-6:  24px;
+  --findx-space-7:  28px;
+  --findx-space-8:  32px;
   --findx-space-9:  36px;
   --findx-space-10: 40px;
   --findx-space-12: 48px;
   --findx-space-16: 64px;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BORDER RADIUS — Moclaw scale
+     BORDER RADIUS
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-radius-xs:   5px;
-  --findx-radius-sm:   12px;
-  --findx-radius-md:   16px;
-  --findx-radius-lg:   32px;
-  --findx-radius-xl:   9999px;
-  --findx-radius-2xl:  9999px;
-  --findx-radius-3xl:  9999px;
+  --findx-radius-xs:   2px;
+  --findx-radius-sm:   4px;
+  --findx-radius-md:   6px;
+  --findx-radius-lg:   8px;
+  --findx-radius-xl:   12px;
+  --findx-radius-2xl:  16px;
+  --findx-radius-3xl:  24px;
   --findx-radius-full: 9999px;
 
   /* ═══════════════════════════════════════════════════════════════════
-     SHADOWS — Moclaw shadow values
+     SHADOWS — Precision Dark (no glow spam, just depth)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-shadow-xs:  0px 1px 3px 0px rgba(0, 0, 0, 0.03);
-  --findx-shadow-sm:  0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --findx-shadow-md:  rgba(255, 255, 255, 0.06) 0px 0px 0px 1px inset, rgba(0, 0, 0, 0.4) 0px 4px 16px 0px, rgba(255, 255, 255, 0.06) 0px 1px 0px 0px inset;
+  --findx-shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.4);
+  --findx-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --findx-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
   --findx-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
   --findx-shadow-xl:  0 16px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
-  --findx-shadow-brand: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+  --findx-shadow-brand: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 4px 16px rgba(99, 102, 241, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════
-     BLUR — minimal
+     BLUR — minimal, precision
   ═══════════════════════════════════════════════════════════════════ */
   --findx-blur-sm:    blur(4px);
   --findx-blur-md:    blur(8px);
   --findx-blur-lg:    blur(16px);
+  /* Keep glass alias for backward compat — but we no longer rely on blur */
   --findx-blur-glass:    blur(0px);
   --findx-blur-glass-sm: blur(0px);
   --findx-blur-glass-lg: blur(4px);
 
   /* ═══════════════════════════════════════════════════════════════════
-     TRANSITIONS — Moclaw motion tokens
+     TRANSITIONS
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-transition-fast:   150ms ease;
-  --findx-transition-base:   200ms ease;
-  --findx-transition-slow:   300ms ease;
-  --findx-transition-slower: 500ms ease;
+  --findx-transition-fast:   100ms ease;
+  --findx-transition-base:   150ms ease;
+  --findx-transition-slow:   250ms ease;
 }

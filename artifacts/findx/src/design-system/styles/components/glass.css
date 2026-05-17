@@ -1,13 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Precision Card Components — Moclaw Monochrome Edition
+   FINDX DESIGN SYSTEM — Precision Card Components
    
-   Flat surfaces + white borders + depth hierarchy.
-   No colored accents. Pure black/white/grey only.
+   Replaces glass morphism with Precision Dark flat cards.
+   Linear/Vercel/Stripe aesthetic: flat surfaces + crisp borders + depth hierarchy.
    
    The "glass-card" class name is kept for backward compat but the visual
    is now a flat precision card — no blur, no frosted glass.
    
-   @version 4.0.0 — Moclaw Monochrome
+   @version 3.0.0 — Precision Dark (glass → flat precision)
    @layer components
 ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -17,9 +17,9 @@
 
 .glass-card,
 .precision-card {
-  background: var(--findx-surface-glass);
-  border: 1px solid var(--findx-border-default);
-  border-radius: var(--findx-radius-md);
+  background: var(--findx-surface-glass);      /* #141416 */
+  border: 1px solid var(--findx-border-default); /* #222226 */
+  border-radius: var(--findx-radius-lg);
   box-shadow: var(--findx-shadow-sm);
   transition:
     border-color var(--findx-transition-base),
@@ -29,23 +29,23 @@
 /* ─── Hover — border brightens slightly ─────────────────────────────────────── */
 .glass-card-hover:hover,
 .precision-card-hover:hover {
-  border-color: var(--findx-border-strong);
+  border-color: var(--findx-border-strong);     /* #2E2E32 */
   box-shadow:   var(--findx-shadow-md);
 }
 
-/* ─── Active accent highlight — white glow ───────────────────────────────────── */
+/* ─── Active accent highlight ───────────────────────────────────────────────── */
 .glass-card-accent:hover,
 .precision-card-accent:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow:   0 0 0 1px rgba(255, 255, 255, 0.08), var(--findx-shadow-md);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow:   0 0 0 1px rgba(99, 102, 241, 0.12), var(--findx-shadow-md);
 }
 
 /* ─── Raised card — one step up in hierarchy ────────────────────────────────── */
 .glass-card-raised,
 .precision-card-raised {
-  background: var(--findx-surface-glass-raised);
+  background: var(--findx-surface-glass-raised); /* #1C1C1F */
   border: 1px solid var(--findx-border-strong);
-  border-radius: var(--findx-radius-md);
+  border-radius: var(--findx-radius-lg);
   box-shadow: var(--findx-shadow-md);
 }
 
@@ -53,7 +53,7 @@
 .card {
   background: var(--findx-surface-glass);
   border: 1px solid var(--findx-border-default);
-  border-radius: var(--findx-radius-md);
+  border-radius: var(--findx-radius-lg);
   box-shadow: var(--findx-shadow-sm);
   transition:
     border-color var(--findx-transition-base),
@@ -67,8 +67,8 @@
 [data-theme="light"] .glass-card,
 [data-theme="light"] .precision-card,
 [data-theme="light"] .card {
-  background: var(--findx-surface-glass);
-  border-color: var(--findx-border-default);
+  background: var(--findx-surface-glass);       /* #FFFFFF */
+  border-color: var(--findx-border-default);    /* #E4E4E7 */
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
@@ -83,10 +83,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    SURFACE HIERARCHY — depth via background layering
    
-   base     → #000000          (body)
-   card     → oklch(0.145 0 0) (primary surface)
-   raised   → oklch(0.18 0 0)  (secondary surface, elevated panels)
-   overlay  → oklch(0.269 0 0) (modals, dropdowns)
+   base     → #0C0C0E  (body)
+   card     → #141416  (primary surface)
+   raised   → #1C1C1F  (secondary surface, elevated panels)
+   overlay  → #222226  (modals, dropdowns)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .surface-base    { background: var(--findx-bg-base);     }
@@ -95,7 +95,7 @@
 .surface-overlay { background: var(--findx-bg-elevated); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BRAND ACCENT CHIP — monochrome pill (editorial detail)
+   BRAND ACCENT CHIP — Indigo pill (editorial detail)
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .brand-chip {
@@ -106,14 +106,14 @@
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  border-radius: var(--findx-radius-xl);
+  border-radius: var(--findx-radius-full);
   background: var(--findx-accent-subtle);
   color: var(--findx-accent);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SKELETON — Monochrome shimmer
+   SKELETON — Precision Dark shimmer
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 .skeleton {
@@ -143,12 +143,12 @@
   justify-content: center;
   background: var(--findx-accent);
   border-radius: var(--findx-radius-md);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.30);
   transition: box-shadow var(--findx-transition-base);
 }
 
 .brand-icon:hover {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 16px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.50), 0 4px 16px rgba(99, 102, 241, 0.20);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -205,5 +205,5 @@
 .precision-badge-accent {
   background:   var(--findx-accent-subtle);
   color:        var(--findx-accent);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(99, 102, 241, 0.20);
 }

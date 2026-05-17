@@ -3,24 +3,25 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX LANDING — Global CSS — Moclaw Monochrome Edition
+   FINDX LANDING — Global CSS — Precision Dark Edition
    
-   Pure black base, white accents, no colored gradients.
-   Inter font, editorial micro-typography.
+   Indigo accent (#6366F1) + near-black surfaces.
+   Dark-first, no glass morphism, no mesh gradients.
+   Inter font, editorial micro-typography from open-design.ai.
    
-   @version 4.0.0
+   @version 3.0.0
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Google Fonts — Inter ───────────────────────────────────────────────── */
+/* ─── Google Fonts — Inter replaces Outfit ───────────────────────────────── */
 /* (Import moved to Base.astro — this file handles CSS variables only) */
 
 /* ─── Light Mode (default :root) ─────────────────────────────────────────── */
 :root {
-  --primary:        #ffffff;
-  --primary-hover:  oklch(0.9 0 0);
-  --primary-light:  oklch(0.85 0 0);
-  --primary-glow:   rgba(255, 255, 255, 0.08);
-  --shadow-brand:   0 0 0 1px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --primary:        #4F46E5;
+  --primary-hover:  #4338CA;
+  --primary-light:  #6366F1;
+  --primary-glow:   rgba(79, 70, 229, 0.15);
+  --shadow-brand:   0 0 0 1px rgba(79, 70, 229, 0.25), 0 4px 12px rgba(79, 70, 229, 0.10);
 
   --bg:             #FAFAFA;
   --bg-subtle:      #F4F4F5;
@@ -44,27 +45,27 @@
 /* ─── Dark Mode override ─────────────────────────────────────────────────── */
 .dark,
 html.dark {
-  --primary:        #ffffff;
-  --primary-hover:  oklch(0.9 0 0);
-  --primary-light:  oklch(0.85 0 0);
-  --primary-glow:   rgba(255, 255, 255, 0.08);
-  --shadow-brand:   0 0 0 1px rgba(255, 255, 255, 0.2), 0 4px 16px rgba(0, 0, 0, 0.5);
+  --primary:        #6366F1;
+  --primary-hover:  #4F46E5;
+  --primary-light:  #818CF8;
+  --primary-glow:   rgba(99, 102, 241, 0.20);
+  --shadow-brand:   0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 16px rgba(99, 102, 241, 0.15);
 
-  --bg:             #000000;
-  --bg-subtle:      oklch(0.145 0 0);
-  --bg-inset:       oklch(0.18 0 0);
-  --bg-elevated:    oklch(0.269 0 0);
+  --bg:             #0C0C0E;
+  --bg-subtle:      #141416;
+  --bg-inset:       #1C1C1F;
+  --bg-elevated:    #222226;
 
-  --text:           oklch(0.985 0 0);
-  --text-muted:     oklch(0.85 0 0);
-  --text-subtle:    oklch(0.708 0 0);
+  --text:           #FAFAFA;
+  --text-muted:     #A1A1AA;
+  --text-subtle:    #71717A;
 
-  --glass:          oklch(0.145 0 0);
-  --glass-border:   rgba(255, 255, 255, 0.1);
-  --glass-border-strong: rgba(255, 255, 255, 0.2);
+  --glass:          #141416;
+  --glass-border:   #222226;
+  --glass-border-strong: #2E2E32;
 
-  --border:         rgba(255, 255, 255, 0.1);
-  --border-strong:  rgba(255, 255, 255, 0.2);
+  --border:         #222226;
+  --border-strong:  #2E2E32;
 
   color-scheme: dark;
 }
@@ -72,7 +73,7 @@ html.dark {
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
-  background-color: #000000; /* Prevent white flash */
+  background-color: #0C0C0E; /* Prevent white flash */
 }
 
 body {
@@ -85,7 +86,7 @@ body {
   padding: 0;
 }
 
-/* No background glow — pure black */
+/* Subtle Indigo glow — dark only */
 body::before {
   content: '';
   position: fixed;
@@ -97,7 +98,11 @@ body::before {
 
 .dark body::before,
 html.dark body::before {
-  background-image: none;
+  background-image: radial-gradient(
+    ellipse 70% 25% at 50% -2%,
+    rgba(99, 102, 241, 0.08) 0%,
+    transparent 60%
+  );
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────── */
@@ -111,13 +116,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(99, 102, 241, 0.20);
   color: var(--text);
 }
 
 /* ─── Focus ──────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -128,22 +133,22 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-subtle); }
 
 /* ─── Utilities ──────────────────────────────────────────────────────────── */
-/* Editorial section label — muted, no accent color */
+/* Editorial section label (open-design.ai micro-typography) */
 .section-label {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--primary);
 }
 
-/* Section number editorial detail — subtle */
+/* Section number editorial detail */
 .section-number {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-subtle);
+  color: var(--primary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -159,7 +164,7 @@ h1, h2, h3, h4, h5, h6 {
 .precision-card {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 8px;
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */

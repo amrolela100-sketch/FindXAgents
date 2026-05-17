@@ -4,20 +4,20 @@
    :root = light mode default.
    .dark overrides these in semantic-dark.css.
    
-   @version 4.0.0 — Moclaw Monochrome (black accent on white)
+   @version 3.1.0 — Precision Light (default :root)
    @layer tokens
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Black on white (monochrome principle for light mode)
+     ACCENT — Indigo (slightly darker for light bg contrast)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-accent:              #000000;
-  --findx-accent-hover:        oklch(0.2 0 0);
+  --findx-accent:              #4F46E5;
+  --findx-accent-hover:        #4338CA;
   --findx-accent-foreground:   #FFFFFF;
-  --findx-accent-subtle:       rgba(0, 0, 0, 0.06);
-  --findx-accent-muted:        rgba(0, 0, 0, 0.12);
-  --findx-accent-glow:         rgba(0, 0, 0, 0.08);
+  --findx-accent-subtle:       rgba(79, 70, 229, 0.08);
+  --findx-accent-muted:        rgba(79, 70, 229, 0.15);
+  --findx-accent-glow:         rgba(79, 70, 229, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT
@@ -52,7 +52,7 @@
   ═══════════════════════════════════════════════════════════════════ */
   --findx-border-default: #E4E4E7;
   --findx-border-strong:  #D4D4D8;
-  --findx-border-focus:   #000000;
+  --findx-border-focus:   #4F46E5;
 
   /* ═══════════════════════════════════════════════════════════════════
      INTERACTIVE
@@ -94,7 +94,7 @@
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: oklch(0.2 0 0);
+  --brand-subtle-fg: #3730A3;
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);
