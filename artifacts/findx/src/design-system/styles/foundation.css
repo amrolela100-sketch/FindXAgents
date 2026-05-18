@@ -31,16 +31,16 @@
   /* ═══════════════════════════════════════════════════════════════════
      PRIMITIVE COLORS — Brand (Amber)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-brand-50:  #FFFBEB;
-  --findx-color-brand-100: #FEF3C7;
-  --findx-color-brand-200: #FDE68A;
-  --findx-color-brand-300: #FCD34D;
-  --findx-color-brand-400: #FBBF24;
-  --findx-color-brand-500: #F59E0B;  /* PRIMARY BRAND */
-  --findx-color-brand-600: #D97706;  /* PRIMARY HOVER */
-  --findx-color-brand-700: #B45309;
-  --findx-color-brand-800: #92400E;
-  --findx-color-brand-900: #78350F;
+  --findx-color-brand-50:  #EEF2FF;
+  --findx-color-brand-100: #E0E7FF;
+  --findx-color-brand-200: #C7D2FE;
+  --findx-color-brand-300: #A5B4FC;
+  --findx-color-brand-400: #818CF8;
+  --findx-color-brand-500: #6366F1;  /* PRIMARY BRAND */
+  --findx-color-brand-600: #4F46E5;  /* PRIMARY HOVER */
+  --findx-color-brand-700: #4338CA;
+  --findx-color-brand-800: #3730A3;
+  --findx-color-brand-900: #312E81;
 
   /* ═══════════════════════════════════════════════════════════════════
      PRIMITIVE COLORS — Neutral (Gray)
@@ -745,4 +745,7 @@ body::before {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
+}
+.shadow-glow-brand {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3), 0 4px 16px rgba(99, 102, 241, 0.15);
 }
