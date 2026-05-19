@@ -59,8 +59,8 @@ export default function AgentsPage() {
         <motion.div variants={FADE_UP} initial="hidden" animate="visible" className="rounded-2xl overflow-hidden bg-glass border border-glass-border shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 gap-4 border-b border-glass-border bg-glass-raised/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20 shadow-glow-brand">
-                <Zap className="w-5 h-5 text-primary fill-current" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-glass-raised border border-glass-border shadow-sm">
+                <Zap className="w-5 h-5 text-text fill-current" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-text uppercase tracking-widest">{t.agents.runPipeline}</h3>
@@ -118,7 +118,7 @@ export default function AgentsPage() {
               <Button 
                 onClick={handleRun} 
                 disabled={starting || !query.trim()} 
-                className="h-12 px-8 font-bold gap-2 shadow-glow-brand"
+                className="h-12 px-8 font-bold gap-2 shadow-sm"
               >
                 {starting ? <Activity className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                 {starting ? "Starting..." : "Run Pipeline"}
