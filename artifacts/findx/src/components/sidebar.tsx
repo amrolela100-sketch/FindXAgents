@@ -50,7 +50,7 @@ function NavLink({
       <a 
         onClick={onClick} 
         className={cn(
-          "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 group border",
+          "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 group border",
           active 
             ? "bg-primary text-primary-foreground border-transparent shadow-sm" 
             : "text-text-muted hover:bg-interactive-hover hover:text-text border-transparent"
@@ -64,6 +64,7 @@ function NavLink({
   );
 }
 
+// Icon-only nav links when collapsed
 function NavLinkIcon({
   href,
   icon: Icon,
@@ -119,7 +120,7 @@ function SidebarContent({
       <div className={cn("py-6 mb-2", collapsed ? "flex justify-center" : "px-5")}>
         <Link href="/">
           <a onClick={onClose} className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105 border border-border">
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105 border border-primary/20">
               <RadarIcon className="w-5 h-5 text-primary-foreground" />
             </div>
             {!collapsed && (
@@ -127,7 +128,7 @@ function SidebarContent({
                 <span className="text-lg font-bold tracking-tight text-text leading-none">
                   FindX
                 </span>
-                <span className="text-[10px] font-medium text-text-muted uppercase tracking-widest mt-0.5">
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-0.5">
                   Intelligence
                 </span>
               </div>
@@ -191,7 +192,7 @@ function SidebarContent({
         <div className="space-y-1 mb-4">
             <Link href="/help">
               <a className={cn(
-                "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium text-text-muted hover:bg-interactive-hover hover:text-text transition-all border border-transparent",
+                "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-semibold text-text-muted hover:bg-interactive-hover hover:text-text transition-all border border-transparent",
                 isActive("/help") && "bg-interactive-hover text-text border-border shadow-sm",
                 collapsed && "justify-center !px-0"
               )}>
@@ -202,7 +203,7 @@ function SidebarContent({
             <button 
                 onClick={() => authLogout()} 
                 className={cn(
-                    "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium text-text-muted hover:bg-danger/10 hover:text-danger transition-all w-full border border-transparent",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-semibold text-text-muted hover:bg-danger/10 hover:text-danger transition-all w-full border border-transparent",
                     collapsed && "justify-center !px-0"
                 )}
             >
@@ -224,7 +225,7 @@ function SidebarContent({
                 <p className="text-xs font-semibold text-text truncate">
                   {authUser.email}
                 </p>
-                <p className="text-[10px] text-text-subtle font-medium uppercase tracking-tighter">
+                <p className="text-[10px] text-text-subtle font-semibold uppercase tracking-tighter">
                   Free Member
                 </p>
               </div>
@@ -259,7 +260,7 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
         <button
           onClick={onToggleCollapse}
           className={cn(
-            "absolute top-6 w-6 h-6 rounded-full flex items-center justify-center z-30 transition-all shadow-lg border border-glass-border-strong bg-glass-raised text-text-subtle hover:text-primary",
+            "absolute top-6 w-6 h-6 rounded-full flex items-center justify-center z-30 transition-all shadow-lg border border-border bg-interactive-hover text-text-muted hover:text-primary",
             isRtl ? "-left-3" : "-right-3"
           )}
         >
@@ -268,10 +269,10 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       </aside>
 
       {/* Mobile Nav Bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30 bg-glass-overlay backdrop-blur-glass border-b border-glass-border">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30 bg-glass backdrop-blur-glass border-b border-border">
         <Link href="/">
           <a className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm border border-glass-border">
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-sm border border-primary/20">
               <RadarIcon className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-sm text-text">FindX</span>
