@@ -14,10 +14,43 @@
   ═══════════════════════════════════════════════════════════════════ */
   --findx-accent:              #2563EB;
   --findx-accent-hover:        #1D4ED8;
-  --findx-accent-foreground:   #FFFFFF;
   --findx-accent-subtle:       rgba(37, 99, 235, 0.08);
   --findx-accent-muted:        rgba(37, 99, 235, 0.15);
   --findx-accent-glow:         rgba(37, 99, 235, 0.15);
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BRAND TOKENS (Mapped to Base Palette)
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-primary:            var(--findx-color-brand-500);
+  --findx-primary-hover:      var(--findx-color-brand-600);
+  --findx-primary-foreground: #FFFFFF;
+  --findx-primary-subtle:     var(--findx-color-brand-50);
+  
+  /* ═══════════════════════════════════════════════════════════════════
+     ACCENT TOKENS (For interactive elements)
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-accent:             #000000;
+  --findx-accent-subtle:      #F4F4F5;
+  --findx-accent-foreground:  #FFFFFF;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SURFACE TOKENS (Backgrounds & Cards)
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-bg-canvas:          #FAFAFA;
+  --findx-bg-surface:         #FFFFFF;
+  --findx-bg-inset:           #F4F4F5;
+  
+  --findx-surface-glass:      rgba(255, 255, 255, 0.85);
+  --findx-surface-raised:     #FFFFFF;
+  --findx-surface-overlay:    #FFFFFF;
+  --findx-surface-elevated:       #FFFFFF;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BORDER TOKENS
+  ═══════════════════════════════════════════════════════════════════ */
+  --findx-border-default:     #E5E5E5;
+  --findx-border-strong:      #D4D4D4;
+  --findx-border-glass:       rgba(0, 0, 0, 0.08);
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT
@@ -27,32 +60,6 @@
   --findx-text-muted:     #64748B;
   --findx-text-subtle:    #94A3B8;
   --findx-text-inverted:  #F8FAFC;
-
-  /* ═══════════════════════════════════════════════════════════════════
-     BACKGROUNDS — Clean white/slate
-  ═══════════════════════════════════════════════════════════════════ */
-  --findx-bg-base:     #F8FAFC;
-  --findx-bg-subtle:   #F1F5F9;
-  --findx-bg-inset:    #E2E8F0;
-  --findx-bg-elevated: #FFFFFF;
-
-  /* ═══════════════════════════════════════════════════════════════════
-     SURFACES — Flat light cards
-  ═══════════════════════════════════════════════════════════════════ */
-  --findx-surface-glass:          #FFFFFF;
-  --findx-surface-glass-raised:   #F8FAFC;
-  --findx-surface-glass-overlay:  #FFFFFF;
-  --findx-surface-border:         #E2E8F0;
-  --findx-surface-border-strong:  #CBD5E1;
-  --findx-surface-blur:           blur(0px);
-  --findx-surface-elevated:       #FFFFFF;
-
-  /* ═══════════════════════════════════════════════════════════════════
-     BORDERS
-  ═══════════════════════════════════════════════════════════════════ */
-  --findx-border-default: #E4E4E7;
-  --findx-border-strong:  #D4D4D8;
-  --findx-border-focus:   #4F46E5;
 
   /* ═══════════════════════════════════════════════════════════════════
      INTERACTIVE
