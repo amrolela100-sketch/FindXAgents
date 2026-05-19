@@ -33,16 +33,26 @@ body {
 
 /* ─── Removed glowing mesh gradients for clean minimalist aesthetic ─── */
 
-/* ─── Typography ────────────────────────────────────────────────────────────── */
-[dir="rtl"] body {
-  font-family: var(--findx-font-arabic);
+[dir="rtl"] body,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  font-family: var(--font-arabic), sans-serif !important;
+  letter-spacing: 0 !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--findx-text-primary);
   font-family: var(--font-sans);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
