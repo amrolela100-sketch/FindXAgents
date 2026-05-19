@@ -10,40 +10,40 @@
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Indigo (slightly darker for light bg contrast)
+     ACCENT — Royal Cobalt Blue
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-accent:              #4F46E5;
-  --findx-accent-hover:        #4338CA;
+  --findx-accent:              #2563EB;
+  --findx-accent-hover:        #1D4ED8;
   --findx-accent-foreground:   #FFFFFF;
-  --findx-accent-subtle:       rgba(79, 70, 229, 0.08);
-  --findx-accent-muted:        rgba(79, 70, 229, 0.15);
-  --findx-accent-glow:         rgba(79, 70, 229, 0.15);
+  --findx-accent-subtle:       rgba(37, 99, 235, 0.08);
+  --findx-accent-muted:        rgba(37, 99, 235, 0.15);
+  --findx-accent-glow:         rgba(37, 99, 235, 0.15);
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-text-primary:   #09090B;
-  --findx-text-secondary: #52525B;
-  --findx-text-muted:     #71717A;
-  --findx-text-subtle:    #A1A1AA;
-  --findx-text-inverted:  #FAFAFA;
+  --findx-text-primary:   #020617;
+  --findx-text-secondary: #334155;
+  --findx-text-muted:     #64748B;
+  --findx-text-subtle:    #94A3B8;
+  --findx-text-inverted:  #F8FAFC;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BACKGROUNDS — Clean white/zinc
+     BACKGROUNDS — Clean white/slate
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-bg-base:     #FAFAFA;
-  --findx-bg-subtle:   #F4F4F5;
-  --findx-bg-inset:    #E4E4E7;
+  --findx-bg-base:     #F8FAFC;
+  --findx-bg-subtle:   #F1F5F9;
+  --findx-bg-inset:    #E2E8F0;
   --findx-bg-elevated: #FFFFFF;
 
   /* ═══════════════════════════════════════════════════════════════════
      SURFACES — Flat light cards
   ═══════════════════════════════════════════════════════════════════ */
   --findx-surface-glass:          #FFFFFF;
-  --findx-surface-glass-raised:   #FAFAFA;
+  --findx-surface-glass-raised:   #F8FAFC;
   --findx-surface-glass-overlay:  #FFFFFF;
-  --findx-surface-border:         #E4E4E7;
-  --findx-surface-border-strong:  #D4D4D8;
+  --findx-surface-border:         #E2E8F0;
+  --findx-surface-border-strong:  #CBD5E1;
   --findx-surface-blur:           blur(0px);
   --findx-surface-elevated:       #FFFFFF;
 
