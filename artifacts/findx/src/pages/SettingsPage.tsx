@@ -4,8 +4,8 @@ import {
   Zap, Trash2, Bell, Mail, AlertTriangle, Loader2,
   CheckCircle2, Plus, X, Star, Eye, EyeOff, ExternalLink,
   ChevronDown, ChevronUp, Settings2, Search, Bot, Shield,
-  Send, MessageSquare, Database, Cpu, Key, Globe, ChevronRight,
-  AlertCircle, Check, RefreshCw, TestTube,
+  Send, MessageSquare, Database, Cpu, Key, Globe,
+  AlertCircle, Check, TestTube,
 } from "lucide-react";
 import {
   getAiProviders, createAiProvider, updateAiProvider, deleteAiProvider,
@@ -18,6 +18,7 @@ import {
   toastError,
 } from "../lib/api";
 import type { AiProvider, AiProviderType, SmtpConfigResponse, ResendConfigResponse, SearchConfigResponse } from "../lib/types";
+import { cn } from "@/lib/utils";
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const SPRING = { type: "spring" as const, stiffness: 120, damping: 22 };
@@ -28,11 +29,11 @@ const FADE_UP = {
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "ai",            label: "AI Providers",   icon: Bot,           color: "#C084FC" },
-  { id: "email",         label: "Email",          icon: Mail,          color: "#60A5FA" },
-  { id: "search",        label: "Search",         icon: Search,        color: "#FBBF24" },
-  { id: "notifications", label: "Notifications",  icon: Bell,          color: "#F97316" },
-  { id: "data",          label: "Data",           icon: Database,      color: "#F87171" },
+  { id: "ai",            label: "AI Providers",   icon: Bot,           color: "var(--primary)" },
+  { id: "email",         label: "Email",          icon: Mail,          color: "var(--primary)" },
+  { id: "search",        label: "Search",         icon: Search,        color: "var(--primary)" },
+  { id: "notifications", label: "Notifications",  icon: Bell,          color: "var(--primary)" },
+  { id: "data",          label: "Data",           icon: Database,      color: "var(--primary)" },
 ];
 
 // ─── Provider configs ─────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ const EMPTY_FORM = {
 function SectionCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`glass-card rounded-2xl overflow-hidden ${className}`}
+      className={`glass-card rounded-2xl border border-border bg-glass backdrop-blur-glass overflow-hidden ${className}`}
     >
       {children}
     </div>
@@ -78,7 +79,7 @@ function SectionHeader({
   icon: Icon,
   title,
   subtitle,
-  accent = "var(--brand)",
+  accent = "var(--primary)",
   action,
 }: {
   icon: typeof Bot;
@@ -89,19 +90,17 @@ function SectionHeader({
 }) {
   return (
     <div
-      className="flex items-center justify-between px-5 py-4"
-      style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+      className="flex items-center justify-between px-5 py-4 border-b border-border bg-interactive-hover"
     >
       <div className="flex items-center gap-3">
         <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border border-border bg-interactive-hover"
         >
-          <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={1.8} />
+          <Icon className="w-4 h-4 text-primary" strokeWidth={1.8} />
         </div>
         <div>
-          <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>{title}</p>
-          {subtitle && <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>{subtitle}</p>}
+          <p className="text-[13px] font-semibold text-text">{title}</p>
+          {subtitle && <p className="text-[11px] text-text-subtle">{subtitle}</p>}
         </div>
       </div>
       {action}
@@ -112,10 +111,10 @@ function SectionHeader({
 function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <label className="block mb-1.5">
-      <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {children}
       </span>
-      {hint && <span className="ml-1.5 text-[10px]" style={{ color: "var(--text-subtle)" }}>{hint}</span>}
+      {hint && <span className="ml-1.5 text-[10px] text-text-subtle">{hint}</span>}
     </label>
   );
 }
@@ -123,12 +122,10 @@ function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: stri
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold"
-      style={{
-        background: ok ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
-        color: ok ? "#34D399" : "#F87171",
-        border: `1px solid ${ok ? "rgba(52,211,153,0.25)" : "rgba(248,113,113,0.25)"}`,
-      }}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full font-semibold border",
+        ok ? "bg-success/5 border-success/20 text-success" : "bg-danger/5 border-danger/20 text-danger"
+      )}
     >
       {ok
         ? <CheckCircle2 className="w-3 h-3" strokeWidth={2} />
@@ -143,18 +140,18 @@ function Alert({
   message,
   onClose,
 }: { type: "success" | "error" | "warn"; message: string; onClose?: () => void }) {
-  const styles = {
-    success: { bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.25)", color: "#34D399", Icon: CheckCircle2 },
-    error:   { bg: "rgba(248,113,113,0.10)", border: "rgba(248,113,113,0.25)", color: "#F87171", Icon: AlertCircle },
-    warn:    { bg: "rgba(251,191,36,0.10)", border: "rgba(251,191,36,0.25)", color: "#FBBF24", Icon: AlertTriangle },
-  }[type];
-  const { Icon } = styles;
   return (
     <div
-      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[12px]"
-      style={{ background: styles.bg, border: `1px solid ${styles.border}`, color: styles.color }}
+      className={cn(
+        "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[12px] border",
+        type === "success" && "bg-success/5 border-success/20 text-success",
+        type === "error" && "bg-danger/5 border-danger/20 text-danger",
+        type === "warn" && "bg-warning/5 border-warning/20 text-warning"
+      )}
     >
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
+      {type === "success" && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />}
+      {type === "error" && <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />}
+      {type === "warn" && <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />}
       <span className="flex-1">{message}</span>
       {onClose && (
         <button onClick={onClose} className="opacity-70 hover:opacity-100 transition-opacity">
@@ -181,8 +178,7 @@ function PasswordField({
       <button
         type="button"
         onClick={() => setShow((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
-        style={{ color: "var(--text-muted)" }}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted opacity-50 hover:opacity-100 transition-opacity"
       >
         {show ? <EyeOff className="w-4 h-4" strokeWidth={1.8} /> : <Eye className="w-4 h-4" strokeWidth={1.8} />}
       </button>
@@ -201,19 +197,18 @@ function AdvancedSettings({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--glass-border)" }}>
+    <div className="rounded-xl overflow-hidden border border-border bg-glass">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
-        style={{ background: "var(--glass-raised)" }}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-left border-b border-border bg-interactive-hover transition-colors"
       >
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           Advanced Settings
         </span>
         {open
-          ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-          : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />}
+          ? <ChevronUp className="w-3.5 h-3.5 text-text-subtle" strokeWidth={1.8} />
+          : <ChevronDown className="w-3.5 h-3.5 text-text-subtle" strokeWidth={1.8} />}
       </button>
       <AnimatePresence>
         {open && (
@@ -385,7 +380,6 @@ export default function SettingsPage() {
   async function loadTelegramSettings() {
     try {
       const d = await getTelegramSettings();
-      // API returns { configured, chatId } directly — not { settings: { ... } }
       const raw = d as any;
       const configured = raw.configured ?? !!(raw.settings?.botToken && raw.settings?.chatId);
       const chatId: string | undefined = raw.chatId ?? raw.settings?.chatId;
@@ -421,8 +415,6 @@ export default function SettingsPage() {
   async function handleSaveProvider() {
     setSaving(true); setAiError(null);
     try {
-      // When editing: omit apiKey entirely if left blank (server keeps existing key)
-      // When creating: include apiKey if provided
       const payload: Record<string, unknown> = {
         name: form.name,
         providerType: form.providerType,
@@ -438,7 +430,6 @@ export default function SettingsPage() {
         await updateAiProvider(editingId, payload as any);
       } else {
         const result = await createAiProvider(payload as any);
-        // Auto set as default if this is the first (or only) provider
         const isFirst = !aiProviders || aiProviders.length === 0;
         if (isFirst && (result as any)?.provider?.id) {
           await setDefaultAiProvider((result as any).provider.id);
@@ -527,7 +518,6 @@ export default function SettingsPage() {
         setTelegramSaveError("Bot Token is required");
         return;
       }
-      // If already configured and user left token blank → sentinel tells server to keep existing
       const payload = {
         botToken: telegramForm.botToken || "__keep__",
         chatId: telegramForm.chatId,
@@ -541,7 +531,6 @@ export default function SettingsPage() {
   async function handleTestTelegram() {
     setTelegramTesting(true); setTelegramTestResult(null);
     try {
-      // If no token entered, send __keep__ so server uses stored token
       const payload = {
         botToken: telegramForm.botToken || "__keep__",
         chatId: telegramForm.chatId,
@@ -564,21 +553,20 @@ export default function SettingsPage() {
   const provCfg = PROVIDER_TYPES.find((p) => p.value === form.providerType) ?? PROVIDER_TYPES[0];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
         {/* ── Page Header ──────────────────────────────── */}
         <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="visible">
           <div className="flex items-center gap-2.5 mb-1">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.22)" }}
+              className="w-8 h-8 rounded-full flex items-center justify-center border border-border bg-interactive-hover"
             >
-              <Settings2 className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={1.8} />
+              <Settings2 className="w-4 h-4 text-primary" strokeWidth={1.8} />
             </div>
-            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Settings</h1>
+            <h1 className="text-[22px] font-bold tracking-tight text-text">Settings</h1>
           </div>
-          <p className="text-[13px] ml-[42px]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[13px] ml-[42px] text-text-muted">
             Configure AI providers, email, search, and manage data.
           </p>
         </motion.div>
@@ -586,8 +574,7 @@ export default function SettingsPage() {
         {/* ── Tab Bar ──────────────────────────────────── */}
         <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="visible">
           <div
-            className="flex gap-1 p-1 rounded-2xl overflow-x-auto"
-            style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+            className="flex gap-1 p-1 rounded-full overflow-x-auto border border-border bg-interactive-hover"
           >
             {TABS.map((tab, i) => {
               const Icon = tab.icon;
@@ -599,18 +586,14 @@ export default function SettingsPage() {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...SPRING, delay: i * 0.05 }}
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap flex-shrink-0"
-                  style={isActive ? {
-                    background: `${tab.color}18`,
-                    color: tab.color,
-                    border: `1px solid ${tab.color}30`,
-                    boxShadow: `0 2px 12px ${tab.color}20`,
-                  } : {
-                    color: "var(--text-muted)",
-                    border: "1px solid transparent",
-                  }}
+                  whileHover={{ scale: 1.02, y: -0.5 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "flex items-center gap-2 px-3.5 py-2 rounded-full text-[12px] font-semibold whitespace-nowrap flex-shrink-0 border transition-all",
+                    isActive
+                      ? "border-primary/20 bg-primary/10 text-primary"
+                      : "border-transparent text-text-muted hover:text-text"
+                  )}
                 >
                   <motion.span
                     animate={isActive ? { rotate: [0, -8, 8, 0] } : { rotate: 0 }}
@@ -619,14 +602,6 @@ export default function SettingsPage() {
                     <Icon className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
                   </motion.span>
                   {tab.label}
-                  {isActive && (
-                    <motion.span
-                      layoutId="activeTabDot"
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ background: tab.color }}
-                      transition={SPRING}
-                    />
-                  )}
                 </motion.button>
               );
             })}
@@ -642,23 +617,21 @@ export default function SettingsPage() {
             {/* Active provider banner */}
             {activeProvider && (
               <div
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.20)" }}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-success/20 bg-success/5"
               >
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(52,211,153,0.15)" }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border border-success/20 bg-success/10"
                 >
-                  <Zap className="w-4 h-4" style={{ color: "#34D399" }} strokeWidth={2} />
+                  <Zap className="w-4 h-4 text-success" strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-[12px] font-bold" style={{ color: "#34D399" }}>Active Provider</p>
+                    <p className="text-[12px] font-bold text-success">Active Provider</p>
                     {activeProvider.isEnvFallback && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(251,191,36,0.15)", color: "#FBBF24" }}>ENV</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-bold border border-warning/20 bg-warning/5 text-warning">ENV</span>
                     )}
                   </div>
-                  <p className="text-[11px] truncate font-mono" style={{ color: "#34D399", opacity: 0.8 }}>
+                  <p className="text-[11px] truncate font-mono text-success/80">
                     {PROVIDER_TYPES.find((t) => t.value === activeProvider.providerType)?.label ?? activeProvider.providerType}
                     {" · "}{activeProvider.model}
                   </p>
@@ -674,7 +647,7 @@ export default function SettingsPage() {
                 subtitle="Configure language models for the pipeline"
                 accent="#C084FC"
                 action={
-                  <button onClick={openAddForm} className="btn btn-primary text-[12px] px-3.5 py-2 gap-1.5 font-semibold">
+                  <button onClick={openAddForm} className="btn btn-primary text-[12px] px-3.5 py-2 rounded-full gap-1.5 font-semibold">
                     <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
                     Add Provider
                   </button>
@@ -684,16 +657,16 @@ export default function SettingsPage() {
               <div className="p-4 space-y-2">
                 {aiLoading ? (
                   <div className="flex items-center gap-2 py-6 justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-muted)" }} />
-                    <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>Loading providers…</span>
+                    <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
+                    <span className="text-[12px] text-text-muted">Loading providers…</span>
                   </div>
                 ) : aiProviders.length === 0 ? (
                   <div className="flex flex-col items-center py-10 gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(192,132,252,0.10)", border: "1px solid rgba(192,132,252,0.18)" }}>
-                      <Bot className="w-6 h-6" style={{ color: "#C084FC", opacity: 0.6 }} strokeWidth={1.5} />
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center border border-border bg-glass">
+                      <Bot className="w-6 h-6 text-primary/60" strokeWidth={1.5} />
                     </div>
-                    <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>No AI providers configured</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>Add one or set env vars as fallback</p>
+                    <p className="text-[13px] font-medium text-text-muted">No AI providers configured</p>
+                    <p className="text-[11px] text-text-subtle">Add one or set env vars as fallback</p>
                   </div>
                 ) : (
                   aiProviders.map((provider) => {
@@ -703,32 +676,31 @@ export default function SettingsPage() {
                     return (
                       <div
                         key={provider.id}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
-                        style={{
-                          background: provider.isDefault ? "var(--glass-raised)" : "var(--glass)",
-                          border: `1px solid ${provider.isDefault ? "var(--glass-border-strong)" : "var(--glass-border)"}`,
-                        }}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors",
+                          provider.isDefault ? "border-primary/20 bg-primary/5" : "border-border bg-interactive-hover"
+                        )}
                       >
                         <span className="text-xl flex-shrink-0">{info?.icon ?? "🤖"}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>
+                            <p className="text-[13px] font-semibold truncate text-text">
                               {provider.name}
                             </p>
                             {provider.isDefault && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(245,158,11,0.15)", color: "var(--brand)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                              <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold border border-primary/30 bg-primary/10 text-primary">
                                 DEFAULT
                               </span>
                             )}
                             {!provider.isActive && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--glass-raised)", color: "var(--text-subtle)" }}>INACTIVE</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium border border-border bg-interactive-hover text-text-subtle">INACTIVE</span>
                             )}
                           </div>
-                          <p className="text-[11px] font-mono truncate" style={{ color: "var(--text-subtle)" }}>
+                          <p className="text-[11px] font-mono truncate text-text-subtle">
                             {info?.label} · {provider.model}
                           </p>
                           {result && (
-                            <p className="text-[11px] mt-0.5" style={{ color: result.ok ? "#34D399" : "#F87171" }}>
+                            <p className="text-[11px] mt-0.5 font-medium" style={{ color: result.ok ? "var(--success)" : "var(--danger)" }}>
                               {result.ok ? `✓ OK · ${result.model ?? ""}` : `✗ ${result.error}`}
                             </p>
                           )}
@@ -739,12 +711,7 @@ export default function SettingsPage() {
                             onClick={() => handleTestProvider(provider.id)}
                             disabled={isTest}
                             title="Test connection"
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                            style={{
-                              background: "rgba(96,165,250,0.10)",
-                              border: "1px solid rgba(96,165,250,0.20)",
-                              color: "#60A5FA",
-                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium border border-primary/20 bg-primary/5 text-primary transition-all"
                           >
                             {isTest ? <Loader2 className="w-3 h-3 animate-spin" /> : <TestTube className="w-3 h-3" strokeWidth={2} />}
                             <span>Test</span>
@@ -754,12 +721,7 @@ export default function SettingsPage() {
                             <button
                               onClick={() => handleSetDefault(provider.id)}
                               title="Set as default"
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                              style={{
-                                background: "rgba(245,158,11,0.10)",
-                                border: "1px solid rgba(245,158,11,0.20)",
-                                color: "#F59E0B",
-                              }}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium border border-primary/20 bg-primary/5 text-primary transition-all"
                             >
                               <Star className="w-3 h-3" strokeWidth={2} />
                               <span>Default</span>
@@ -769,12 +731,7 @@ export default function SettingsPage() {
                           <button
                             onClick={() => openEditForm(provider)}
                             title="Edit"
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                            style={{
-                              background: "var(--glass-raised)",
-                              border: "1px solid var(--glass-border)",
-                              color: "var(--text-muted)",
-                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium border border-border bg-interactive-hover text-text-muted transition-all"
                           >
                             <Settings2 className="w-3 h-3" strokeWidth={2} />
                             <span>Edit</span>
@@ -783,12 +740,7 @@ export default function SettingsPage() {
                           <button
                             onClick={() => handleDeleteProvider(provider.id)}
                             title="Delete"
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                            style={{
-                              background: "rgba(248,113,113,0.08)",
-                              border: "1px solid rgba(248,113,113,0.18)",
-                              color: "#F87171",
-                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium border border-danger/20 bg-danger/5 text-danger transition-all"
                           >
                             <Trash2 className="w-3 h-3" strokeWidth={2} />
                             <span>Delete</span>
@@ -818,7 +770,7 @@ export default function SettingsPage() {
                       title={editingId ? "Edit Provider" : "Add AI Provider"}
                       accent="#C084FC"
                       action={
-                        <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn btn-ghost w-7 h-7 p-0 rounded-lg">
+                        <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn btn-ghost w-7 h-7 p-0 rounded-full">
                           <X className="w-3.5 h-3.5" strokeWidth={1.8} />
                         </button>
                       }
@@ -834,28 +786,27 @@ export default function SettingsPage() {
                               <button
                                 key={p.value}
                                 onClick={() => handleProviderTypeChange(p.value)}
-                                className="flex flex-col items-start gap-1 p-3 rounded-xl transition-all text-left"
-                                style={{
-                                  background: form.providerType === p.value ? `${p.color}12` : "var(--glass-raised)",
-                                  border: `1px solid ${form.providerType === p.value ? p.color + "40" : "var(--glass-border)"}`,
-                                  boxShadow: form.providerType === p.value ? `0 0 12px ${p.color}15` : "none",
-                                }}
+                                className={cn(
+                                  "flex flex-col items-start gap-1 p-3 rounded-xl transition-all text-left border",
+                                  form.providerType === p.value
+                                    ? "border-primary/30 bg-primary/10 text-primary font-semibold"
+                                    : "border-border bg-interactive-hover text-text-muted hover:text-text"
+                                )}
                               >
                                 <span className="text-lg">{p.icon}</span>
-                                <span className="text-[11px] font-semibold leading-tight" style={{ color: form.providerType === p.value ? p.color : "var(--text-muted)" }}>
+                                <span className="text-[11px] leading-tight">
                                   {p.label}
                                 </span>
                               </button>
                             ))}
                           </div>
                           <div
-                            className="flex items-start gap-2.5 mt-3 px-3.5 py-2.5 rounded-xl text-[12px]"
-                            style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                            className="flex items-start gap-2.5 mt-3 px-3.5 py-2.5 rounded-xl text-[12px] border border-border bg-interactive-hover"
                           >
                             <span className="text-base mt-0.5 flex-shrink-0">{provCfg.icon}</span>
                             <div>
-                              <p className="font-semibold" style={{ color: "var(--text)" }}>{provCfg.label}</p>
-                              <p style={{ color: "var(--text-muted)" }}>{provCfg.description}</p>
+                              <p className="font-semibold text-text">{provCfg.label}</p>
+                              <p className="text-text-muted">{provCfg.description}</p>
                             </div>
                           </div>
                         </div>
@@ -866,22 +817,19 @@ export default function SettingsPage() {
                         <FieldLabel>{editingId ? "🔑 API Key" : "② API Key"}</FieldLabel>
                         {provCfg.apiKeyUrl && (
                           <div
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] mb-2"
-                            style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.18)" }}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] border border-primary/20 bg-primary/5 text-primary mb-2"
                           >
-                            <span style={{ color: "#60A5FA" }}>Get your key from</span>
+                            <span>Get your key from</span>
                             <a href={provCfg.apiKeyUrl} target="_blank" rel="noopener noreferrer"
-                              className="font-semibold flex items-center gap-1 underline"
-                              style={{ color: "#60A5FA" }}>
+                              className="font-semibold flex items-center gap-1 underline text-primary">
                               {provCfg.apiKeyUrlLabel}
-                              <ExternalLink className="w-3 h-3" strokeWidth={1.8} />
+                              <ExternalLink className="w-3 h-3 text-primary" strokeWidth={1.8} />
                             </a>
                           </div>
                         )}
                         {provCfg.value === "ollama" && (
                           <div
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] mb-2"
-                            style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.18)", color: "#34D399" }}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] border border-success/20 bg-success/5 text-success mb-2"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
                             No API key needed — Ollama runs locally
@@ -906,17 +854,16 @@ export default function SettingsPage() {
                               <button
                                 key={m}
                                 onClick={() => setForm({ ...form, model: m })}
-                                className="text-left px-3 py-2 rounded-xl text-[12px] transition-all"
-                                style={{
-                                  background: form.model === m ? "rgba(192,132,252,0.10)" : "var(--glass-raised)",
-                                  border: `1px solid ${form.model === m ? "rgba(192,132,252,0.30)" : "var(--glass-border)"}`,
-                                  color: form.model === m ? "#C084FC" : "var(--text-muted)",
-                                  fontWeight: form.model === m ? "600" : "400",
-                                }}
+                                className={cn(
+                                  "text-left px-3 py-2 rounded-xl text-[12px] transition-all border",
+                                  form.model === m
+                                    ? "border-primary/30 bg-primary/10 text-primary font-semibold"
+                                    : "border-border bg-interactive-hover text-text-muted hover:text-text"
+                                )}
                               >
                                 {m}
                                 {m === provCfg.defaultModel && (
-                                  <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: "rgba(245,158,11,0.15)", color: "var(--brand)" }}>
+                                  <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-primary/10 text-primary border border-primary/20">
                                     recommended
                                   </span>
                                 )}
@@ -942,16 +889,16 @@ export default function SettingsPage() {
                       />
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 pt-2" style={{ borderTop: "1px solid var(--glass-border)" }}>
+                      <div className="flex items-center gap-2 pt-2 border-t border-border">
                         <button
                           onClick={handleSaveProvider}
                           disabled={saving || !form.name || !form.model}
-                          className="btn btn-primary text-[13px] px-5 py-2.5 gap-2 font-semibold"
+                          className="btn btn-primary text-[13px] px-5 py-2.5 rounded-full gap-2 font-semibold"
                         >
                           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" strokeWidth={2.5} />}
                           {saving ? "Saving…" : editingId ? "Update Provider" : "Add Provider"}
                         </button>
-                        <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn btn-ghost text-[13px] px-4 py-2.5">
+                        <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn btn-ghost text-[13px] px-4 py-2.5 rounded-full">
                           Cancel
                         </button>
                       </div>
@@ -985,16 +932,12 @@ export default function SettingsPage() {
                             key={p}
                             onClick={() => handleSetEmailDefault(p)}
                             disabled={!isConfigured}
-                            className="px-4 py-2 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed capitalize"
-                            style={isDefault ? {
-                              background: "rgba(96,165,250,0.15)",
-                              color: "#60A5FA",
-                              border: "1px solid rgba(96,165,250,0.30)",
-                            } : {
-                              background: "var(--glass-raised)",
-                              color: "var(--text-muted)",
-                              border: "1px solid var(--glass-border)",
-                            }}
+                            className={cn(
+                              "px-4 py-2 rounded-full text-[12px] font-semibold border transition-all capitalize",
+                              isDefault
+                                ? "border-primary/30 bg-primary/15 text-primary"
+                                : "border-border bg-interactive-hover text-text-muted hover:text-text"
+                            )}
                           >
                             {isDefault && <span className="mr-1">✓</span>}{p}
                           </button>
@@ -1019,17 +962,17 @@ export default function SettingsPage() {
                     {resendConfig?.configured && <StatusBadge ok={true} label={resendConfig.source === "env" ? "via ENV" : "Configured"} />}
                     <button
                       onClick={() => { setShowResendForm(!showResendForm); setResendError(null); setResendSuccess(null); }}
-                      className="btn btn-secondary text-[12px] px-3 py-1.5 gap-1.5"
+                      className="btn btn-secondary text-[12px] px-3 py-1.5 rounded-full gap-1.5"
                     >
                       {showResendForm ? "Cancel" : resendConfig?.configured ? "Update" : "Configure"}
                     </button>
                     {resendConfig?.configured && (
                       <>
-                        <button onClick={handleTestResend} disabled={resendTesting} className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5">
+                        <button onClick={handleTestResend} disabled={resendTesting} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full gap-1.5">
                           {resendTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" strokeWidth={1.8} />}
                           Test
                         </button>
-                        <button onClick={handleDeleteResend} disabled={resendDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5" style={{ color: "#F87171" }}>
+                        <button onClick={handleDeleteResend} disabled={resendDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full text-danger">
                           {resendDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />}
                         </button>
                       </>
@@ -1052,11 +995,11 @@ export default function SettingsPage() {
                       {resendError && <Alert type="error" message={resendError} onClose={() => setResendError(null)} />}
                       {resendSuccess && <Alert type="success" message={resendSuccess} onClose={() => setResendSuccess(null)} />}
                       <div className="flex gap-2 pt-1">
-                        <button onClick={handleSaveResend} disabled={resendSaving} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
+                        <button onClick={handleSaveResend} disabled={resendSaving} className="btn btn-primary text-[13px] px-4 py-2 rounded-full gap-2">
                           {resendSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
                           Save
                         </button>
-                        <button onClick={() => setShowResendForm(false)} className="btn btn-ghost text-[13px] px-4 py-2">Cancel</button>
+                        <button onClick={() => setShowResendForm(false)} className="btn btn-ghost text-[13px] px-4 py-2 rounded-full">Cancel</button>
                       </div>
                     </div>
                   </motion.div>
@@ -1075,11 +1018,11 @@ export default function SettingsPage() {
                 action={
                   <div className="flex items-center gap-2">
                     {smtpConfig?.configured && <StatusBadge ok={true} label="Configured" />}
-                    <button onClick={() => { setShowSmtpForm(!showSmtpForm); setSmtpError(null); setSmtpSuccess(null); }} className="btn btn-secondary text-[12px] px-3 py-1.5">
+                    <button onClick={() => { setShowSmtpForm(!showSmtpForm); setSmtpError(null); setSmtpSuccess(null); }} className="btn btn-secondary text-[12px] px-3 py-1.5 rounded-full">
                       {showSmtpForm ? "Cancel" : smtpConfig?.configured ? "Update" : "Configure"}
                     </button>
                     {smtpConfig?.configured && (
-                      <button onClick={handleDeleteSmtp} disabled={smtpDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5" style={{ color: "#F87171" }}>
+                      <button onClick={handleDeleteSmtp} disabled={smtpDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full text-danger">
                         {smtpDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />}
                       </button>
                     )}
@@ -1122,16 +1065,16 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="checkbox" id="smtp-secure" checked={smtpForm.secure} onChange={(e) => setSmtpForm((f) => ({ ...f, secure: e.target.checked }))} className="rounded" />
-                        <label htmlFor="smtp-secure" className="text-[12px]" style={{ color: "var(--text-muted)" }}>Use TLS/SSL</label>
+                        <label htmlFor="smtp-secure" className="text-[12px] text-text-muted">Use TLS/SSL</label>
                       </div>
                       {smtpError && <Alert type="error" message={smtpError} onClose={() => setSmtpError(null)} />}
                       {smtpSuccess && <Alert type="success" message={smtpSuccess} onClose={() => setSmtpSuccess(null)} />}
                       <div className="flex gap-2 pt-1">
-                        <button onClick={handleSaveSmtp} disabled={smtpSaving} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
+                        <button onClick={handleSaveSmtp} disabled={smtpSaving} className="btn btn-primary text-[13px] px-4 py-2 rounded-full gap-2">
                           {smtpSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
                           Save
                         </button>
-                        <button onClick={() => setShowSmtpForm(false)} className="btn btn-ghost text-[13px] px-4 py-2">Cancel</button>
+                        <button onClick={() => setShowSmtpForm(false)} className="btn btn-ghost text-[13px] px-4 py-2 rounded-full">Cancel</button>
                       </div>
                     </div>
                   </motion.div>
@@ -1155,16 +1098,16 @@ export default function SettingsPage() {
                 action={
                   <div className="flex items-center gap-2">
                     {searchConfig?.configured && <StatusBadge ok={true} label={searchConfig.source === "env" ? "via ENV" : "Configured"} />}
-                    <button onClick={() => { setShowSearchForm(!showSearchForm); setSearchError(null); setSearchSuccess(null); }} className="btn btn-secondary text-[12px] px-3 py-1.5">
+                    <button onClick={() => { setShowSearchForm(!showSearchForm); setSearchError(null); setSearchSuccess(null); }} className="btn btn-secondary text-[12px] px-3 py-1.5 rounded-full">
                       {showSearchForm ? "Cancel" : searchConfig?.configured ? "Update" : "Configure"}
                     </button>
                     {searchConfig?.configured && (
                       <>
-                        <button onClick={handleTestSearch} disabled={searchTesting} className="btn btn-ghost text-[12px] px-3 py-1.5 gap-1.5">
+                        <button onClick={handleTestSearch} disabled={searchTesting} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full gap-1.5">
                           {searchTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" strokeWidth={1.8} />}
                           Test
                         </button>
-                        <button onClick={handleDeleteSearch} disabled={searchDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5" style={{ color: "#F87171" }}>
+                        <button onClick={handleDeleteSearch} disabled={searchDeleting} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full text-danger">
                           {searchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />}
                         </button>
                       </>
@@ -1177,13 +1120,12 @@ export default function SettingsPage() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                     <div className="p-5 space-y-3">
                       <div
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px]"
-                        style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.20)", color: "#FBBF24" }}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px] border border-warning/20 bg-warning/5 text-warning"
                       >
                         <Key className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.8} />
                         Get your free key at{" "}
-                        <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold flex items-center gap-1">
-                          tavily.com <ExternalLink className="w-3 h-3" strokeWidth={1.8} />
+                        <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold flex items-center gap-1 text-warning">
+                          tavily.com <ExternalLink className="w-3 h-3 text-warning" strokeWidth={1.8} />
                         </a>
                       </div>
                       <div>
@@ -1193,11 +1135,11 @@ export default function SettingsPage() {
                       {searchError && <Alert type="error" message={searchError} onClose={() => setSearchError(null)} />}
                       {searchSuccess && <Alert type="success" message={searchSuccess} onClose={() => setSearchSuccess(null)} />}
                       <div className="flex gap-2 pt-1">
-                        <button onClick={handleSaveSearch} disabled={searchSaving || !searchForm.apiKey} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
+                        <button onClick={handleSaveSearch} disabled={searchSaving || !searchForm.apiKey} className="btn btn-primary text-[13px] px-4 py-2 rounded-full gap-2">
                           {searchSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
                           Save
                         </button>
-                        <button onClick={() => setShowSearchForm(false)} className="btn btn-ghost text-[13px] px-4 py-2">Cancel</button>
+                        <button onClick={() => setShowSearchForm(false)} className="btn btn-ghost text-[13px] px-4 py-2 rounded-full">Cancel</button>
                       </div>
                     </div>
                   </motion.div>
@@ -1223,14 +1165,13 @@ export default function SettingsPage() {
               />
               <div className="p-5 space-y-3">
                 <div
-                  className="flex flex-col gap-1 px-3.5 py-3 rounded-xl text-[12px]"
-                  style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                  className="flex flex-col gap-1 px-3.5 py-3 rounded-xl text-[12px] border border-border bg-interactive-hover"
                 >
-                  <p className="font-semibold" style={{ color: "var(--text)" }}>Setup steps:</p>
-                  <ol className="list-decimal list-inside space-y-1" style={{ color: "var(--text-muted)" }}>
-                    <li>Message <a href="https://t.me/BotFather" target="_blank" className="underline font-medium" style={{ color: "#F97316" }}>@BotFather</a> to create a bot and get your token</li>
+                  <p className="font-semibold text-text">Setup steps:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-text-muted">
+                    <li>Message <a href="https://t.me/BotFather" target="_blank" className="underline font-medium text-warning">@BotFather</a> to create a bot and get your token</li>
                     <li>Start a chat with your bot</li>
-                    <li>Get your Chat ID from <a href="https://t.me/userinfobot" target="_blank" className="underline font-medium" style={{ color: "#F97316" }}>@userinfobot</a></li>
+                    <li>Get your Chat ID from <a href="https://t.me/userinfobot" target="_blank" className="underline font-medium text-warning">@userinfobot</a></li>
                   </ol>
                 </div>
                 <div>
@@ -1248,11 +1189,11 @@ export default function SettingsPage() {
                   <Alert type={telegramTestResult.success ? "success" : "error"} message={telegramTestResult.success ? "Test message sent!" : telegramTestResult.error ?? "Test failed"} />
                 )}
                 <div className="flex gap-2 pt-1">
-                  <button onClick={handleSaveTelegram} disabled={telegramSaving || (!telegramSettings?.configured && !telegramForm.botToken) || !telegramForm.chatId} className="btn btn-primary text-[13px] px-4 py-2 gap-2">
+                  <button onClick={handleSaveTelegram} disabled={telegramSaving || (!telegramSettings?.configured && !telegramForm.botToken) || !telegramForm.chatId} className="btn btn-primary text-[13px] px-4 py-2 rounded-full gap-2">
                     {telegramSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
                     Save Settings
                   </button>
-                  <button onClick={handleTestTelegram} disabled={telegramTesting || !telegramForm.botToken || !telegramForm.chatId} className="btn btn-secondary text-[13px] px-4 py-2 gap-2">
+                  <button onClick={handleTestTelegram} disabled={telegramTesting || !telegramForm.botToken || !telegramForm.chatId} className="btn btn-secondary text-[13px] px-4 py-2 rounded-full gap-2">
                     {telegramTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" strokeWidth={1.8} />}
                     Test
                   </button>
@@ -1276,13 +1217,12 @@ export default function SettingsPage() {
               />
               <div className="p-5 space-y-4">
                 <div
-                  className="flex items-start gap-3 px-4 py-3.5 rounded-xl text-[12px]"
-                  style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.20)" }}
+                  className="flex items-start gap-3 px-4 py-3.5 rounded-xl text-[12px] border border-danger/20 bg-danger/5"
                 >
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#F87171" }} strokeWidth={1.8} />
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-danger" strokeWidth={1.8} />
                   <div>
-                    <p className="font-semibold mb-0.5" style={{ color: "#F87171" }}>Irreversible action</p>
-                    <p style={{ color: "var(--text-muted)" }}>
+                    <p className="font-semibold mb-0.5 text-danger">Irreversible action</p>
+                    <p className="text-text-muted">
                       This will permanently delete all leads, pipeline runs, analyses, and outreach emails. This cannot be undone.
                     </p>
                   </div>
@@ -1303,8 +1243,7 @@ export default function SettingsPage() {
                       key="delete-btn"
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                       onClick={() => setConfirming(true)}
-                      className="btn text-[13px] px-5 py-2.5 font-semibold gap-2"
-                      style={{ background: "rgba(248,113,113,0.12)", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}
+                      className="btn text-[13px] px-5 py-2.5 font-semibold gap-2 border border-danger/20 bg-danger/5 text-danger rounded-full hover:bg-danger/10"
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={1.8} />
                       Clear All Data
@@ -1313,18 +1252,17 @@ export default function SettingsPage() {
                     <motion.div
                       key="confirm"
                       initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
-                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
-                      style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)" }}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-danger/25 bg-danger/5"
                     >
-                      <Shield className="w-4 h-4 flex-shrink-0" style={{ color: "#F87171" }} strokeWidth={1.8} />
-                      <span className="text-[12px] flex-1 font-medium" style={{ color: "#F87171" }}>
+                      <Shield className="w-4 h-4 flex-shrink-0 text-danger" strokeWidth={1.8} />
+                      <span className="text-[12px] flex-1 font-medium text-danger">
                         Are you absolutely sure?
                       </span>
-                      <button onClick={handleClearAll} disabled={clearing} className="btn text-[12px] px-3 py-1.5 font-semibold gap-1.5" style={{ background: "#F87171", color: "#fff" }}>
+                      <button onClick={handleClearAll} disabled={clearing} className="btn text-[12px] px-3 py-1.5 font-semibold gap-1.5 bg-danger text-danger-foreground hover:bg-danger/90 rounded-full">
                         {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />}
                         {clearing ? "Clearing…" : "Yes, delete"}
                       </button>
-                      <button onClick={() => setConfirming(false)} className="btn btn-ghost text-[12px] px-3 py-1.5">Cancel</button>
+                      <button onClick={() => setConfirming(false)} className="btn btn-ghost text-[12px] px-3 py-1.5 rounded-full">Cancel</button>
                     </motion.div>
                   )}
                 </AnimatePresence>
