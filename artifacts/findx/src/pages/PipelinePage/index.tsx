@@ -152,7 +152,7 @@ export default function PipelinePage() {
       <Button 
         variant={showForm ? "secondary" : "default"} 
         onClick={() => setShowForm((v) => !v)}
-        className="gap-2 h-9 font-bold shadow-glow-brand"
+        className="gap-2 h-9 font-bold shadow-sm"
       >
         <Zap className="w-3.5 h-3.5 fill-current" />
         {showForm ? "Close Form" : t.pipeline.runPipeline}
@@ -225,7 +225,7 @@ export default function PipelinePage() {
 
                   <div className="flex-1" />
 
-                  <Button onClick={handleRun} disabled={running || !query.trim()} className="h-11 px-8 font-bold gap-2 shadow-glow-brand">
+                  <Button onClick={handleRun} disabled={running || !query.trim()} className="h-11 px-8 font-bold gap-2 shadow-sm">
                     {running ? <Activity className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                     {running ? "Running..." : "Launch Pipeline"}
                   </Button>
@@ -253,12 +253,12 @@ export default function PipelinePage() {
         <div className="min-h-[500px]">
           {leads.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed border-glass-border bg-glass-raised/20">
-              <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2.5 }} className="w-20 h-20 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20 mb-6 shadow-glow-brand">
-                <GitBranch className="w-10 h-10 text-primary" strokeWidth={1.5} />
+              <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2.5 }} className="w-20 h-20 rounded-2xl flex items-center justify-center bg-glass-raised border border-glass-border mb-6 shadow-sm">
+                <GitBranch className="w-10 h-10 text-text" strokeWidth={1.5} />
               </motion.div>
               <h3 className="text-lg font-bold text-text">{t.pipeline.noLeads}</h3>
               <p className="text-sm text-text-muted mt-2 mb-8">{t.pipeline.noLeadsHint}</p>
-              <Button onClick={() => setShowForm(true)} className="h-12 px-10 font-bold gap-2 shadow-glow-brand">
+              <Button onClick={() => setShowForm(true)} className="h-12 px-10 font-bold gap-2 shadow-sm">
                 <Zap className="w-4 h-4 fill-current" />
                 Start First Pipeline
               </Button>
