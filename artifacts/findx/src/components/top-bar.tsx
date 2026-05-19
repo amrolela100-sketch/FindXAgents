@@ -25,7 +25,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const initial = (user?.email ?? "U")[0].toUpperCase();
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between h-14 px-5 gap-4 bg-glass backdrop-blur-glass border-b border-glass-border">
+    <header className="sticky top-0 z-10 flex items-center justify-between h-14 px-5 gap-4 bg-glass backdrop-blur-glass border-b border-border">
       {/* Left: Page title */}
       <div className="flex items-center gap-3 min-w-0">
         {title && (
@@ -79,7 +79,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             }
             {/* Badge */}
             {unreadCount > 0 && (
-              <span className="absolute top-1 end-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-0.5 bg-primary shadow-glow-brand">
+              <span className="absolute top-1 end-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-0.5 bg-primary shadow-sm">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -96,7 +96,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="relative ms-1">
           <button
             onClick={() => { setUserMenuOpen(v => !v); setNotifOpen(false); }}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all hover:scale-105 bg-gradient-to-br from-primary to-teal-600 text-white shadow-glow-brand"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 hover:scale-105 bg-primary text-primary-foreground border border-border shadow-sm"
             title={user?.email}
           >
             {initial}
@@ -106,14 +106,14 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
               <div className={cn(
-                "absolute top-12 w-52 z-20 rounded-2xl overflow-hidden",
-                "bg-glass-overlay backdrop-blur-glass border border-glass-border-strong shadow-2xl",
+                "absolute top-12 w-52 z-20 rounded-xl overflow-hidden",
+                "bg-glass-overlay backdrop-blur-glass border border-border shadow-2xl",
                 "animate-in fade-in slide-in-from-top-2 duration-200",
                 isRtl ? "left-0" : "right-0",
               )}>
-                <div className="px-4 py-3 border-b border-glass-border bg-glass-raised/50">
-                  <p className="text-xs font-medium truncate text-text">{user?.email}</p>
-                  <p className="text-[10px] mt-0.5 text-primary font-bold uppercase tracking-widest">Free plan</p>
+                <div className="px-4 py-3 border-b border-border bg-interactive-hover">
+                  <p className="text-xs font-semibold truncate text-text">{user?.email}</p>
+                  <p className="text-[10px] mt-0.5 text-text-muted font-bold uppercase tracking-widest">Free plan</p>
                 </div>
                 <button
                   onClick={() => { logout(); setUserMenuOpen(false); }}
