@@ -9,7 +9,7 @@ import { INDUSTRIES, REGIONS } from "./constants";
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+    <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5 text-text-muted">
       {children}
     </label>
   );
