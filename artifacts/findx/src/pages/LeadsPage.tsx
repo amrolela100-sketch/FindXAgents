@@ -123,7 +123,7 @@ function ImportPreviewModal({
             size="sm"
             onClick={onConfirm}
             disabled={importing}
-            className="gap-2 font-bold shadow-glow-brand"
+            className="gap-2 font-bold shadow-sm"
           >
             {importing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
             {importing ? "Importing…" : `Import ${rows.length - 1} leads`}
@@ -573,7 +573,7 @@ export default function LeadsPage() {
         size="sm"
         onClick={handleDiscover}
         disabled={discovering}
-        className="gap-1.5 h-9 font-bold shadow-glow-brand"
+        className="gap-1.5 h-9 font-bold shadow-sm"
       >
         {discovering
           ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -654,10 +654,9 @@ export default function LeadsPage() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                 statusFilter === item.key
-                  ? "text-white shadow-glow-brand"
-                  : "text-text-muted hover:text-text border border-glass-border hover:border-primary/40",
+                  ? "text-primary-foreground shadow-sm bg-primary"
+                  : "text-text-muted hover:text-text border border-glass-border bg-glass-raised",
               )}
-              style={statusFilter === item.key ? { background: "var(--primary)" } : { background: "var(--surface-elevated)" }}
             >
               {item.label}
             </button>
