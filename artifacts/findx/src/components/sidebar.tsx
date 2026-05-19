@@ -52,8 +52,8 @@ function NavLink({
         className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 group",
           active 
-            ? "bg-primary text-primary-foreground shadow-glow-brand" 
-            : "text-text-muted hover:bg-glass-raised hover:text-text"
+            ? "bg-glass-raised text-text border border-glass-border-strong shadow-sm" 
+            : "text-text-muted hover:bg-glass-raised hover:text-text border border-transparent"
         )}
       >
         <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform", active ? "scale-110" : "group-hover:scale-110")} />
@@ -83,10 +83,10 @@ function NavLinkIcon({
         onClick={onClick}
         title={label}
         className={cn(
-          "flex items-center justify-center h-10 w-10 mx-auto rounded-xl transition-all duration-200",
+          "flex items-center justify-center h-10 w-10 mx-auto rounded-xl transition-all duration-200 border",
           active 
-            ? "bg-primary text-primary-foreground shadow-glow-brand" 
-            : "text-text-muted hover:bg-glass-raised hover:text-text"
+            ? "bg-glass-raised text-text border-glass-border-strong shadow-sm" 
+            : "text-text-muted hover:bg-glass-raised hover:text-text border-transparent"
         )}
       >
         <Icon className={cn("w-4 h-4 flex-shrink-0", active && "scale-110")} />
@@ -119,8 +119,8 @@ function SidebarContent({
       <div className={cn("py-6 mb-2", collapsed ? "flex justify-center" : "px-5")}>
         <Link href="/">
           <a onClick={onClose} className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center flex-shrink-0 shadow-glow-brand transition-transform group-hover:scale-105">
-              <RadarIcon className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105 border border-glass-border">
+              <RadarIcon className="w-5 h-5 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div className="flex flex-col">
@@ -142,8 +142,8 @@ function SidebarContent({
           <a className={cn(
             "relative overflow-hidden group transition-all duration-300",
             collapsed 
-              ? "h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-glow-brand"
-              : "w-full py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-glow-brand flex items-center justify-center gap-2"
+              ? "h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm"
+              : "w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm flex items-center justify-center gap-2"
           )}>
             <span className="relative z-10">{collapsed ? "✦" : `✦ ${t.nav.upgrade}`}</span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -191,8 +191,8 @@ function SidebarContent({
         <div className="space-y-1 mb-4">
             <Link href="/help">
               <a className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-text-muted hover:bg-glass-raised hover:text-text transition-all",
-                isActive("/help") && "bg-primary text-primary-foreground shadow-glow-brand",
+                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-text-muted hover:bg-glass-raised hover:text-text transition-all border border-transparent",
+                isActive("/help") && "bg-glass-raised text-text border-glass-border-strong shadow-sm",
                 collapsed && "justify-center !px-0"
               )}>
                 <HelpCircle className="w-4 h-4" />
@@ -216,7 +216,7 @@ function SidebarContent({
             "flex items-center gap-3 p-2 rounded-2xl bg-glass-raised border border-glass-border",
             collapsed && "justify-center p-1.5"
           )}>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm flex-shrink-0">
               {initial}
             </div>
             {!collapsed && (
@@ -271,8 +271,8 @@ export function Sidebar({ isAdmin, collapsed = false, onToggleCollapse }: Sideba
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-30 bg-glass-overlay backdrop-blur-glass border-b border-glass-border">
         <Link href="/">
           <a className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-glow-brand">
-              <RadarIcon className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm border border-glass-border">
+              <RadarIcon className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-sm text-text">FindX</span>
           </a>
