@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Users, BarChart2, Zap, Shield, CheckCircle, XCircle, Loader2, RefreshCw, TrendingUp } from "lucide-react";
-import { PageShell } from "../components/page-shell";
-import { supabase } from "../lib/supabase";
-import { Button } from "../components/ui/button";
+import { PageShell } from "@/components/page-shell";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 interface AdminStats {
@@ -25,10 +24,9 @@ interface AdminUser {
   isAdmin: boolean;
 }
 
-// Cast to Variants so TS accepts the custom resolver function
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
-  visible: (i: number = 0) => ({
+  visible: (i = 0) => ({
     opacity: 1, y: 0,
     transition: { duration: 0.35, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
   }),
@@ -37,7 +35,7 @@ const fadeUp: Variants = {
 async function apiGet<T>(path: string): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token    = data.session?.access_token;
-  const base     = "/api";
+  const base     = "/api"; // Use Vercel proxy to avoid cross-origin issues
   const res      = await fetch(`${base}${path}`, {
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
@@ -48,21 +46,23 @@ async function apiGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function StatCard({ label, value, colorClass, bgClass, borderClass, icon: Icon }: {
-  label: string; value: number | string; colorClass: string; bgClass: string; borderClass: string; icon: any;
+function StatCard({ label, value, children }: {
+  label: string;
+  value: number | string;
+  children: React.ReactNode;
 }) {
   return (
     <motion.div
       variants={fadeUp}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className={cn("rounded-2xl p-6 border bg-glass shadow-sm flex items-center gap-5", borderClass)}
+      whileHover={{ y: -2 }}
+      className="glass-card rounded-2xl p-5 flex items-center gap-4 border border-border bg-glass backdrop-blur-glass shadow-sm"
     >
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center bg-white/10 shadow-inner shrink-0", colorClass)}>
-        <Icon className="w-6 h-6" />
+      <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 border border-primary/20 bg-primary/10 text-primary">
+        {children}
       </div>
       <div>
-        <p className="text-3xl font-bold tracking-tighter text-text leading-none">{value}</p>
-        <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-2">{label}</p>
+        <p className="text-[26px] font-bold leading-none text-text">{value}</p>
+        <p className="text-[12px] mt-1 text-text-muted">{label}</p>
       </div>
     </motion.div>
   );
@@ -91,7 +91,7 @@ export default function AdminPage() {
       setStats(s.stats);
       setUsers(u.users);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load admin data");
+      setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -99,128 +99,213 @@ export default function AdminPage() {
 
   useEffect(() => { load(); }, []);
 
-  return (
-    <PageShell title="Admin" subtitle="System Administration" actions={
-      <Button variant="outline" size="sm" onClick={load} className="gap-2 font-bold h-9">
-        <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-        Refresh
-      </Button>
-    }>
-      <div className="max-w-6xl mx-auto space-y-8 px-5 md:px-8 py-6">
+  if (loading) {
+    return (
+      <PageShell title="Admin" subtitle="Platform Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
+        </div>
+      </PageShell>
+    );
+  }
 
-        {/* Tab Navigation */}
-        <div className="flex gap-1.5 p-1.5 rounded-2xl bg-glass border border-glass-border w-fit shadow-sm">
-          <Button 
-            variant={tab === "overview" ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => setTab("overview")}
-            className={cn("h-9 px-6 font-bold uppercase tracking-widest text-[10px]", tab !== "overview" && "text-text-muted")}
+  if (error) {
+    return (
+      <PageShell title="Admin" subtitle="Platform Dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <Shield className="w-10 h-10 mx-auto text-danger" />
+            <p className="font-semibold text-text">{error}</p>
+            <button onClick={load} className="text-[13px] underline text-text-muted">Try again</button>
+          </div>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell title="Admin" subtitle="Platform Dashboard">
+      <div className="max-w-5xl mx-auto space-y-8">
+
+        {/* ── Header ─────────────────────────────────────────── */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-text-muted">
+                Admin
+              </span>
+            </div>
+            <h1 className="text-[22px] font-bold tracking-tight text-text">
+              Platform Dashboard
+            </h1>
+            <p className="text-[13px] mt-0.5 text-text-muted">
+              Internal management page for FindX administrators.
+            </p>
+          </div>
+          <button
+            onClick={load}
+            className="flex items-center gap-1.5 text-[13px] px-3.5 py-2 rounded-full border border-border bg-interactive-hover hover:bg-interactive-hover-active transition-all text-text-muted"
           >
-            Overview
-          </Button>
-          <Button 
-            variant={tab === "users" ? "default" : "ghost"} 
-            size="sm" 
-            onClick={() => setTab("users")}
-            className={cn("h-9 px-6 font-bold uppercase tracking-widest text-[10px]", tab !== "users" && "text-text-muted")}
-          >
-            Users Management
-          </Button>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </button>
+        </motion.div>
+
+        {/* ── Tabs ───────────────────────────────────────────── */}
+        <div className="flex gap-1 p-1 rounded-full border border-border bg-interactive-hover w-fit">
+          {(["overview", "users"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "px-4 py-2 rounded-full text-[13px] font-semibold transition-all border",
+                tab === t
+                  ? "border-primary/20 bg-primary/10 text-primary shadow-sm"
+                  : "border-transparent text-text-muted hover:text-text"
+              )}
+            >
+              {t === "overview" ? "Overview" : "Users"}
+            </button>
+          ))}
         </div>
 
-        <AnimatePresence mode="wait">
-          {loading && !stats ? (
-             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-64 gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm font-bold text-text-muted uppercase tracking-widest">Loading Analytics...</p>
-             </motion.div>
-          ) : error ? (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-64 gap-4">
-              <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center text-danger border border-danger/20">
-                <Shield className="w-8 h-8" />
-              </div>
-              <p className="font-bold text-text">{error}</p>
-              <Button variant="outline" onClick={load}>Try again</Button>
-            </motion.div>
-          ) : tab === "overview" && stats ? (
-            <motion.div key="overview" initial="hidden" animate="visible" variants={fadeUp} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard label="Registered Users" value={stats.totalUsers} colorClass="text-info" bgClass="bg-info/10" borderClass="border-info-border" icon={Users} />
-                <StatCard label="Leads Generated" value={stats.totalLeads} colorClass="text-success" bgClass="bg-success/10" borderClass="border-success-border" icon={TrendingUp} />
-                <StatCard label="Pipeline Executions" value={stats.totalRuns} colorClass="text-primary" bgClass="bg-primary/10" borderClass="border-primary-border" icon={Zap} />
-              </div>
+        {/* ── Overview ───────────────────────────────────────── */}
+        {tab === "overview" && stats && (
+          <motion.div initial="hidden" animate="visible" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard label="Registered users"      value={stats.totalUsers}><Users      className="w-5 h-5" strokeWidth={1.5} /></StatCard>
+              <StatCard label="Total leads generated" value={stats.totalLeads}><TrendingUp className="w-5 h-5" strokeWidth={1.5} /></StatCard>
+              <StatCard label="Agent runs executed"   value={stats.totalRuns}><Zap        className="w-5 h-5" strokeWidth={1.5} /></StatCard>
+            </div>
 
-              <div className="rounded-2xl bg-glass border border-glass-border overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-glass-border bg-glass-raised/50">
-                   <h3 className="text-sm font-bold text-text uppercase tracking-widest flex items-center gap-2">
-                     <Shield className="w-4 h-4 text-primary" />
-                     Platform Health Status
-                   </h3>
-                </div>
-                <div className="divide-y divide-glass-border">
-                  {[
-                    { label: "Core API Infrastructure", ok: true },
-                    { label: "Identity & Authentication (Supabase)", ok: true },
-                    { label: "Primary Storage Layer (PostgreSQL)", ok: true },
-                    { label: "Agent Orchestration Engine", ok: stats.totalRuns > 0 },
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-glass-raised/30">
-                      <span className="text-sm font-medium text-text-muted">{s.label}</span>
-                      <div className={cn("flex items-center gap-2 text-xs font-bold uppercase tracking-wider", s.ok ? "text-success" : "text-warning")}>
-                        {s.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                        {s.ok ? "Operational" : "Degraded Performance"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="users" initial="hidden" animate="visible" variants={fadeUp} className="rounded-2xl border border-glass-border bg-glass overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-glass-border bg-glass-raised/50 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-text uppercase tracking-widest">Registered Userbase</h3>
-                <span className="text-[10px] font-bold px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20">{users.length} TOTAL USERS</span>
-              </div>
-              
-              <div className="divide-y divide-glass-border">
-                {users.map((u, i) => (
-                  <div key={u.id} className="flex flex-wrap items-center gap-4 px-6 py-5 transition-all hover:bg-glass-raised group">
-                    <div className="relative">
-                      {u.avatar ? (
-                        <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-xl object-cover border border-glass-border" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary border border-primary/20 text-sm font-bold">
-                          {u.name[0]?.toUpperCase()}
-                        </div>
+            <motion.div variants={fadeUp} className="rounded-2xl p-5 space-y-4 border border-border bg-glass backdrop-blur-glass shadow-sm">
+              <p className="text-[13.5px] font-semibold text-text">
+                Platform health
+              </p>
+              <div className="space-y-0">
+                {[
+                  { label: "API Server",           ok: true },
+                  { label: "Supabase Auth",         ok: true },
+                  { label: "Database connection",   ok: true },
+                  { label: "Agent system",          ok: stats.totalRuns > 0 },
+                ].map(({ label, ok }, i) => (
+                  <div
+                    key={label}
+                    className={cn(
+                      "flex items-center justify-between py-3",
+                      i < 3 && "border-b border-border"
+                    )}
+                  >
+                    <span className="text-[13px] text-text-muted">{label}</span>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1.5 text-[12px] font-bold",
+                        ok ? "text-success" : "text-warning"
                       )}
-                      {u.isAdmin && <div className="absolute -top-1 -right-1 w-4 h-4 bg-warning rounded-full border-2 border-background flex items-center justify-center shadow-sm" title="Admin User"><Shield className="w-2.5 h-2.5 text-white" /></div>}
-                    </div>
-
-                    <div className="flex-1 min-w-[200px]">
-                      <p className="text-sm font-bold text-text group-hover:text-primary transition-colors">{u.name}</p>
-                      <p className="text-xs text-text-subtle font-medium">{u.email}</p>
-                    </div>
-
-                    <div className="flex items-center gap-8 text-[11px] uppercase tracking-tighter font-bold">
-                      <div className="flex flex-col items-center">
-                        <span className="text-text text-sm font-mono">{u.leadCount}</span>
-                        <span className="text-text-subtle">Leads</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-text text-sm font-mono">{formatDate(u.createdAt)}</span>
-                        <span className="text-text-subtle">Joined</span>
-                      </div>
-                      <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-lg border", u.onboardingCompleted ? "bg-success/5 border-success/20 text-success" : "bg-warning/5 border-warning/20 text-warning")}>
-                        {u.onboardingCompleted ? <CheckCircle className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                        {u.onboardingCompleted ? "Active" : "Onboarding"}
-                      </div>
+                    >
+                      {ok
+                        ? <CheckCircle className="w-3.5 h-3.5" strokeWidth={2} />
+                        : <XCircle    className="w-3.5 h-3.5" strokeWidth={2} />}
+                      {ok ? "Operational" : "Needs attention"}
                     </div>
                   </div>
                 ))}
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* ── Users table ────────────────────────────────────── */}
+        {tab === "users" && (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="rounded-2xl overflow-hidden border border-border bg-glass backdrop-blur-glass shadow-sm"
+          >
+            <div className="px-5 py-4 flex items-center justify-between border-b border-border bg-interactive-hover">
+              <p className="text-[13.5px] font-semibold text-text">
+                {users.length} users
+              </p>
+              <div className="flex items-center gap-1.5 text-text-muted">
+                <BarChart2 className="w-4 h-4" />
+                <span className="text-[11px]">sorted by creation date</span>
+              </div>
+            </div>
+
+            <div>
+              {users.map((u, i) => (
+                <motion.div
+                  key={u.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 20, delay: i * 0.03 }}
+                  className={cn(
+                    "flex items-center gap-4 px-5 py-4 hover:bg-interactive-hover transition-colors",
+                    i < users.length - 1 && "border-b border-border"
+                  )}
+                >
+                  {u.avatar ? (
+                    <img
+                      src={u.avatar}
+                      alt={u.name}
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-border"
+                    />
+                  ) : (
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-bold border border-primary/20 bg-primary/10 text-primary"
+                    >
+                      {u.name[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-medium truncate text-text">
+                        {u.name}
+                      </p>
+                      {u.isAdmin && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 border border-warning/20 bg-warning/5 text-warning"
+                        >
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] truncate text-text-muted">{u.email}</p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-6 text-[12px] flex-shrink-0 text-text-muted">
+                    <div className="text-center">
+                      <p className="font-semibold text-[13px] text-text">{u.leadCount}</p>
+                      <p>leads</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-[13px] text-text">{formatDate(u.createdAt)}</p>
+                      <p>joined</p>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 font-bold",
+                        u.onboardingCompleted ? "text-success" : "text-warning"
+                      )}
+                    >
+                      {u.onboardingCompleted
+                        ? <CheckCircle className="w-3.5 h-3.5" strokeWidth={2} />
+                        : <XCircle    className="w-3.5 h-3.5" strokeWidth={2} />}
+                      {u.onboardingCompleted ? "Onboarded" : "In progress"}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
       </div>
     </PageShell>
   );
