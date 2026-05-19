@@ -1,53 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { PageShell } from "../components/page-shell";
-import { LeadDetailPanel } from "../components/lead-detail-panel";
-import { useLang } from "../lib/lang-context";
-import { getLeads } from "../lib/api";
-import { useRealtimeData } from "../lib/hooks/use-realtime-data";
-import type { Lead } from "../lib/types";
+import { PageShell } from "@/components/page-shell";
+import { LeadDetailPanel } from "@/components/lead-detail-panel";
+import { useLang } from "@/lib/lang-context";
+import { getLeads } from "@/lib/api";
+import { useRealtimeData } from "@/lib/hooks/use-realtime-data";
+import type { Lead } from "@/lib/types";
 import { Building2, MapPin, Globe, Mail, Award, Search, Trophy, Star, MessageCircle } from "lucide-react";
-
-const GLASS = {
-  background: "var(--glass)",
-  backdropFilter: "blur(20px) saturate(180%)",
-  WebkitBackdropFilter: "blur(20px) saturate(180%)",
-  border: "1px solid var(--glass-border)",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.10)",
-} as const;
-
-const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
-
-// ── Avatar ────────────────────────────────────────────────────────────────────
-const AVATAR_PALETTES: [string, string][] = [
-  ["rgba(59,130,246,0.18)", "#60A5FA"],
-  ["rgba(16,185,129,0.18)", "#34D399"],
-  ["rgba(139,92,246,0.18)", "#C084FC"],
-  ["rgba(245,158,11,0.18)", "#FBBF24"],
-  ["rgba(236,72,153,0.18)", "#F472B6"],
-  ["rgba(14,165,233,0.18)", "#38BDF8"],
-  ["rgba(107,114,128,0.14)", "#9CA3AF"],
-];
-
-function InitialAvatar({ name }: { name: string }) {
-  const initials = name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-  const [bg, fg] = AVATAR_PALETTES[name.charCodeAt(0) % AVATAR_PALETTES.length];
-  return (
-    <div
-      className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-      style={{ background: bg, color: fg, border: `1px solid ${fg}30` }}
-    >
-      {initials || "?"}
-    </div>
-  );
-}
-
-// ── Status config ─────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { accent: string; glow: string }> = {
-  won:       { accent: "#34D399", glow: "rgba(52,211,153,0.3)" },
-  qualified: { accent: "#C084FC", glow: "rgba(192,132,252,0.3)" },
-  responded: { accent: "#FBBF24", glow: "rgba(251,191,36,0.3)"  },
-};
+import { SPRING } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 const STATUS_ICONS: Record<string, typeof Trophy> = {
   won:       Trophy,
@@ -55,10 +16,20 @@ const STATUS_ICONS: Record<string, typeof Trophy> = {
   responded: MessageCircle,
 };
 
+function InitialAvatar({ name }: { name: string }) {
+  const initial = (name ?? "?")[0]?.toUpperCase() ?? "?";
+  return (
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm border border-border bg-interactive-hover text-text-muted"
+    >
+      {initial}
+    </div>
+  );
+}
+
 // ── Client card ───────────────────────────────────────────────────────────────
 function ClientCard({ lead, onClick, index }: { lead: Lead; onClick: () => void; index: number }) {
   const { t }       = useLang();
-  const cfg         = STATUS_CONFIG[lead.status] ?? { accent: "#9CA3AF", glow: "rgba(156,163,175,0.2)" };
   const statusLabel = t.leads.status[lead.status as keyof typeof t.leads.status] ?? lead.status;
 
   return (
@@ -66,52 +37,46 @@ function ClientCard({ lead, onClick, index }: { lead: Lead; onClick: () => void;
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...SPRING, delay: index * 0.04 }}
-      whileHover={{ y: -2, boxShadow: `0 8px 32px ${cfg.glow}, 0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.12)` }}
+      whileHover={{ y: -2 }}
       onClick={onClick}
-      className="rounded-2xl p-5 text-left w-full flex flex-col gap-4"
-      style={GLASS}
+      className="glass-card glass-card-hover rounded-2xl p-5 text-left w-full flex flex-col gap-4 border border-border"
     >
       {/* Header */}
       <div className="flex items-start gap-3">
         <InitialAvatar name={lead.businessName} />
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[13.5px] truncate" style={{ color: "var(--text)" }}>
+          <h3 className="font-semibold text-[13.5px] truncate text-text">
             {lead.businessName}
           </h3>
           {lead.industry && (
-            <p className="text-[12px] mt-0.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[12px] mt-0.5 flex items-center gap-1 text-text-muted">
               <Building2 className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{lead.industry}</span>
             </p>
           )}
         </div>
         <span
-          className="badge text-[10px] flex-shrink-0 font-semibold"
-          style={{
-            background: `${cfg.accent}18`,
-            color: cfg.accent,
-            border: `1px solid ${cfg.accent}30`,
-          }}
+          className="text-[10px] px-2 py-0.5 rounded-full font-bold border border-primary/20 bg-primary/10 text-primary flex-shrink-0"
         >
           {statusLabel}
         </span>
       </div>
 
       {/* Details */}
-      <div className="space-y-1.5">
-        <p className="text-[12px] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+      <div className="space-y-1.5 w-full">
+        <p className="text-[12px] flex items-center gap-1.5 text-text-muted">
           <MapPin className="w-3 h-3 flex-shrink-0" />
           <span className="truncate">{lead.city}{lead.address ? `, ${lead.address}` : ""}</span>
         </p>
         {lead.email && (
-          <p className="text-[12px] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[12px] flex items-center gap-1.5 text-text-muted">
             <Mail className="w-3 h-3 flex-shrink-0" />
             <span className="truncate">{lead.email}</span>
           </p>
         )}
         {lead.website && (
-          <p className="text-[12px] flex items-center gap-1.5" style={{ color: "#60A5FA" }}>
-            <Globe className="w-3 h-3 flex-shrink-0" />
+          <p className="text-[12px] flex items-center gap-1.5 text-primary">
+            <Globe className="w-3 h-3 flex-shrink-0 text-primary" />
             <span className="truncate">{lead.website.replace(/^https?:\/\//, "")}</span>
           </p>
         )}
@@ -119,30 +84,29 @@ function ClientCard({ lead, onClick, index }: { lead: Lead; onClick: () => void;
 
       {/* Footer */}
       <div
-        className="flex items-center justify-between pt-3"
-        style={{ borderTop: "1px solid var(--glass-border)" }}
+        className="flex items-center justify-between pt-3 border-t border-border"
       >
-        <span className="text-[12px] flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
-          <Award className="w-3 h-3" />
+        <span className="text-[12px] flex items-center gap-1.5 text-text-subtle">
+          <Award className="w-3.5 h-3.5" />
           {lead.leadScore != null ? (
             <span
-              className="font-bold text-[13px]"
-              style={{
-                color: lead.leadScore >= 70
-                  ? "#34D399"
+              className={cn(
+                "font-bold text-[13px]",
+                lead.leadScore >= 70
+                  ? "text-success"
                   : lead.leadScore >= 40
-                  ? "#FBBF24"
-                  : "#F87171",
-              }}
+                  ? "text-warning"
+                  : "text-danger"
+              )}
             >
               {lead.leadScore}
             </span>
           ) : (
             <span>—</span>
           )}
-          <span style={{ color: "var(--text-subtle)" }}>/ 100</span>
+          <span className="text-text-subtle">/ 100</span>
         </span>
-        <span className="text-[11px] font-mono" style={{ color: "var(--text-subtle)" }}>
+        <span className="text-[11px] font-mono text-text-subtle">
           {new Date(lead.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
         </span>
       </div>
@@ -151,31 +115,23 @@ function ClientCard({ lead, onClick, index }: { lead: Lead; onClick: () => void;
 }
 
 // ── Summary stat card ─────────────────────────────────────────────────────────
-function StatCard({ label, count, accent, glow, icon: Icon }: {
-  label: string; count: number; accent: string; glow: string; icon: typeof Trophy;
+function StatCard({ label, count, icon: Icon }: {
+  label: string; count: number; icon: typeof Trophy;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={SPRING}
-      className="rounded-2xl p-4 flex flex-col items-center justify-center gap-1"
-      style={{
-        background: `${accent}10`,
-        border: `1px solid ${accent}25`,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: `0 2px 12px ${glow}`,
-      }}
+      className="rounded-2xl p-4 flex flex-col items-center justify-center gap-1 border border-border bg-interactive-hover"
     >
       <div
-        className="w-8 h-8 rounded-xl flex items-center justify-center mb-1"
-        style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}
+        className="w-8 h-8 rounded-full flex items-center justify-center mb-1 border border-border bg-glass"
       >
-        <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={1.5} />
+        <Icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
       </div>
-      <span className="text-[22px] font-bold leading-none" style={{ color: accent }}>{count}</span>
-      <span className="text-[11px] font-medium" style={{ color: accent, opacity: 0.75 }}>{label}</span>
+      <span className="text-[22px] font-bold leading-none text-text">{count}</span>
+      <span className="text-[11px] font-medium text-text-muted">{label}</span>
     </motion.div>
   );
 }
@@ -216,22 +172,16 @@ export default function ClientsPage() {
         <StatCard
           label={t.clients.won}
           count={counts.won}
-          accent="#34D399"
-          glow="rgba(52,211,153,0.2)"
           icon={Trophy}
         />
         <StatCard
           label={t.clients.qualified}
           count={counts.qualified}
-          accent="#C084FC"
-          glow="rgba(192,132,252,0.2)"
           icon={Star}
         />
         <StatCard
           label={t.clients.responded}
           count={counts.responded}
-          accent="#FBBF24"
-          glow="rgba(251,191,36,0.2)"
           icon={MessageCircle}
         />
       </div>
@@ -239,8 +189,7 @@ export default function ClientsPage() {
       {/* ── Search ────────────────────────────────────────────── */}
       <div className="relative mb-6">
         <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-          style={{ color: "var(--text-subtle)" }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle"
         />
         <input
           type="text"
@@ -254,22 +203,17 @@ export default function ClientsPage() {
       {/* ── Grid ──────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
         <div
-          className="flex flex-col items-center justify-center py-24 rounded-2xl"
-          style={{
-            border: "2px dashed var(--glass-border-strong)",
-            background: "var(--glass-raised)",
-          }}
+          className="flex flex-col items-center justify-center py-24 rounded-2xl border-2 border-dashed border-border bg-interactive-hover"
         >
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.20)" }}
+            className="w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-border bg-glass"
           >
-            <Building2 className="w-7 h-7" style={{ color: "#60A5FA", opacity: 0.6 }} strokeWidth={1.5} />
+            <Building2 className="w-7 h-7 text-primary/60" strokeWidth={1.5} />
           </div>
-          <p className="text-[13px] font-medium" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[13px] font-medium text-text-muted">
             {search ? t.clients.noMatch : t.clients.noClients}
           </p>
-          <p className="text-[12px] mt-1" style={{ color: "var(--text-subtle)" }}>
+          <p className="text-[12px] mt-1 text-text-subtle">
             {search ? t.clients.noMatchHint : t.clients.noClientsHint}
           </p>
         </div>
