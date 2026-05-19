@@ -107,8 +107,8 @@ function AuthGuard() {
         {/* Main area — offset by sidebar on desktop */}
         <div className={
           isRtl
-            ? (sidebarCollapsed ? "md:mr-16" : "md:mr-60")
-            : (sidebarCollapsed ? "md:ml-16" : "md:ml-60")
+            ? (sidebarCollapsed ? "md:mr-16" : "md:mr-64")
+            : (sidebarCollapsed ? "md:ml-16" : "md:ml-64")
         } style={{ transition: "margin 0.3s ease" }}>
           <ErrorBoundary key={location}>
             <Suspense fallback={<PageSpinner />}>
