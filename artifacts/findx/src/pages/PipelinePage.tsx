@@ -13,7 +13,7 @@ import { dispatchNotification } from "../lib/hooks/use-notifications";
 import {
   Zap, Activity, RefreshCw, Search, Languages, Hash,
   Play, TrendingUp, Users, CheckCircle2, Star, Filter,
-  GitBranch, Circle, ArrowUpRight, SlidersHorizontal
+  GitBranch, Circle, ArrowUpRight
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -54,24 +54,19 @@ function StatusChip({
 }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.03, y: -1 }}
+      whileHover={{ scale: 1.02, y: -1 }}
       transition={{ duration: 0.15 }}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-default select-none"
-      style={{
-        background: `${color}12`,
-        border: `1px solid ${color}25`,
-      }}
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-interactive-hover cursor-default select-none"
     >
       <span
         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ background: color, boxShadow: `0 0 5px ${color}` }}
+        style={{ background: color }}
       />
-      <span className="text-[12px] font-medium" style={{ color }}>
+      <span className="text-[12px] font-medium text-text">
         {label}
       </span>
       <span
-        className="text-[11px] font-bold tabular-nums px-1.5 py-0 rounded-full"
-        style={{ background: `${color}20`, color }}
+        className="text-[11px] font-bold tabular-nums px-1.5 py-0 rounded-full bg-interactive-hover border border-border text-text-subtle"
       >
         {count}
       </span>
@@ -96,18 +91,17 @@ function SummaryCard({
 }) {
   return (
     <div
-      className="glass-card rounded-2xl p-4 flex items-center gap-3"
+      className="glass-card rounded-2xl p-4 flex items-center gap-3 border border-border"
     >
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-border bg-interactive-hover"
       >
-        <Icon className="w-4 h-4" style={{ color: accent }} strokeWidth={1.8} />
+        <Icon className="w-4 h-4 text-primary" strokeWidth={1.8} />
       </div>
       <div>
-        <p className="text-[11px] font-medium" style={{ color: "var(--text-subtle)" }}>{label}</p>
-        <p className="text-[18px] font-bold leading-tight" style={{ color: "var(--text)" }}>{value}</p>
-        {sub && <p className="text-[10px] mt-0.5" style={{ color: "var(--text-subtle)" }}>{sub}</p>}
+        <p className="text-[11px] font-medium text-text-subtle">{label}</p>
+        <p className="text-[18px] font-bold leading-tight text-text">{value}</p>
+        {sub && <p className="text-[10px] mt-0.5 text-text-subtle">{sub}</p>}
       </div>
     </div>
   );
@@ -134,7 +128,6 @@ export default function PipelinePage() {
     20_000,
   );
   const leads = data?.leads ?? [];
-  const pipelineLoading = isLoading && leads.length === 0;
 
   useEffect(() => {
     return () => { if (pollIntervalRef.current) clearInterval(pollIntervalRef.current); };
@@ -167,7 +160,6 @@ export default function PipelinePage() {
             refresh();
           }
         } catch (err) {
-          // Log transient poll errors — don't toast since this runs every 4s
           console.warn("[pipeline poll] error:", err instanceof Error ? err.message : err);
         }
       }
@@ -209,14 +201,14 @@ export default function PipelinePage() {
     <div className="flex items-center gap-2">
       <button
         onClick={refresh}
-        className="btn btn-ghost px-2.5 py-2"
+        className="btn btn-ghost px-2.5 py-2 rounded-full"
         title={t.pipeline.refresh}
       >
         <RefreshCw className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={() => setShowForm((v) => !v)}
-        className={`btn gap-2 px-4 py-2 text-[12px] font-semibold ${showForm ? "btn-secondary" : "btn-primary"}`}
+        className={`btn gap-2 px-4 py-2 text-[12px] font-semibold rounded-full ${showForm ? "btn-secondary" : "btn-primary"}`}
       >
         <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
         {showForm ? "Close" : t.pipeline.runPipeline}
@@ -251,16 +243,15 @@ export default function PipelinePage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden mb-5"
           >
-            <div className="glass-card rounded-2xl overflow-hidden">
+            <div className="glass-card rounded-2xl overflow-hidden border border-border bg-glass backdrop-blur-glass">
               <div
-                className="flex items-center gap-2.5 px-5 py-3.5"
-                style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+                className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border bg-interactive-hover"
               >
-                <GitBranch className="w-4 h-4" style={{ color: "var(--brand)" }} strokeWidth={2} />
-                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                <GitBranch className="w-4 h-4 text-primary" strokeWidth={2} />
+                <p className="text-[13px] font-semibold text-text">
                   Launch AI Pipeline
                 </p>
-                <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>
+                <p className="text-[11px] text-text-subtle">
                   · Discovery → Analysis → Outreach
                 </p>
               </div>
@@ -268,8 +259,7 @@ export default function PipelinePage() {
               <div className="p-5 flex flex-col gap-3">
                 <div className="relative">
                   <Search
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "var(--text-subtle)" }}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-text-subtle"
                     strokeWidth={1.8}
                   />
                   <input
@@ -285,33 +275,29 @@ export default function PipelinePage() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-interactive-hover"
                   >
-                    <Hash className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-                    <label className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                    <Hash className="w-3.5 h-3.5 flex-shrink-0 text-text-subtle" strokeWidth={1.8} />
+                    <label className="text-[11px] font-medium text-text-muted">
                       Max
                     </label>
                     <select
                       value={maxResults}
                       onChange={(e) => setMaxResults(Number(e.target.value))}
-                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                      style={{ color: "var(--text)" }}
+                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer text-text [&>option]:bg-background"
                     >
                       {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
 
                   <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                    style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-interactive-hover"
                   >
-                    <Languages className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
+                    <Languages className="w-3.5 h-3.5 flex-shrink-0 text-text-subtle" strokeWidth={1.8} />
                     <select
                       value={lang}
                       onChange={(e) => setLang(e.target.value as typeof lang)}
-                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                      style={{ color: "var(--text)" }}
+                      className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer text-text [&>option]:bg-background"
                     >
                       <option value="ar">🇸🇦 Arabic</option>
                       <option value="en">🇬🇧 English</option>
@@ -327,7 +313,7 @@ export default function PipelinePage() {
                   <button
                     onClick={handleRun}
                     disabled={running || !query.trim()}
-                    className="btn btn-primary px-5 py-2 text-[13px] font-semibold gap-2"
+                    className="btn btn-primary px-5 py-2 rounded-full text-[13px] font-semibold gap-2"
                   >
                     {running ? (
                       <><Activity className="w-4 h-4 animate-spin" /> Running…</>
@@ -351,7 +337,7 @@ export default function PipelinePage() {
           animate="visible"
           className="flex flex-wrap items-center gap-2 mb-5"
         >
-          <div className="flex items-center gap-1.5 mr-1" style={{ color: "var(--text-subtle)" }}>
+          <div className="flex items-center gap-1.5 mr-1 text-text-subtle">
             <Filter className="w-3.5 h-3.5" strokeWidth={1.8} />
             <span className="text-[11px] font-medium">Status</span>
           </div>
@@ -376,29 +362,24 @@ export default function PipelinePage() {
       >
         {leads.length === 0 ? (
           <div
-            className="flex flex-col items-center justify-center py-28 rounded-2xl"
-            style={{
-              border: "2px dashed var(--glass-border-strong)",
-              background: "var(--glass-raised)",
-            }}
+            className="flex flex-col items-center justify-center py-28 rounded-2xl border-2 border-dashed border-border bg-interactive-hover"
           >
             <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
+              animate={{ scale: [1, 1.03, 1] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-              style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.20)" }}
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-5 border border-border bg-glass"
             >
-              <GitBranch className="w-8 h-8" style={{ color: "#FBBF24", opacity: 0.7 }} strokeWidth={1.5} />
+              <GitBranch className="w-8 h-8 text-primary/70" strokeWidth={1.5} />
             </motion.div>
-            <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[15px] font-semibold mb-1 text-text-muted">
               {t.pipeline.noLeads}
             </p>
-            <p className="text-[13px] mb-5" style={{ color: "var(--text-subtle)" }}>
+            <p className="text-[13px] mb-5 text-text-subtle">
               {t.pipeline.noLeadsHint}
             </p>
             <button
               onClick={() => setShowForm(true)}
-              className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
+              className="btn btn-primary px-5 py-2.5 rounded-full text-[13px] font-semibold gap-2"
             >
               <Zap className="w-4 h-4" strokeWidth={2.5} />
               Launch Pipeline
