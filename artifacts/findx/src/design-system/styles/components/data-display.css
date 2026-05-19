@@ -34,7 +34,7 @@
 .badge-accent {
   background: var(--findx-accent-subtle);
   color: var(--findx-accent);
-  border-color: rgba(99, 102, 241, 0.20);
+  border-color: var(--findx-border-default);
 }
 
 .badge-success {
