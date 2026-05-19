@@ -10,45 +10,45 @@
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════
-     BRAND — Indigo (Precision accent, Linear-style)
+     BRAND — Royal Cobalt Blue
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-brand-50:  #EEF2FF;
-  --findx-color-brand-100: #E0E7FF;
-  --findx-color-brand-200: #C7D2FE;
-  --findx-color-brand-300: #A5B4FC;
-  --findx-color-brand-400: #818CF8;
-  --findx-color-brand-500: #6366F1;  /* PRIMARY BRAND — Indigo */
-  --findx-color-brand-600: #4F46E5;  /* PRIMARY HOVER */
-  --findx-color-brand-700: #4338CA;
-  --findx-color-brand-800: #3730A3;
-  --findx-color-brand-900: #312E81;
-  --findx-color-brand-950: #1E1B4B;
+  --findx-color-brand-50:  #EFF6FF;
+  --findx-color-brand-100: #DBEAFE;
+  --findx-color-brand-200: #BFDBFE;
+  --findx-color-brand-300: #93C5FD;
+  --findx-color-brand-400: #60A5FA;
+  --findx-color-brand-500: #3B82F6;  /* PRIMARY BRAND — Royal Cobalt Blue */
+  --findx-color-brand-600: #2563EB;  /* PRIMARY HOVER */
+  --findx-color-brand-700: #1D4ED8;
+  --findx-color-brand-800: #1E40AF;
+  --findx-color-brand-900: #1E3A8A;
+  --findx-color-brand-950: #172554;
 
   /* ═══════════════════════════════════════════════════════════════════
-     NEUTRAL — Zinc (cooler than gray, matches Precision Dark)
+     NEUTRAL — Slate (navy-tinted gray)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-neutral-50:  #FAFAFA;
-  --findx-color-neutral-100: #F4F4F5;
-  --findx-color-neutral-200: #E4E4E7;
-  --findx-color-neutral-300: #D4D4D8;
-  --findx-color-neutral-400: #A1A1AA;
-  --findx-color-neutral-500: #71717A;
-  --findx-color-neutral-600: #52525B;
-  --findx-color-neutral-700: #3F3F46;
-  --findx-color-neutral-800: #27272A;
-  --findx-color-neutral-900: #18181B;
-  --findx-color-neutral-950: #09090B;
+  --findx-color-neutral-50:  #F8FAFC;
+  --findx-color-neutral-100: #F1F5F9;
+  --findx-color-neutral-200: #E2E8F0;
+  --findx-color-neutral-300: #CBD5E1;
+  --findx-color-neutral-400: #94A3B8;
+  --findx-color-neutral-500: #64748B;
+  --findx-color-neutral-600: #475569;
+  --findx-color-neutral-700: #334155;
+  --findx-color-neutral-800: #1E293B;
+  --findx-color-neutral-900: #0F172A;
+  --findx-color-neutral-950: #020617;
 
   /* ═══════════════════════════════════════════════════════════════════
      PRECISION DARK SURFACES
-     near-black, not pure black — matches Linear/Vercel aesthetic
+     deep navy slate
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-color-surface-base:    #0C0C0E;  /* Main canvas */
-  --findx-color-surface-card:    #141416;  /* Card background */
-  --findx-color-surface-raised:  #1C1C1F;  /* Elevated elements */
-  --findx-color-surface-overlay: #222226;  /* Modals/popovers */
-  --findx-color-surface-border:  #222226;  /* Subtle separator */
-  --findx-color-surface-border-strong: #2E2E32; /* Visible border */
+  --findx-color-surface-base:    #030712;  /* Main canvas */
+  --findx-color-surface-card:    #0B132B;  /* Card background */
+  --findx-color-surface-raised:  #111827;  /* Elevated elements */
+  --findx-color-surface-overlay: #1E293B;  /* Modals/popovers */
+  --findx-color-surface-border:  #1E293B;  /* Subtle separator */
+  --findx-color-surface-border-strong: #334155; /* Visible border */
 
   /* ═══════════════════════════════════════════════════════════════════
      SEMANTIC COLORS — Feedback states
