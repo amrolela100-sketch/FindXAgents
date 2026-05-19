@@ -17,8 +17,8 @@ export function PipelineFlow({ agents }: { agents: Agent[] }) {
         return (
           <div key={agent.id} className="flex items-center gap-0 flex-shrink-0">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold bg-glass border border-glass-border text-text">
-              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-primary text-white shadow-sm">{i + 1}</span>
-              <Icon className="w-3.5 h-3.5 text-primary" strokeWidth={2.5} />
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-glass-raised border border-glass-border text-text shadow-sm">{i + 1}</span>
+              <Icon className="w-3.5 h-3.5 text-text" strokeWidth={2.5} />
               <span className="capitalize">{agent.name}</span>
             </div>
             {i < agents.length - 1 && <ArrowRight className="w-4 h-4 mx-2 flex-shrink-0 text-text-subtle" />}
@@ -40,26 +40,24 @@ export function AgentCard({ agent, index }: { agent: Agent; index: number }) {
       initial="hidden" 
       animate="visible" 
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="group relative rounded-2xl bg-glass border border-glass-border overflow-hidden flex flex-col shadow-sm transition-all hover:shadow-xl hover:border-primary/30"
+      className="group relative rounded-2xl bg-glass border border-glass-border overflow-hidden flex flex-col shadow-sm transition-all hover:shadow-md"
     >
-      {/* Decorative top border */}
-      <div className="h-1 w-full bg-gradient-to-r from-primary/60 to-transparent" />
       
       <div className="p-6 flex flex-col flex-1">
         <div className="flex items-start justify-between mb-5">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/5 border border-primary/10 shadow-inner group-hover:bg-primary/10 transition-colors">
-            <Icon className="w-6 h-6 text-primary" strokeWidth={2} />
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-glass-raised border border-glass-border shadow-inner group-hover:bg-glass transition-colors">
+            <Icon className="w-6 h-6 text-text" strokeWidth={2} />
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-success/10 border border-success/20">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-glass-raised border border-glass-border">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <span className="text-[10px] font-bold text-success uppercase tracking-wider">Active</span>
+            <span className="text-[10px] font-bold text-text uppercase tracking-wider">Active</span>
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-base tracking-tight text-text">{agent.displayName}</h3>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary border border-primary/20">
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-glass-raised text-text-muted border border-glass-border">
               STEP {agent.pipelineOrder}
             </span>
           </div>
@@ -88,13 +86,13 @@ export function StatPill({ icon: Icon, label, value, colorClass, bgClass, border
   icon: any; label: string; value: string | number; colorClass: string; bgClass: string; borderClass: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-sm", bgClass, borderClass)}>
-      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 shadow-inner", colorClass)}>
+    <div className={cn("flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-sm bg-glass border-glass-border")}>
+      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center bg-glass-raised border border-glass-border", colorClass)}>
         <Icon className="w-5 h-5" strokeWidth={2} />
       </div>
       <div>
         <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{label}</p>
-        <p className={cn("text-lg font-bold leading-none tabular-nums", colorClass)}>{value}</p>
+        <p className={cn("text-lg font-bold leading-none tabular-nums text-text")}>{value}</p>
       </div>
     </div>
   );
