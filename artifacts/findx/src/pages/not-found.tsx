@@ -20,7 +20,7 @@ export default function NotFound() {
         initial="hidden"
         animate="visible"
         custom={0}
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 shadow-glow-brand"
+        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 shadow-sm"
         style={{ background: "var(--primary)" }}
       >
         <RadarIcon className="w-7 h-7 text-white" />
@@ -70,7 +70,7 @@ export default function NotFound() {
       >
         <Link href="/">
           <a
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white shadow-glow-brand transition-all hover:opacity-90"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white shadow-sm transition-all hover:opacity-90"
             style={{ background: "var(--primary)" }}
           >
             <Home className="w-4 h-4" />
