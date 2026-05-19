@@ -35,23 +35,23 @@ const AGENT_META: Record<string, {
 }> = {
   discovery: {
     icon: Search,
-    accent: "#60A5FA",
-    gradient: "linear-gradient(135deg, #60A5FA22, #3B82F608)",
-    bg: "rgba(96,165,250,0.10)",
+    accent: "var(--findx-accent)",
+    gradient: "linear-gradient(135deg, var(--interactive-hover), transparent)",
+    bg: "var(--interactive-hover)",
     description: "Scans the web using Tavily to find real businesses matching your ICP. Filters out directories & aggregators.",
   },
   analysis: {
     icon: BarChart3,
-    accent: "#FBBF24",
-    gradient: "linear-gradient(135deg, #FBBF2422, #F59E0B08)",
-    bg: "rgba(251,191,36,0.10)",
+    accent: "var(--findx-accent)",
+    gradient: "linear-gradient(135deg, var(--interactive-hover), transparent)",
+    bg: "var(--interactive-hover)",
     description: "Visits every lead's website. Extracts emails, SSL, load speed, social links — grounds the AI score in real data.",
   },
   outreach: {
     icon: Mail,
-    accent: "#34D399",
-    gradient: "linear-gradient(135deg, #34D39922, #10B98108)",
-    bg: "rgba(52,211,153,0.10)",
+    accent: "var(--findx-accent)",
+    gradient: "linear-gradient(135deg, var(--interactive-hover), transparent)",
+    bg: "var(--interactive-hover)",
     description: "Writes hyper-personalised cold emails referencing verified facts from the scraped site. No hallucination.",
   },
 };
@@ -62,29 +62,23 @@ function PipelineFlow({ agents }: { agents: Agent[] }) {
   return (
     <div className="flex items-center gap-0 flex-nowrap overflow-x-auto py-1">
       {agents.map((agent, i) => {
-        const meta = AGENT_META[agent.name] ?? { accent: "#C084FC", icon: Bot };
+        const meta = AGENT_META[agent.name] ?? { accent: "var(--findx-accent)", icon: Bot };
         const Icon = meta.icon;
         return (
           <div key={agent.id} className="flex items-center gap-0 flex-shrink-0">
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold"
-              style={{
-                background: `${meta.accent}15`,
-                border: `1px solid ${meta.accent}30`,
-                color: meta.accent,
-              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold border border-border bg-interactive-hover text-text"
             >
               <span
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
-                style={{ background: meta.accent, color: "#000" }}
+                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold bg-primary text-primary-foreground"
               >
                 {i + 1}
               </span>
-              <Icon className="w-3 h-3" strokeWidth={2} />
-              <span className="capitalize">{agent.name}</span>
+              <Icon className="w-3 h-3 text-text-muted" strokeWidth={2} />
+              <span className="capitalize text-text">{agent.name}</span>
             </div>
             {i < agents.length - 1 && (
-              <ArrowRight className="w-3.5 h-3.5 mx-1 flex-shrink-0" style={{ color: "var(--text-subtle)" }} />
+              <ArrowRight className="w-3.5 h-3.5 mx-1 flex-shrink-0 text-text-muted" />
             )}
           </div>
         );
@@ -98,9 +92,9 @@ function PipelineFlow({ agents }: { agents: Agent[] }) {
 function AgentCard({ agent, index }: { agent: Agent; index: number }) {
   const meta = AGENT_META[agent.name] ?? {
     icon: Bot,
-    accent: "#C084FC",
-    gradient: "linear-gradient(135deg, #C084FC22, #A855F708)",
-    bg: "rgba(192,132,252,0.10)",
+    accent: "var(--findx-accent)",
+    gradient: "linear-gradient(135deg, var(--interactive-hover), transparent)",
+    bg: "var(--interactive-hover)",
     description: "AI agent handling pipeline tasks.",
   };
   const Icon = meta.icon;
@@ -112,38 +106,26 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
       initial="hidden"
       animate="visible"
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+      className="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       tabIndex={0}
       role="article"
       aria-label={`${agent.displayName} - Step ${agent.pipelineOrder} of 3`}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.currentTarget.focus(); }}
     >
-      {/* Accent bar */}
-      <div
-        className="h-0.5 w-full"
-        style={{ background: `linear-gradient(90deg, ${meta.accent}, transparent)` }}
-      />
-
       <div className="p-5 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: meta.bg,
-              border: `1px solid ${meta.accent}28`,
-              boxShadow: `0 0 16px ${meta.accent}20`,
-            }}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border border-border bg-interactive-hover"
           >
-            <Icon className="w-5 h-5" strokeWidth={1.8} style={{ color: meta.accent }} aria-hidden="true" />
+            <Icon className="w-5 h-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
           </div>
 
           <div className="flex items-center gap-1.5">
             <span
-              className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ background: "#34D399", boxShadow: "0 0 6px #34D399" }}
+              className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"
             />
-            <span className="text-[10px] font-semibold" style={{ color: "#34D399" }}>
+            <span className="text-[10px] font-semibold text-success">
               Active
             </span>
           </div>
@@ -152,17 +134,16 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
         {/* Title & step */}
         <div className="mb-2">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-[14px] tracking-tight" style={{ color: "var(--text)" }}>
+            <h3 className="font-bold text-[14px] tracking-tight text-text">
               {agent.displayName}
             </h3>
             <span
-              className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-              style={{ background: `${meta.accent}18`, color: meta.accent }}
+              className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-interactive-hover border border-border text-text"
             >
               #{agent.pipelineOrder}
             </span>
           </div>
-          <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[12px] leading-relaxed text-text-muted">
             {meta.description}
           </p>
         </div>
@@ -171,22 +152,16 @@ function AgentCard({ agent, index }: { agent: Agent; index: number }) {
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between mt-4 pt-3 text-[11px]"
-          style={{ borderTop: "1px solid var(--glass-border)" }}
+          className="flex items-center justify-between mt-4 pt-3 text-[11px] border-t border-border"
         >
-          <div className="flex items-center gap-1.5" style={{ color: "var(--text-subtle)" }}>
+          <div className="flex items-center gap-1.5 text-text-subtle">
             <Cpu className="w-3 h-3" strokeWidth={1.5} />
             <span className="font-mono">
               {agent.model?.split("/").pop()?.split(":")[0] ?? "—"}
             </span>
           </div>
           <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-            style={{
-              background: "var(--glass-raised)",
-              color: "var(--text-muted)",
-              border: "1px solid var(--glass-border)",
-            }}
+            className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-interactive-hover text-text-muted border border-border"
           >
             Step {agent.pipelineOrder} of 3
           </span>
@@ -211,16 +186,12 @@ function StatPill({
 }) {
   return (
     <div
-      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
-      style={{
-        background: `${accent}10`,
-        border: `1px solid ${accent}22`,
-      }}
+      className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-border bg-interactive-hover"
     >
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accent }} strokeWidth={1.8} />
+      <Icon className="w-3.5 h-3.5 flex-shrink-0 text-primary" strokeWidth={1.8} />
       <div>
-        <p className="text-[10px] font-medium" style={{ color: `${accent}aa` }}>{label}</p>
-        <p className="text-[13px] font-bold leading-none mt-0.5" style={{ color: accent }}>{value}</p>
+        <p className="text-[10px] font-medium text-text-muted">{label}</p>
+        <p className="text-[13px] font-bold leading-none mt-0.5 text-text">{value}</p>
       </div>
     </div>
   );
@@ -355,41 +326,31 @@ export default function AgentsPage() {
             className="overflow-hidden mb-5"
           >
             <div
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-              style={{
-                background: "rgba(96,165,250,0.08)",
-                border: "1px solid rgba(96,165,250,0.20)",
-                backdropFilter: "blur(12px)",
-              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-md"
             >
               <div className="relative flex-shrink-0">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(96,165,250,0.15)" }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-interactive-hover border border-border"
                 >
-                  <Activity className="w-4 h-4 animate-pulse" style={{ color: "#60A5FA" }} />
+                  <Activity className="w-4 h-4 animate-pulse text-primary" />
                 </div>
                 <span
-                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
+                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background bg-primary shadow-sm"
                   style={{
-                    background: "#60A5FA",
-                    borderColor: "var(--bg)",
-                    boxShadow: "0 0 6px #60A5FA",
                     animation: "pulse 1.5s ease-in-out infinite",
                   }}
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold" style={{ color: "#60A5FA" }}>
+                <p className="text-[13px] font-semibold text-primary">
                   Pipeline running…
                 </p>
-                <p className="text-[11px] truncate font-mono mt-0.5" style={{ color: "#60A5FA", opacity: 0.7 }}>
+                <p className="text-[11px] truncate font-mono mt-0.5 text-primary/80">
                   "{activeRun.query}"
                 </p>
               </div>
               <span
-                className="text-[10px] px-2.5 py-1 rounded-full font-bold animate-pulse"
-                style={{ background: "#60A5FA22", color: "#60A5FA", border: "1px solid #60A5FA44" }}
+                className="text-[10px] px-2.5 py-1 rounded-full font-bold border border-primary/30 bg-primary/10 text-primary"
               >
                 LIVE
               </span>
@@ -424,21 +385,19 @@ export default function AgentsPage() {
       >
         {/* Card header */}
         <div
-          className="flex items-center justify-between px-5 py-3.5"
-          style={{ borderBottom: "1px solid var(--glass-border)", background: "var(--glass-raised)" }}
+          className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-interactive-hover"
         >
           <div className="flex items-center gap-2.5">
             <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)" }}
+              className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center"
             >
-              <Zap className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} strokeWidth={2.5} />
+              <Zap className="w-3.5 h-3.5 text-primary" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+              <p className="text-[13px] font-semibold text-text">
                 {t.agents.runPipeline}
               </p>
-              <p className="text-[11px]" style={{ color: "var(--text-subtle)" }}>
+              <p className="text-[11px] text-text-subtle">
                 Discover → Analyze → Outreach
               </p>
             </div>
@@ -450,8 +409,7 @@ export default function AgentsPage() {
           {/* Search input */}
           <div className="relative">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-              style={{ color: "var(--text-subtle)" }}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-text-subtle"
               strokeWidth={1.8}
             />
             <input
@@ -468,18 +426,16 @@ export default function AgentsPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Max results */}
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-              style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-interactive-hover"
             >
-              <Hash className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-              <label className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+              <Hash className="w-3.5 h-3.5 flex-shrink-0 text-text-subtle" strokeWidth={1.8} />
+              <label className="text-[11px] font-medium text-text-muted">
                 Max results
               </label>
               <select
                 value={maxResults}
                 onChange={(e) => setMaxResults(Number(e.target.value))}
-                className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                style={{ color: "var(--text)" }}
+                className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer text-text [&>option]:bg-background"
               >
                 {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -487,18 +443,16 @@ export default function AgentsPage() {
 
             {/* Language */}
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-              style={{ background: "var(--glass-raised)", border: "1px solid var(--glass-border)" }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-interactive-hover"
             >
-              <Languages className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--text-subtle)" }} strokeWidth={1.8} />
-              <label className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+              <Languages className="w-3.5 h-3.5 flex-shrink-0 text-text-subtle" strokeWidth={1.8} />
+              <label className="text-[11px] font-medium text-text-muted">
                 Email lang
               </label>
               <select
                 value={emailLang}
                 onChange={(e) => setEmailLang(e.target.value as typeof emailLang)}
-                className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer"
-                style={{ color: "var(--text)" }}
+                className="bg-transparent text-[12px] font-semibold outline-none cursor-pointer text-text [&>option]:bg-background"
               >
                 <option value="ar">🇸🇦 Arabic</option>
                 <option value="en">🇬🇧 English</option>
@@ -514,9 +468,9 @@ export default function AgentsPage() {
             <button
               onClick={handleRun}
               disabled={starting || !query.trim()}
-          aria-label={starting ? "Starting pipeline..." : t.agents.runPipeline}
-          aria-busy={starting}
-              className="btn btn-primary px-5 py-2.5 text-[13px] font-semibold gap-2"
+              aria-label={starting ? "Starting pipeline..." : t.agents.runPipeline}
+              aria-busy={starting}
+              className="btn btn-primary px-5 py-2.5 rounded-full text-[13px] font-semibold gap-2"
             >
               {starting ? (
                 <>
@@ -544,19 +498,13 @@ export default function AgentsPage() {
       >
         <div className="flex items-center justify-between mb-4">
           <h2
-            className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
-            style={{ color: "var(--text-subtle)" }}
+            className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 text-text-subtle"
           >
             <Layers className="w-3.5 h-3.5" strokeWidth={2} />
             {t.agents.activeAgents}
           </h2>
           <span
-            className="text-[11px] px-2.5 py-0.5 rounded-full font-medium"
-            style={{
-              background: "var(--glass-raised)",
-              color: "var(--text-subtle)",
-              border: "1px solid var(--glass-border)",
-            }}
+            className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-interactive-hover text-text-subtle border border-border"
             aria-live="polite"
           >
             {agentsLoading ? "…" : `${agents.length} agents`}
@@ -586,30 +534,23 @@ export default function AgentsPage() {
       >
         <button
           onClick={() => setShowHistory((v) => !v)}
-          className="flex items-center justify-between w-full mb-4 group"
+          className="flex items-center justify-between w-full mb-4 group text-start focus:outline-none"
         >
           <h2
-            className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
-            style={{ color: "var(--text-subtle)" }}
+            className="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 text-text-subtle"
           >
             <Clock className="w-3.5 h-3.5" strokeWidth={2} />
             {t.agents.pipelineRuns}
           </h2>
           <div className="flex items-center gap-2">
             <span
-              className="text-[11px] px-2.5 py-0.5 rounded-full font-medium"
-              style={{
-                background: "var(--glass-raised)",
-                color: "var(--text-subtle)",
-                border: "1px solid var(--glass-border)",
-              }}
+              className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-interactive-hover text-text-subtle border border-border"
             >
               {runs.length} total
             </span>
             <ChevronRight
-              className="w-4 h-4 transition-transform"
+              className="w-4 h-4 transition-transform text-text-subtle"
               style={{
-                color: "var(--text-subtle)",
                 transform: showHistory ? "rotate(90deg)" : "rotate(0deg)",
               }}
               strokeWidth={1.8}
@@ -628,22 +569,17 @@ export default function AgentsPage() {
             >
               {runs.length === 0 ? (
                 <div
-                  className="flex flex-col items-center justify-center py-20 rounded-2xl"
-                  style={{
-                    border: "2px dashed var(--glass-border-strong)",
-                    background: "var(--glass-raised)",
-                  }}
+                  className="flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed border-border bg-interactive-hover"
                 >
                   <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                    style={{ background: "rgba(192,132,252,0.08)", border: "1px solid rgba(192,132,252,0.16)" }}
+                    className="w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-border bg-glass"
                   >
-                    <Sparkles className="w-7 h-7" style={{ color: "#C084FC", opacity: 0.5 }} strokeWidth={1.5} />
+                    <Sparkles className="w-7 h-7 text-primary/50" strokeWidth={1.5} />
                   </div>
-                  <p className="text-[14px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-[14px] font-semibold text-text-muted">
                     {t.agents.noRuns}
                   </p>
-                  <p className="text-[12px] mt-1" style={{ color: "var(--text-subtle)" }}>
+                  <p className="text-[12px] mt-1 text-text-subtle">
                     {t.agents.noRunsHint}
                   </p>
                 </div>
