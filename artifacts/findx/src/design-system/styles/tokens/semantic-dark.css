@@ -10,48 +10,48 @@
 
 .dark {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Indigo bright on dark
+     ACCENT — Royal Cobalt Blue bright on dark
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-accent:              #6366F1;
-  --findx-accent-hover:        #4F46E5;
+  --findx-accent:              #3B82F6;
+  --findx-accent-hover:        #2563EB;
   --findx-accent-foreground:   #FFFFFF;
-  --findx-accent-subtle:       rgba(99, 102, 241, 0.12);
-  --findx-accent-muted:        rgba(99, 102, 241, 0.20);
-  --findx-accent-glow:         rgba(99, 102, 241, 0.20);
+  --findx-accent-subtle:       rgba(59, 130, 246, 0.12);
+  --findx-accent-muted:        rgba(59, 130, 246, 0.20);
+  --findx-accent-glow:         rgba(59, 130, 246, 0.20);
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT — High contrast on dark
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-text-primary:   #FAFAFA;
-  --findx-text-secondary: #A1A1AA;
-  --findx-text-muted:     #71717A;
-  --findx-text-subtle:    #52525B;
-  --findx-text-inverted:  #0C0C0E;
+  --findx-text-primary:   #F8FAFC;
+  --findx-text-secondary: #94A3B8;
+  --findx-text-muted:     #64748B;
+  --findx-text-subtle:    #475569;
+  --findx-text-inverted:  #030712;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BACKGROUNDS — near-black precision surfaces
+     BACKGROUNDS — deep navy slate precision surfaces
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-bg-base:     #0C0C0E;
-  --findx-bg-subtle:   #141416;
-  --findx-bg-inset:    #1C1C1F;
-  --findx-bg-elevated: #222226;
+  --findx-bg-base:     #030712;
+  --findx-bg-subtle:   #0B132B;
+  --findx-bg-inset:    #111827;
+  --findx-bg-elevated: #1E293B;
 
   /* ═══════════════════════════════════════════════════════════════════
      SURFACES — Flat dark cards
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-surface-glass:          #141416;
-  --findx-surface-glass-raised:   #1C1C1F;
-  --findx-surface-glass-overlay:  #222226;
-  --findx-surface-border:         #222226;
-  --findx-surface-border-strong:  #2E2E32;
+  --findx-surface-glass:          #0B132B;
+  --findx-surface-glass-raised:   #111827;
+  --findx-surface-glass-overlay:  #1E293B;
+  --findx-surface-border:         #1E293B;
+  --findx-surface-border-strong:  #334155;
   --findx-surface-blur:           blur(0px);
-  --findx-surface-elevated:       #141416;
+  --findx-surface-elevated:       #0B132B;
 
   /* ═══════════════════════════════════════════════════════════════════
      BORDERS — crisp, visible
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-border-default: #222226;
-  --findx-border-strong:  #2E2E32;
+  --findx-border-default: #1E293B;
+  --findx-border-strong:  #334155;
   --findx-border-focus:   #6366F1;
 
   /* ═══════════════════════════════════════════════════════════════════
