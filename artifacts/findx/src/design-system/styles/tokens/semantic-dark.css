@@ -10,14 +10,14 @@
 
 .dark {
   /* ═══════════════════════════════════════════════════════════════════
-     ACCENT — Royal Cobalt Blue bright on dark
+     ACCENT — True White (Minimalist)
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-accent:              #3B82F6;
-  --findx-accent-hover:        #2563EB;
-  --findx-accent-foreground:   #FFFFFF;
-  --findx-accent-subtle:       rgba(59, 130, 246, 0.12);
-  --findx-accent-muted:        rgba(59, 130, 246, 0.20);
-  --findx-accent-glow:         rgba(59, 130, 246, 0.20);
+  --findx-accent:              #FFFFFF;
+  --findx-accent-hover:        #E5E5E5;
+  --findx-accent-foreground:   #000000;
+  --findx-accent-subtle:       rgba(255, 255, 255, 0.05);
+  --findx-accent-muted:        rgba(255, 255, 255, 0.10);
+  --findx-accent-glow:         rgba(255, 255, 255, 0.10);
 
   /* ═══════════════════════════════════════════════════════════════════
      TEXT — High contrast on dark
@@ -29,30 +29,30 @@
   --findx-text-inverted:  #030712;
 
   /* ═══════════════════════════════════════════════════════════════════
-     BACKGROUNDS — deep navy slate precision surfaces
+     BACKGROUNDS — True Black
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-bg-base:     #030712;
-  --findx-bg-subtle:   #0B132B;
-  --findx-bg-inset:    #111827;
-  --findx-bg-elevated: #1E293B;
+  --findx-bg-base:     #000000;
+  --findx-bg-subtle:   #0A0A0A;
+  --findx-bg-inset:    #121212;
+  --findx-bg-elevated: #18181B;
 
   /* ═══════════════════════════════════════════════════════════════════
      SURFACES — Flat dark cards
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-surface-glass:          #0B132B;
-  --findx-surface-glass-raised:   #111827;
-  --findx-surface-glass-overlay:  #1E293B;
-  --findx-surface-border:         #1E293B;
-  --findx-surface-border-strong:  #334155;
+  --findx-surface-glass:          #0A0A0A;
+  --findx-surface-glass-raised:   #121212;
+  --findx-surface-glass-overlay:  #18181B;
+  --findx-surface-border:         #18181B;
+  --findx-surface-border-strong:  #27272A;
   --findx-surface-blur:           blur(0px);
-  --findx-surface-elevated:       #0B132B;
+  --findx-surface-elevated:       #0A0A0A;
 
   /* ═══════════════════════════════════════════════════════════════════
      BORDERS — crisp, visible
   ═══════════════════════════════════════════════════════════════════ */
-  --findx-border-default: #1E293B;
-  --findx-border-strong:  #334155;
-  --findx-border-focus:   #6366F1;
+  --findx-border-default: #27272A;
+  --findx-border-strong:  #3F3F46;
+  --findx-border-focus:   #FFFFFF;
 
   /* ═══════════════════════════════════════════════════════════════════
      INTERACTIVE STATES
@@ -94,7 +94,7 @@
   --brand-hover:     var(--findx-accent-hover);
   --brand-fg:        var(--findx-accent-foreground);
   --brand-subtle:    var(--findx-accent-subtle);
-  --brand-subtle-fg: #A5B4FC;
+  --brand-subtle-fg: #E5E5E5;
   --brand-glow:      var(--findx-accent-glow);
 
   --bg:              var(--findx-bg-base);
