@@ -54,10 +54,10 @@ export default function WorkspacePage() {
         <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="visible" className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(192,132,252,0.12)", border: "1px solid rgba(192,132,252,0.22)" }}>
-                <Layers className="w-4 h-4" style={{ color: "#C084FC" }} strokeWidth={1.8} />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-glass-raised border border-glass-border">
+                <Layers className="w-4 h-4 text-text-muted" strokeWidth={1.8} />
               </div>
-              <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Workspaces</h1>
+              <h1 className="text-[22px] font-bold tracking-tight text-text">Workspaces</h1>
             </div>
             <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Manage multiple prospecting campaigns with their own ICP and region.</p>
           </div>
@@ -69,21 +69,20 @@ export default function WorkspacePage() {
         {/* Active Workspace Banner */}
         <AnimatePresence>
           {activeWorkspace && (
-            <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="visible" className="rounded-2xl overflow-hidden"
-              style={{ background: "linear-gradient(135deg, var(--brand) 0%, #F97316 100%)", boxShadow: "0 8px 32px rgba(245,158,11,0.30)" }}>
+            <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="visible" className="rounded-2xl overflow-hidden bg-glass border border-glass-border shadow-sm">
               <div className="px-5 py-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
-                  <CheckCircle2 className="w-5 h-5 text-white" strokeWidth={2} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground">
+                  <CheckCircle2 className="w-5 h-5" strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-0.5">Active workspace</p>
-                  <p className="font-bold text-white truncate text-[15px]">{activeWorkspace.name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-subtle mb-0.5">Active workspace</p>
+                  <p className="font-bold text-text truncate text-[15px]">{activeWorkspace.name}</p>
                   {(activeWorkspace.targetIndustry || activeWorkspace.targetCity) && (
-                    <p className="text-[11px] text-white/70 mt-0.5">{activeWorkspace.targetIndustry}{activeWorkspace.targetIndustry && activeWorkspace.targetCity ? " · " : ""}{activeWorkspace.targetCity}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5">{activeWorkspace.targetIndustry}{activeWorkspace.targetIndustry && activeWorkspace.targetCity ? " · " : ""}{activeWorkspace.targetCity}</p>
                   )}
                 </div>
-                <div className="text-[11px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5" style={{ background: "rgba(255,255,255,0.20)", color: "#fff" }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Running
+                <div className="text-[11px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 bg-glass-raised border border-glass-border text-text">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Running
                 </div>
               </div>
             </motion.div>
@@ -94,8 +93,7 @@ export default function WorkspacePage() {
         <AnimatePresence>
           {error && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px]"
-              style={{ background: "rgba(248,113,113,0.10)", border: "1px solid rgba(248,113,113,0.25)", color: "#F87171" }}>
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] bg-glass-raised border border-glass-border-strong text-danger">
               <AlertCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
               <span className="flex-1">{error}</span>
               <button onClick={() => setError(null)} className="opacity-70 hover:opacity-100"><X className="w-4 h-4" strokeWidth={1.8} /></button>
@@ -130,8 +128,8 @@ export default function WorkspacePage() {
         ) : workspaces.length === 0 ? (
           <motion.div custom={2} variants={FADE_UP} initial="hidden" animate="visible"
             className="flex flex-col items-center justify-center py-24 rounded-2xl" style={{ border: "2px dashed var(--glass-border-strong)", background: "var(--glass-raised)" }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(192,132,252,0.10)", border: "1px solid rgba(192,132,252,0.20)" }}>
-              <FolderOpen className="w-7 h-7" style={{ color: "#C084FC", opacity: 0.6 }} strokeWidth={1.5} />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-glass-raised border border-glass-border">
+              <FolderOpen className="w-7 h-7 text-text-muted opacity-60" strokeWidth={1.5} />
             </div>
             <p className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>No workspaces yet</p>
             <p className="text-[13px] mb-5" style={{ color: "var(--text-subtle)" }}>Create your first workspace to start prospecting</p>
