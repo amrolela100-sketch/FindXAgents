@@ -50,15 +50,15 @@ function NavLink({
       <a 
         onClick={onClick} 
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 group",
+          "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 group border",
           active 
-            ? "bg-glass-raised text-text border border-glass-border-strong shadow-sm" 
-            : "text-text-muted hover:bg-glass-raised hover:text-text border border-transparent"
+            ? "bg-primary text-primary-foreground border-transparent shadow-sm" 
+            : "text-text-muted hover:bg-interactive-hover hover:text-text border-transparent"
         )}
       >
-        <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform", active ? "scale-110" : "group-hover:scale-110")} />
+        <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform duration-300", active ? "scale-105" : "group-hover:scale-105")} />
         <span className="flex-1">{label}</span>
-        {active && <ChevronRight className="w-3 h-3 opacity-60 rtl:rotate-180" />}
+        {active && <ChevronRight className="w-3.5 h-3.5 opacity-80 rtl:rotate-180" />}
       </a>
     </Link>
   );
@@ -83,13 +83,13 @@ function NavLinkIcon({
         onClick={onClick}
         title={label}
         className={cn(
-          "flex items-center justify-center h-10 w-10 mx-auto rounded-xl transition-all duration-200 border",
+          "flex items-center justify-center h-10 w-10 mx-auto rounded-full transition-all duration-300 border",
           active 
-            ? "bg-glass-raised text-text border-glass-border-strong shadow-sm" 
-            : "text-text-muted hover:bg-glass-raised hover:text-text border-transparent"
+            ? "bg-primary text-primary-foreground border-transparent shadow-sm" 
+            : "text-text-muted hover:bg-interactive-hover hover:text-text border-transparent"
         )}
       >
-        <Icon className={cn("w-4 h-4 flex-shrink-0", active && "scale-110")} />
+        <Icon className={cn("w-4 h-4 flex-shrink-0 transition-transform duration-300", active && "scale-105")} />
       </a>
     </Link>
   );
@@ -114,12 +114,12 @@ function SidebarContent({
   const initial = (authUser?.email ?? "U")[0].toUpperCase();
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-glass backdrop-blur-glass border-x border-glass-border shadow-2xl">
+    <div className="flex flex-col h-full overflow-hidden bg-glass backdrop-blur-glass border-x border-border shadow-2xl">
       {/* Logo */}
       <div className={cn("py-6 mb-2", collapsed ? "flex justify-center" : "px-5")}>
         <Link href="/">
           <a onClick={onClose} className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105 border border-glass-border">
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105 border border-border">
               <RadarIcon className="w-5 h-5 text-primary-foreground" />
             </div>
             {!collapsed && (
@@ -127,7 +127,7 @@ function SidebarContent({
                 <span className="text-lg font-bold tracking-tight text-text leading-none">
                   FindX
                 </span>
-                <span className="text-[10px] font-medium text-primary uppercase tracking-widest mt-0.5">
+                <span className="text-[10px] font-medium text-text-muted uppercase tracking-widest mt-0.5">
                   Intelligence
                 </span>
               </div>
@@ -140,10 +140,10 @@ function SidebarContent({
       <div className={cn("px-3 mb-6", collapsed ? "flex justify-center" : "px-4")}>
         <Link href="/pricing">
           <a className={cn(
-            "relative overflow-hidden group transition-all duration-300",
+            "relative overflow-hidden group transition-all duration-300 border border-transparent",
             collapsed 
-              ? "h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm"
-              : "w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm flex items-center justify-center gap-2"
+              ? "h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm"
+              : "w-full py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm flex items-center justify-center gap-2"
           )}>
             <span className="relative z-10">{collapsed ? "✦" : `✦ ${t.nav.upgrade}`}</span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -176,7 +176,7 @@ function SidebarContent({
         )}
 
         {isAdmin && (
-          <div className="pt-4 mt-4 border-t border-glass-border">
+          <div className="pt-4 mt-4 border-t border-border">
              {collapsed ? (
                 <NavLinkIcon href="/admin" icon={ShieldCheck} label={t.nav.admin} active={isActive("/admin")} onClick={onClose} />
              ) : (
@@ -187,12 +187,12 @@ function SidebarContent({
       </nav>
 
       {/* Footer / User Profile */}
-      <div className={cn("mt-auto py-4 border-t border-glass-border bg-glass-raised/30", collapsed ? "px-2" : "px-3")}>
+      <div className={cn("mt-auto py-4 border-t border-border bg-interactive-hover", collapsed ? "px-2" : "px-3")}>
         <div className="space-y-1 mb-4">
             <Link href="/help">
               <a className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-text-muted hover:bg-glass-raised hover:text-text transition-all border border-transparent",
-                isActive("/help") && "bg-glass-raised text-text border-glass-border-strong shadow-sm",
+                "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium text-text-muted hover:bg-interactive-hover hover:text-text transition-all border border-transparent",
+                isActive("/help") && "bg-interactive-hover text-text border-border shadow-sm",
                 collapsed && "justify-center !px-0"
               )}>
                 <HelpCircle className="w-4 h-4" />
@@ -202,7 +202,7 @@ function SidebarContent({
             <button 
                 onClick={() => authLogout()} 
                 className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-text-muted hover:bg-danger/10 hover:text-danger transition-all w-full",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-medium text-text-muted hover:bg-danger/10 hover:text-danger transition-all w-full border border-transparent",
                     collapsed && "justify-center !px-0"
                 )}
             >
@@ -213,10 +213,10 @@ function SidebarContent({
 
         {authUser && (
           <div className={cn(
-            "flex items-center gap-3 p-2 rounded-2xl bg-glass-raised border border-glass-border",
+            "flex items-center gap-3 p-2 rounded-full bg-interactive-hover border border-border",
             collapsed && "justify-center p-1.5"
           )}>
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm flex-shrink-0">
               {initial}
             </div>
             {!collapsed && (
