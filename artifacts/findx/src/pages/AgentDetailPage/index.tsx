@@ -59,7 +59,7 @@ function StatCard({ label, value, icon: Icon, accent }: {
       </div>
       <div>
         <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</div>
-        <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{value}</div>
+        <div className="text-lg font-bold" style={{ color: "var(--text-text)" }}>{value}</div>
       </div>
     </div>
   );
@@ -116,14 +116,14 @@ function EditForm({ agent, onSaved }: { agent: Agent; onSaved: (a: Agent) => voi
           value={String(form[key])}
           onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
           className="font-mono text-xs resize-y"
-          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-text)" }}
         />
       ) : (
         <Input
           type={type === "number" ? "number" : "text"}
           value={String(form[key])}
           onChange={(e) => setForm(f => ({ ...f, [key]: type === "number" ? Number(e.target.value) : e.target.value }))}
-          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          style={{ background: "var(--surface-1)", borderColor: "var(--border)", color: "var(--text-text)" }}
         />
       )}
     </div>
@@ -135,7 +135,7 @@ function EditForm({ agent, onSaved }: { agent: Agent; onSaved: (a: Agent) => voi
       <div className="flex items-center justify-between p-4 rounded-xl border"
         style={{ background: "var(--surface-1)", borderColor: "var(--border)" }}>
         <div>
-          <div className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>Active</div>
+          <div className="font-medium text-sm" style={{ color: "var(--text-text)" }}>Active</div>
           <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
             Inactive agents are skipped by the pipeline runner
           </div>
@@ -284,7 +284,7 @@ export default function AgentDetailPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+                <h1 className="text-xl font-bold" style={{ color: "var(--text-text)" }}>
                   {agent.displayName}
                 </h1>
                 <Badge
@@ -372,7 +372,7 @@ export default function AgentDetailPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
+                        <span className="font-medium text-sm" style={{ color: "var(--text-text)" }}>
                           {skill.name}
                         </span>
                         {!skill.isActive && (
