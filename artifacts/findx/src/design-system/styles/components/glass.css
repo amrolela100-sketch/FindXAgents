@@ -36,8 +36,8 @@
 /* ─── Active accent highlight ───────────────────────────────────────────────── */
 .glass-card-accent:hover,
 .precision-card-accent:hover {
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow:   0 0 0 1px rgba(99, 102, 241, 0.12), var(--findx-shadow-md);
+  border-color: var(--findx-border-strong);
+  box-shadow:   0 0 0 1px var(--findx-border-strong), var(--findx-shadow-md);
 }
 
 /* ─── Raised card — one step up in hierarchy ────────────────────────────────── */
@@ -109,7 +109,7 @@
   border-radius: var(--findx-radius-full);
   background: var(--findx-accent-subtle);
   color: var(--findx-accent);
-  border: 1px solid rgba(99, 102, 241, 0.20);
+  border: 1px solid var(--findx-border-default);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -142,13 +142,14 @@
   align-items: center;
   justify-content: center;
   background: var(--findx-accent);
+  color: var(--findx-accent-foreground);
   border-radius: var(--findx-radius-md);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.30);
+  box-shadow: 0 0 0 1px var(--findx-border-default);
   transition: box-shadow var(--findx-transition-base);
 }
 
 .brand-icon:hover {
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.50), 0 4px 16px rgba(99, 102, 241, 0.20);
+  box-shadow: 0 0 0 1px var(--findx-border-strong), 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -205,5 +206,5 @@
 .precision-badge-accent {
   background:   var(--findx-accent-subtle);
   color:        var(--findx-accent);
-  border-color: rgba(99, 102, 241, 0.20);
+  border-color: var(--findx-border-default);
 }
