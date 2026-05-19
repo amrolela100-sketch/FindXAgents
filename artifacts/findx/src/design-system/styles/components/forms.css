@@ -1,33 +1,29 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Form Components — Precision Dark Edition
+   FINDX DESIGN SYSTEM — Form Components — Modern Edition
    
-   Buttons, inputs, selects — flat precision style.
-   Single accent (Indigo). No gradients. No glass blur.
+   Buttons, inputs, selects — fully semantic and modern.
+   Pill-shaped buttons, beautifully rounded inputs, variable-driven themes.
    
-   @version 3.0.0 — Precision Dark
+   @version 4.0.0 — Modern System
    @layer components
-═══════════════════════════════════════════════════════════════════════════════ */
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    BUTTON BASE
-═══════════════════════════════════════════════════════════════════════════════ */
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--findx-radius-md);
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.4;
-  transition:
-    background var(--findx-transition-fast),
-    border-color var(--findx-transition-fast),
-    box-shadow var(--findx-transition-fast),
-    color var(--findx-transition-fast);
+  transition: all var(--findx-transition-normal);
   cursor: pointer;
   border: 1px solid transparent;
   white-space: nowrap;
@@ -46,37 +42,37 @@
   outline-offset: 2px;
 }
 
-/* ─── Primary — Indigo fill ──────────────────────────────────────────────────── */
+/* ─── Primary — Accent fill ──────────────────────────────────────────────────── */
 .btn-primary {
   background: var(--findx-accent);
   color: var(--findx-accent-foreground);
   border-color: transparent;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--findx-accent-hover);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  opacity: 0.95;
 }
 
 .btn-primary:active:not(:disabled) {
-  background: #4338CA;
-  box-shadow: none;
+  opacity: 0.9;
 }
 
 /* ─── Secondary — surface + border ──────────────────────────────────────────── */
 .btn-secondary {
-  background: var(--findx-bg-inset);
+  background: var(--findx-bg-subtle);
   color: var(--findx-text-primary);
-  border-color: var(--findx-border-strong);
+  border-color: var(--findx-border-default);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--findx-bg-elevated);
-  border-color: var(--findx-text-muted);
+  background: var(--findx-interactive-hover);
+  border-color: var(--findx-border-strong);
 }
 
-/* ─── Ghost — transparent, border only ──────────────────────────────────────── */
+/* ─── Ghost — transparent, hover background ──────────────────────────────────── */
 .btn-ghost {
   background: transparent;
   color: var(--findx-text-secondary);
@@ -91,37 +87,23 @@
 /* ─── Danger ─────────────────────────────────────────────────────────────────── */
 .btn-danger {
   background: var(--findx-feedback-danger);
-  color: #FFFFFF;
+  color: var(--findx-text-inverted);
   border-color: transparent;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #E11D48;
+  opacity: 0.9;
 }
 
 /* ─── Sizes ──────────────────────────────────────────────────────────────────── */
-.btn-xs { padding: 3px 8px;   font-size: 11px; border-radius: var(--findx-radius-sm); }
-.btn-sm { padding: 5px 10px;  font-size: 12px; }
-.btn-lg { padding: 9px 18px;  font-size: 14px; }
-.btn-xl { padding: 11px 22px; font-size: 15px; }
-
-/* ─── Light mode overrides ───────────────────────────────────────────────────── */
-.light .btn-secondary,
-[data-theme="light"] .btn-secondary {
-  background: #FFFFFF;
-  color: #09090B;
-  border-color: #D4D4D8;
-}
-
-.light .btn-secondary:hover:not(:disabled),
-[data-theme="light"] .btn-secondary:hover:not(:disabled) {
-  background: #F4F4F5;
-  border-color: #A1A1AA;
-}
+.btn-xs { padding: 4px 10px;  font-size: 11px; }
+.btn-sm { padding: 6px 14px;  font-size: 12px; }
+.btn-lg { padding: 10px 22px; font-size: 14px; }
+.btn-xl { padding: 12px 26px; font-size: 15px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   INPUT / TEXTAREA — Precision Dark
-═══════════════════════════════════════════════════════════════════════════════ */
+   INPUT / TEXTAREA — Modern System
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 .input,
 input[type="text"],
@@ -133,24 +115,22 @@ input[type="number"],
 textarea,
 select {
   background: var(--findx-bg-subtle);
-  border: 1px solid var(--findx-border-strong);
-  border-radius: var(--findx-radius-md);
+  border: 1px solid var(--findx-border-default);
+  border-radius: var(--radius-md);
   color: var(--findx-text-primary);
   font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.5;
-  padding: 7px 11px;
+  padding: 8px 14px;
   outline: none;
   width: 100%;
-  transition:
-    border-color var(--findx-transition-fast),
-    box-shadow var(--findx-transition-fast);
+  transition: all var(--findx-transition-fast);
 }
 
 .input::placeholder,
 input::placeholder,
 textarea::placeholder {
-  color: var(--findx-text-subtle);
+  color: var(--findx-text-muted);
 }
 
 .input:focus,
@@ -162,8 +142,8 @@ input[type="url"]:focus,
 input[type="number"]:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--findx-accent);
-  box-shadow: 0 0 0 3px var(--findx-accent-subtle);
+  border-color: var(--findx-border-strong);
+  box-shadow: 0 0 0 2px var(--findx-accent-glow);
 }
 
 .input:disabled,
@@ -175,29 +155,9 @@ select:disabled {
   background: var(--findx-bg-inset);
 }
 
-/* Light mode inputs */
-.light .input,
-.light input[type="text"],
-.light input[type="email"],
-.light input[type="password"],
-.light input[type="search"],
-.light textarea,
-.light select,
-[data-theme="light"] .input,
-[data-theme="light"] input[type="text"],
-[data-theme="light"] input[type="email"],
-[data-theme="light"] input[type="password"],
-[data-theme="light"] input[type="search"],
-[data-theme="light"] textarea,
-[data-theme="light"] select {
-  background: #FFFFFF;
-  border-color: #D4D4D8;
-  color: #09090B;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════════
    FORM LABEL
-═══════════════════════════════════════════════════════════════════════════════ */
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 .form-label {
   font-size: 12px;
@@ -222,7 +182,7 @@ select:disabled {
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SEARCH INPUT — with icon
-═══════════════════════════════════════════════════════════════════════════════ */
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 .search-input-wrap {
   position: relative;
@@ -230,7 +190,7 @@ select:disabled {
 
 .search-input-wrap .search-icon {
   position: absolute;
-  left: 10px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--findx-text-muted);
@@ -240,5 +200,15 @@ select:disabled {
 }
 
 .search-input-wrap input {
-  padding-left: 32px;
+  padding-left: 36px;
+}
+
+[dir="rtl"] .search-input-wrap .search-icon {
+  left: auto;
+  right: 12px;
+}
+
+[dir="rtl"] .search-input-wrap input {
+  padding-left: 14px;
+  padding-right: 36px;
 }
