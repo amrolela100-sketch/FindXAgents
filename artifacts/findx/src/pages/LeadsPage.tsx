@@ -71,10 +71,9 @@ function ImportPreviewModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={SPRING}
-        className="w-full max-w-2xl rounded-2xl border border-glass-border shadow-2xl overflow-hidden"
-        style={{ background: "var(--surface)" }}
+        className="w-full max-w-2xl rounded-2xl border border-border bg-glass backdrop-blur-glass shadow-2xl overflow-hidden"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-glass-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="font-bold text-text">Import Preview</h2>
           <button onClick={onCancel} className="text-text-muted hover:text-text">
             <X className="w-4 h-4" />
@@ -82,15 +81,15 @@ function ImportPreviewModal({
         </div>
 
         <div className="px-6 py-4">
-          <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>
+          <p className="text-sm mb-3 text-text-muted">
             First {preview.length} rows of your CSV:
           </p>
-          <div className="overflow-x-auto rounded-xl border border-glass-border">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-xs">
               <thead>
-                <tr style={{ background: "var(--surface-elevated)" }}>
+                <tr className="bg-interactive-hover">
                   {headers.map((h, i) => (
-                    <th key={i} className="px-3 py-2 text-left font-semibold text-text border-b border-glass-border">
+                    <th key={i} className="px-3 py-2 text-left font-semibold text-text border-b border-border">
                       {h}
                     </th>
                   ))}
@@ -98,7 +97,7 @@ function ImportPreviewModal({
               </thead>
               <tbody>
                 {preview.map((row, ri) => (
-                  <tr key={ri} className="border-b border-glass-border last:border-0">
+                  <tr key={ri} className="border-b border-border last:border-0">
                     {row.map((cell, ci) => (
                       <td key={ci} className="px-3 py-2 text-text-muted truncate max-w-[150px]">
                         {cell}
@@ -109,12 +108,12 @@ function ImportPreviewModal({
               </tbody>
             </table>
           </div>
-          <p className="text-xs mt-3" style={{ color: "var(--text-subtle)" }}>
+          <p className="text-xs mt-3 text-text-subtle">
             {rows.length - 1} total rows detected.
           </p>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-glass-border">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={importing}>
             Cancel
           </Button>
@@ -154,16 +153,15 @@ function DeleteConfirmModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={SPRING}
-        className="w-full max-w-sm rounded-2xl border border-glass-border shadow-2xl p-6"
-        style={{ background: "var(--surface)" }}
+        className="w-full max-w-sm rounded-2xl border border-border bg-glass backdrop-blur-glass shadow-2xl p-6"
       >
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-danger/10">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-danger/5 border border-danger/20">
             <AlertTriangle className="w-5 h-5 text-danger" />
           </div>
           <h2 className="font-bold text-text">Delete {count} lead{count !== 1 ? "s" : ""}?</h2>
         </div>
-        <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm mb-6 text-text-muted">
           This will permanently delete {count} lead{count !== 1 ? "s" : ""} and all their analysis and outreach data. This action cannot be undone.
         </p>
         <div className="flex gap-3">
@@ -172,7 +170,7 @@ function DeleteConfirmModal({
           </Button>
           <Button
             size="sm"
-            className="flex-1 gap-2 bg-danger text-white hover:bg-danger/90 font-bold"
+            className="flex-1 gap-2 bg-danger text-danger-foreground hover:bg-danger/90 font-bold"
             onClick={onConfirm}
             disabled={deleting}
           >
@@ -224,17 +222,16 @@ function BulkActionBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={SPRING}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl border border-glass-border shadow-2xl backdrop-blur-glass"
-      style={{ background: "var(--surface-elevated)" }}
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-3 rounded-full border border-border bg-glass backdrop-blur-glass shadow-2xl"
     >
       {/* Count */}
       <span className="text-sm font-bold text-text px-2">
         {count} selected
       </span>
-      <div className="w-px h-5 bg-glass-border" />
+      <div className="w-px h-5 bg-border" />
 
       {/* Analyze */}
-      <Button size="sm" variant="outline" onClick={onAnalyze} className="gap-1.5 h-8 text-xs">
+      <Button size="sm" variant="outline" onClick={onAnalyze} className="gap-1.5 h-8 text-xs rounded-full">
         <BarChart2 className="w-3.5 h-3.5" />
         Analyze
       </Button>
@@ -244,7 +241,7 @@ function BulkActionBar({
         <Button
           size="sm" variant="outline"
           onClick={() => setStageOpen(v => !v)}
-          className="gap-1.5 h-8 text-xs"
+          className="gap-1.5 h-8 text-xs rounded-full"
         >
           <MoveHorizontal className="w-3.5 h-3.5" />
           Move to
@@ -256,14 +253,13 @@ function BulkActionBar({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
-              className="absolute bottom-full mb-2 left-0 w-40 rounded-xl border border-glass-border shadow-xl overflow-hidden z-10"
-              style={{ background: "var(--surface)" }}
+              className="absolute bottom-full mb-2 left-0 w-40 rounded-xl border border-border bg-glass backdrop-blur-glass shadow-xl overflow-hidden z-10"
             >
               {STAGES.map(s => (
                 <button
                   key={s.key}
                   onClick={() => { onMoveStage(s.key); setStageOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-glass-raised text-text-muted hover:text-text transition-colors"
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-interactive-hover text-text-muted hover:text-text transition-colors"
                 >
                   {s.label}
                 </button>
@@ -274,7 +270,7 @@ function BulkActionBar({
       </div>
 
       {/* Export selected */}
-      <Button size="sm" variant="outline" onClick={onExportSelected} className="gap-1.5 h-8 text-xs">
+      <Button size="sm" variant="outline" onClick={onExportSelected} className="gap-1.5 h-8 text-xs rounded-full">
         <Download className="w-3.5 h-3.5" />
         Export
       </Button>
@@ -283,13 +279,13 @@ function BulkActionBar({
       <Button
         size="sm" variant="outline"
         onClick={onDelete}
-        className="gap-1.5 h-8 text-xs text-danger border-danger/30 hover:bg-danger/10 hover:border-danger/60"
+        className="gap-1.5 h-8 text-xs text-danger border-danger/30 hover:bg-danger/10 hover:border-danger/60 rounded-full"
       >
         <Trash2 className="w-3.5 h-3.5" />
         Delete
       </Button>
 
-      <div className="w-px h-5 bg-glass-border" />
+      <div className="w-px h-5 bg-border" />
 
       {/* Clear */}
       <button onClick={onClear} className="text-text-muted hover:text-text transition-colors p-1">
@@ -545,12 +541,12 @@ export default function LeadsPage() {
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
       {/* View toggle */}
-      <div className="flex items-center rounded-xl p-1 bg-glass-raised border border-glass-border backdrop-blur-md">
+      <div className="flex items-center rounded-full p-1 bg-interactive-hover border border-border backdrop-blur-md">
         <Button
           variant={view === "list" ? "default" : "ghost"}
           size="sm"
           onClick={() => setView("list")}
-          className={cn("gap-1.5 h-8", view !== "list" && "text-text-muted hover:text-text")}
+          className={cn("gap-1.5 h-8 rounded-full", view !== "list" && "text-text-muted hover:text-text")}
         >
           <LayoutList className="w-3.5 h-3.5" />
           {t.leads.list}
@@ -559,21 +555,21 @@ export default function LeadsPage() {
           variant={view === "kanban" ? "default" : "ghost"}
           size="sm"
           onClick={() => setView("kanban")}
-          className={cn("gap-1.5 h-8", view !== "kanban" && "text-text-muted hover:text-text")}
+          className={cn("gap-1.5 h-8 rounded-full", view !== "kanban" && "text-text-muted hover:text-text")}
         >
           <LayoutGrid className="w-3.5 h-3.5" />
           {t.leads.kanban}
         </Button>
       </div>
 
-      <div className="h-6 w-px bg-glass-border mx-1 hidden sm:block" />
+      <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
 
       <Button
         variant="default"
         size="sm"
         onClick={handleDiscover}
         disabled={discovering}
-        className="gap-1.5 h-9 font-bold shadow-sm"
+        className="gap-1.5 h-9 font-bold shadow-sm rounded-full"
       >
         {discovering
           ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -583,7 +579,7 @@ export default function LeadsPage() {
 
       {/* Import */}
       <label className="flex items-center">
-        <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 font-bold cursor-pointer">
+        <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 font-bold cursor-pointer rounded-full">
           <span>
             <Upload className="w-3.5 h-3.5" />
             {t.leads.importCsv}
@@ -593,7 +589,7 @@ export default function LeadsPage() {
       </label>
 
       {/* Export all */}
-      <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5 h-9 font-bold">
+      <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5 h-9 font-bold rounded-full">
         <Download className="w-3.5 h-3.5" />
         {t.leads.export}
       </Button>
@@ -633,7 +629,7 @@ export default function LeadsPage() {
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="Search leads…"
-            className="w-full pl-8 pr-8 py-2 text-sm rounded-xl border border-glass-border bg-glass-raised text-text placeholder:text-text-subtle focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+            className="input pl-8 pr-8 text-sm"
           />
           {searchQ && (
             <button
@@ -652,10 +648,10 @@ export default function LeadsPage() {
               key={item.key}
               onClick={() => setStatusFilter(item.key)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                 statusFilter === item.key
-                  ? "text-primary-foreground shadow-sm bg-primary"
-                  : "text-text-muted hover:text-text border border-glass-border bg-glass-raised",
+                  ? "text-primary-foreground border-primary bg-primary shadow-sm"
+                  : "text-text-muted hover:text-text border-border bg-interactive-hover",
               )}
             >
               {item.label}
@@ -669,7 +665,7 @@ export default function LeadsPage() {
             variant="outline"
             size="sm"
             onClick={() => setSortOpen(v => !v)}
-            className="gap-1.5 h-8 text-xs"
+            className="gap-1.5 h-8 text-xs rounded-full"
           >
             <ArrowUpDown className="w-3.5 h-3.5" />
             {SORT_LABELS[sortBy]}
@@ -681,8 +677,7 @@ export default function LeadsPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
-                className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-glass-border shadow-xl overflow-hidden z-20"
-                style={{ background: "var(--surface)" }}
+                className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-border bg-glass backdrop-blur-glass shadow-xl overflow-hidden z-20"
               >
                 {(Object.entries(SORT_LABELS) as [SortBy, string][]).map(([key, label]) => (
                   <button
@@ -692,7 +687,7 @@ export default function LeadsPage() {
                       "w-full text-left px-3 py-2.5 text-xs transition-colors",
                       sortBy === key
                         ? "font-bold text-primary bg-primary/5"
-                        : "text-text-muted hover:bg-glass-raised hover:text-text"
+                        : "text-text-muted hover:bg-interactive-hover hover:text-text"
                     )}
                   >
                     {label}
@@ -725,7 +720,7 @@ export default function LeadsPage() {
             {allSelected ? "Deselect all" : `Select all (${filteredLeads.length})`}
           </button>
           {selectedIds.size > 0 && (
-            <span className="text-xs font-medium" style={{ color: "var(--primary)" }}>
+            <span className="text-xs font-medium text-primary">
               {selectedIds.size} selected
             </span>
           )}
@@ -743,7 +738,7 @@ export default function LeadsPage() {
             transition={{ duration: 0.2 }}
           >
             {view === "list" ? (
-              <div className="rounded-2xl border border-glass-border bg-glass overflow-hidden shadow-sm">
+              <div className="rounded-2xl border border-border bg-glass overflow-hidden shadow-sm">
                 <LeadList
                   leads={filteredLeads}
                   selectedIds={selectedIds}
