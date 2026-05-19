@@ -1,18 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FINDX DESIGN SYSTEM — Tailwind v4 Theme Bridge — Precision Dark Edition
+   FINDX DESIGN SYSTEM — Tailwind v4 Theme Bridge — Modern Edition
    
    Maps design tokens to Tailwind's @theme so utilities like
-   bg-primary, text-muted, border-border etc. work with Precision Dark tokens.
+   bg-primary, text-muted, border-border etc. work with modern tokens.
    
-   @version 3.0.0 — Inter font + Precision Dark color system
+   @version 4.0.0 — Outfit + Cairo font system
    @layer tokens
-═══════════════════════════════════════════════════════════════════════════════ */
+ ═══════════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  /* ─── TYPOGRAPHY — Inter (precision, data-dense) ─────────────────────────── */
-  --font-sans:   "Inter", "Noto Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* ─── TYPOGRAPHY — Outfit (English) + Cairo (Arabic) ───────────────────────── */
+  --font-sans:   "Outfit", "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono:   "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  --font-arabic: "Noto Sans Arabic", "Inter", sans-serif;
+  --font-arabic: "Cairo", "Outfit", sans-serif;
 
   /* ─── SHADCN / CORE SEMANTIC COLORS ───────────────────────────────────────── */
   --color-background:      var(--findx-bg-base);
@@ -20,9 +20,9 @@
 
   --color-primary:            var(--findx-accent);
   --color-primary-foreground: var(--findx-accent-foreground);
-  --color-primary-border:     var(--findx-accent-glow);
+  --color-primary-border:     var(--findx-border-default);
 
-  --color-secondary:            var(--findx-bg-subtle);
+  --color-secondary:            var(--findx-bg-inset);
   --color-secondary-foreground: var(--findx-text-secondary);
   --color-secondary-border:     var(--findx-border-default);
 
@@ -54,7 +54,7 @@
   --color-brand-subtle-fg: var(--brand-subtle-fg);
   --color-brand-glow:      var(--brand-glow);
 
-  /* ─── SURFACE LAYERS (Flat — no glass morphism in Precision Dark) ─────────── */
+  /* ─── SURFACE LAYERS ──────────────────────────────────────────────────────── */
   --color-glass:               var(--glass);
   --color-glass-raised:        var(--glass-raised);
   --color-glass-overlay:       var(--glass-overlay);
@@ -84,17 +84,17 @@
   --color-text-muted:     var(--findx-text-muted);
   --color-text-subtle:    var(--findx-text-subtle);
 
-  /* ─── RADIUS ─────────────────────────────────────────────────────────────── */
-  --radius-xs:   var(--findx-radius-xs);
-  --radius-sm:   var(--findx-radius-sm);
-  --radius-md:   var(--findx-radius-md);
-  --radius-lg:   var(--findx-radius-lg);
-  --radius-xl:   var(--findx-radius-xl);
-  --radius-2xl:  var(--findx-radius-2xl);
-  --radius-3xl:  var(--findx-radius-3xl);
+  /* ─── RADIUS (Larger curves for premium feel) ────────────────────────────── */
+  --radius-xs:   6px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-3xl:  32px;
   --radius-full: 9999px;
 
-  /* ─── BLUR (minimal in Precision Dark) ──────────────────────────────────── */
+  /* ─── BLUR ───────────────────────────────────────────────────────────────── */
   --blur-glass:    var(--findx-blur-glass);
   --blur-glass-sm: var(--findx-blur-glass-sm);
   --blur-glass-lg: var(--findx-blur-glass-lg);
