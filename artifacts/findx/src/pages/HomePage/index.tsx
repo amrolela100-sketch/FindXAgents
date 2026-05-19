@@ -198,7 +198,7 @@ export default function HomePage() {
             </p>
           </div>
           <Link href="/agents">
-            <button className="btn btn-primary h-10 px-5 flex items-center gap-2 font-bold shadow-glow-brand">
+            <button className="btn btn-primary h-10 px-5 flex items-center gap-2 font-bold shadow-sm border border-glass-border">
               <Play className="w-3.5 h-3.5 fill-current" />
               Run Agent
             </button>
@@ -210,7 +210,7 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-info/10 border border-info/20 backdrop-blur-md"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-glass-raised border border-glass-border-strong backdrop-blur-md"
           >
             <div className="relative">
               <Activity className="w-5 h-5 text-info" />
