@@ -45,7 +45,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         {/* Lang toggle */}
         <button
           onClick={toggleLang}
-          className="btn btn-ghost px-2.5 py-1.5 text-xs font-semibold gap-1.5 text-text-muted hover:text-text"
+          className="btn btn-ghost px-2.5 py-1.5 text-xs font-semibold gap-1.5 text-text-muted hover:text-text rounded-full"
           title="Switch language"
         >
           <Globe className="w-3.5 h-3.5" />
@@ -55,7 +55,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         {/* Dark mode */}
         <button
           onClick={toggleTheme}
-          className="btn btn-ghost px-2 py-1.5 text-text-muted hover:text-text"
+          className="btn btn-ghost px-2 py-1.5 text-text-muted hover:text-text rounded-full"
           title="Toggle theme"
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -68,7 +68,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               setNotifOpen(v => !v);
               setUserMenuOpen(false);
             }}
-            className="btn btn-ghost px-2 py-1.5 relative text-text-muted hover:text-text"
+            className="btn btn-ghost px-2 py-1.5 relative text-text-muted hover:text-text rounded-full"
             title="Notifications"
             aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
           >
@@ -96,7 +96,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="relative ms-1">
           <button
             onClick={() => { setUserMenuOpen(v => !v); setNotifOpen(false); }}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 hover:scale-105 bg-primary text-primary-foreground border border-border shadow-sm"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 hover:scale-105 bg-primary text-primary-foreground border border-primary/20 shadow-sm"
             title={user?.email}
           >
             {initial}
@@ -107,7 +107,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
               <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
               <div className={cn(
                 "absolute top-12 w-52 z-20 rounded-xl overflow-hidden",
-                "bg-glass-overlay backdrop-blur-glass border border-border shadow-2xl",
+                "bg-glass backdrop-blur-glass border border-border shadow-2xl",
                 "animate-in fade-in slide-in-from-top-2 duration-200",
                 isRtl ? "left-0" : "right-0",
               )}>
