@@ -102,22 +102,11 @@ export default function LoginPage() {
       <div
         className="hidden md:flex flex-col justify-between p-8 lg:p-12 relative overflow-hidden"
         style={{
-          background: "var(--bg-inset)",
-          borderRight: isRtl ? "none" : "1px solid var(--glass-border)",
-          borderLeft: isRtl ? "1px solid var(--glass-border)" : "none",
+          background: "var(--findx-bg-inset)",
+          borderRight: isRtl ? "none" : "1px solid var(--findx-border-default)",
+          borderLeft: isRtl ? "1px solid var(--findx-border-default)" : "none",
         }}
       >
-        {/* Mesh glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(ellipse 70% 50% at 20% 10%, rgba(109,40,217,0.18) 0%, transparent 60%),
-              radial-gradient(ellipse 50% 40% at 80% 80%, rgba(245,158,11,0.14) 0%, transparent 55%)
-            `,
-          }}
-        />
-
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -126,12 +115,11 @@ export default function LoginPage() {
           className="relative flex items-center gap-2.5"
         >
           <div
-            className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center"
-            style={{ boxShadow: "0 4px 12px var(--brand-glow)" }}
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center border border-border"
           >
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-base tracking-tight" style={{ color: "var(--text)" }}>
+          <span className="font-bold text-base tracking-tight text-text">
             FindX
           </span>
         </motion.div>
@@ -145,16 +133,15 @@ export default function LoginPage() {
         >
           <motion.div variants={itemVariants}>
             <h2
-              className="text-3xl lg:text-4xl font-bold tracking-tighter leading-tight mb-4 text-balance break-words"
-              style={{ color: "var(--text)" }}
+              className="text-3xl lg:text-4xl font-bold tracking-tighter leading-tight mb-4 text-balance break-words text-text"
             >
               AI-powered B2B<br />
-              <span className="gradient-brand-text">prospecting</span><br />
+              <span className="text-primary">prospecting</span><br />
               that actually works.
             </h2>
             <p
-              className="text-sm leading-relaxed max-w-full"
-              style={{ color: "var(--text-muted)", lineHeight: 1.8 }}
+              className="text-sm leading-relaxed max-w-full text-text-muted"
+              style={{ lineHeight: 1.8 }}
             >
               Find real businesses, visit their websites, score their gaps,
               and write personalized cold emails — automatically.
@@ -169,18 +156,11 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ ...SPRING, delay: 0.4 + delay }}
-                className="flex items-center gap-4 p-4 rounded-2xl"
-                style={{
-                  background: "var(--glass)",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                  border: "1px solid var(--glass-border)",
-                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.10)`,
-                }}
+                className="flex items-center gap-4 p-4 rounded-xl border border-border bg-glass"
               >
                 {/* Step number */}
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold font-mono"
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold font-mono"
                   style={{
                     background: `${color}18`,
                     border: `1px solid ${color}30`,
@@ -192,20 +172,19 @@ export default function LoginPage() {
 
                 {/* Icon */}
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
                     background: `${color}12`,
-                    boxShadow: `0 0 12px ${color}20`,
                   }}
                 >
                   <Icon className="w-4 h-4" strokeWidth={1.5} style={{ color }} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold tracking-tight truncate" style={{ color: "var(--text)" }}>
+                  <p className="text-sm font-semibold tracking-tight truncate text-text">
                     {label}
                   </p>
-                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-xs mt-0.5 leading-relaxed text-text-muted">
                     {desc}
                   </p>
                 </div>
@@ -232,20 +211,14 @@ export default function LoginPage() {
           {PROOF_ITEMS.map(({ value, label }) => (
             <div
               key={label}
-              className="text-center p-3 rounded-xl"
-              style={{
-                background: "var(--glass)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid var(--glass-border)",
-              }}
+              className="text-center p-3 rounded-xl border border-border bg-glass"
             >
               <div
-                className="text-xl font-bold tracking-tighter font-mono gradient-brand-text"
+                className="text-xl font-bold tracking-tighter font-mono text-text"
               >
                 {value}
               </div>
-              <div className="text-[10px] mt-0.5" style={{ color: "var(--text-subtle)" }}>
+              <div className="text-[10px] mt-0.5 text-text-subtle">
                 {label}
               </div>
             </div>
@@ -258,26 +231,25 @@ export default function LoginPage() {
 
         {/* Top bar */}
         <header
-          className="flex items-center justify-between px-6 py-4 topbar-glass"
-          style={{ borderBottom: "1px solid var(--glass-border)" }}
+          className="flex items-center justify-between px-6 py-4 topbar-glass border-b border-border"
         >
           {/* Mobile logo */}
           <Link href="/">
             <a className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center border border-border">
+                <Zap className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2.5} />
               </div>
-              <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
+              <span className="font-bold text-sm text-text">FindX</span>
             </a>
           </Link>
           <div className="hidden md:block" />
 
           <div className="flex items-center gap-1">
-            <button onClick={toggleLang} className="btn btn-ghost text-xs gap-1.5 px-2.5">
+            <button onClick={toggleLang} className="btn btn-ghost text-xs gap-1.5 px-2.5 rounded-full">
               <Globe className="w-3.5 h-3.5" strokeWidth={1.5} />
               {lang.toUpperCase()}
             </button>
-            <button onClick={toggleTheme} className="btn btn-ghost px-2">
+            <button onClick={toggleTheme} className="btn btn-ghost px-2 rounded-full">
               {isDark
                 ? <Sun className="w-4 h-4" strokeWidth={1.5} />
                 : <Moon className="w-4 h-4" strokeWidth={1.5} />
@@ -295,26 +267,24 @@ export default function LoginPage() {
             variants={containerVariants}
           >
             {/* Mobile-only logo */}
-            <motion.div variants={itemVariants} className="flex md:hidden mb-8">
+            <motion.div variants={itemVariants} className="flex md:hidden mb-8 justify-center">
               <div
-                className="w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center"
-                style={{ boxShadow: "0 4px 16px var(--brand-glow)" }}
+                className="w-12 h-12 rounded-full bg-primary flex items-center justify-center border border-border shadow-sm"
               >
-                <Zap className="w-6 h-6 text-white" strokeWidth={2.5} />
+                <Zap className="w-6 h-6 text-primary-foreground" strokeWidth={2.5} />
               </div>
             </motion.div>
 
             {/* Heading */}
-            <motion.div variants={itemVariants} className="mb-8">
+            <motion.div variants={itemVariants} className="mb-8 text-center md:text-start">
               <h1
-                className="text-2xl md:text-3xl font-bold tracking-tight mb-2"
-                style={{ color: "var(--text)" }}
+                className="text-2xl md:text-3xl font-bold tracking-tight mb-2 text-text"
               >
                 {t.auth.welcome}
               </h1>
               <p
-                className="text-sm leading-relaxed"
-                style={{ color: "var(--text-muted)", lineHeight: 1.75 }}
+                className="text-sm leading-relaxed text-text-muted"
+                style={{ lineHeight: 1.75 }}
               >
                 {t.auth.tagline}
               </p>
@@ -324,23 +294,14 @@ export default function LoginPage() {
             <motion.div variants={itemVariants}>
               <MagneticButton
                 as="button"
-                className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl font-medium text-sm transition-all disabled:opacity-50"
-                style={{
-                  background: "var(--glass-raised)",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                  border: "1px solid var(--glass-border-strong)",
-                  color: "var(--text)",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.12)",
-                }}
+                className="w-full flex items-center justify-center gap-3 py-3 px-5 rounded-full font-medium text-sm transition-all duration-300 border border-border bg-interactive-hover hover:bg-interactive-active text-text shadow-sm disabled:opacity-50"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                strength={0.15}
+                strength={0.10}
               >
                 {loading ? (
                   <div
-                    className="w-4 h-4 rounded-full border-2 animate-spin"
-                    style={{ borderColor: "var(--brand)", borderTopColor: "transparent" }}
+                    className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"
                   />
                 ) : (
                   <GoogleLogo />
@@ -355,12 +316,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={SPRING}
-                className="mt-4 px-4 py-3 rounded-xl text-xs"
-                style={{
-                  background: "var(--color-danger-bg)",
-                  border: "1px solid var(--color-danger-border)",
-                  color: "var(--color-danger)",
-                }}
+                className="mt-4 px-4 py-3 rounded-xl text-xs border border-danger-border bg-danger-bg text-danger"
               >
                 {error}
               </motion.div>
@@ -377,13 +333,11 @@ export default function LoginPage() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-2 text-xs"
-                  style={{ color: "var(--text-subtle)" }}
+                  className="flex items-center gap-2 text-xs text-text-subtle"
                 >
                   <CheckCircle2
-                    className="w-3.5 h-3.5 flex-shrink-0"
+                    className="w-3.5 h-3.5 flex-shrink-0 text-success"
                     strokeWidth={1.5}
-                    style={{ color: "var(--color-success)" }}
                   />
                   {item}
                 </div>
@@ -393,19 +347,18 @@ export default function LoginPage() {
             {/* Privacy */}
             <motion.p
               variants={itemVariants}
-              className="mt-6 text-xs text-center leading-relaxed flex items-center justify-center gap-1 flex-wrap"
-              style={{ color: "var(--text-subtle)" }}
+              className="mt-6 text-xs text-center leading-relaxed flex items-center justify-center gap-1 flex-wrap text-text-subtle"
             >
-              <Shield className="w-3 h-3 flex-shrink-0" strokeWidth={1.5} style={{ color: "var(--brand)" }} />
+              <Shield className="w-3 h-3 flex-shrink-0 text-primary" strokeWidth={1.5} />
               {t.auth.privacyNote}{" "}
               <Link href="/terms">
-                <a className="underline underline-offset-2 hover:opacity-80 transition-opacity" style={{ color: "var(--brand)" }}>
+                <a className="underline underline-offset-2 hover:opacity-80 transition-opacity text-primary">
                   {t.auth.privacyTerms}
                 </a>
               </Link>
               {" "}{t.auth.privacyAnd}{" "}
               <Link href="/privacy">
-                <a className="underline underline-offset-2 hover:opacity-80 transition-opacity" style={{ color: "var(--brand)" }}>
+                <a className="underline underline-offset-2 hover:opacity-80 transition-opacity text-primary">
                   {t.auth.privacyPolicy}
                 </a>
               </Link>.
@@ -415,8 +368,7 @@ export default function LoginPage() {
             <motion.div variants={itemVariants} className="mt-8 text-center">
               <Link href="/">
                 <a
-                  className="inline-flex items-center gap-2 text-xs transition-colors hover:opacity-80"
-                  style={{ color: "var(--text-muted)" }}
+                  className="inline-flex items-center gap-2 text-xs transition-colors hover:opacity-80 text-text-muted"
                 >
                   <BackArrow className="w-3.5 h-3.5" strokeWidth={1.5} />
                   {t.auth.backToHome}
