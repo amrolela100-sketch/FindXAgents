@@ -70,7 +70,7 @@ export default function SettingsPage() {
                   className={cn(
                     "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap border",
                     isActive 
-                      ? "bg-primary text-white border-primary shadow-glow-brand" 
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
                       : "text-text-muted hover:text-text hover:bg-glass-raised border-transparent"
                   )}
                 >
