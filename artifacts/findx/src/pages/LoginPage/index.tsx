@@ -108,16 +108,8 @@ export default function LoginPage() {
           borderLeft: isRtl ? "1px solid var(--glass-border)" : "none",
         }}
       >
-        {/* Mesh glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(ellipse 70% 50% at 20% 10%, rgba(109,40,217,0.18) 0%, transparent 60%),
-              radial-gradient(ellipse 50% 40% at 80% 80%, rgba(245,158,11,0.14) 0%, transparent 55%)
-            `,
-          }}
-        />
+        {/* Mesh glow removed for minimalist aesthetic */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "transparent" }} />
 
         {/* Logo */}
         <motion.div
@@ -127,10 +119,9 @@ export default function LoginPage() {
           className="relative flex items-center gap-2.5"
         >
           <div
-            className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center"
-            style={{ boxShadow: "0 4px 12px var(--brand-glow)" }}
+            className="w-8 h-8 rounded-xl bg-glass-raised border border-glass-border shadow-sm flex items-center justify-center"
           >
-            <RadarIcon className="w-4 h-4 text-white" />
+            <RadarIcon className="w-4 h-4 text-text" />
           </div>
           <span className="font-bold text-base tracking-tight" style={{ color: "var(--text)" }}>
             FindX
@@ -150,7 +141,7 @@ export default function LoginPage() {
               style={{ color: "var(--text)" }}
             >
               AI-powered B2B<br />
-              <span className="gradient-brand-text">prospecting</span><br />
+              <span className="text-text">prospecting</span><br />
               that actually works.
             </h2>
             <p
@@ -241,9 +232,7 @@ export default function LoginPage() {
                 border: "1px solid var(--glass-border)",
               }}
             >
-              <div
-                className="text-xl font-bold tracking-tighter font-mono gradient-brand-text"
-              >
+              <div className="text-xl font-bold tracking-tighter font-mono text-text">
                 {value}
               </div>
               <div className="text-[10px] mt-0.5" style={{ color: "var(--text-subtle)" }}>
@@ -265,8 +254,8 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <Link href="/">
             <a className="md:hidden flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
-                <RadarIcon className="w-3.5 h-3.5 text-white" />
+              <div className="w-7 h-7 rounded-lg bg-glass-raised border border-glass-border flex items-center justify-center shadow-sm">
+                <RadarIcon className="w-3.5 h-3.5 text-text" />
               </div>
               <span className="font-bold text-sm" style={{ color: "var(--text)" }}>FindX</span>
             </a>
@@ -298,10 +287,9 @@ export default function LoginPage() {
             {/* Mobile-only logo */}
             <motion.div variants={itemVariants} className="flex md:hidden mb-8">
               <div
-                className="w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center"
-                style={{ boxShadow: "0 4px 16px var(--brand-glow)" }}
+                className="w-12 h-12 rounded-2xl bg-glass-raised border border-glass-border flex items-center justify-center shadow-sm"
               >
-                <RadarIcon className="w-6 h-6 text-white" />
+                <RadarIcon className="w-6 h-6 text-text" />
               </div>
             </motion.div>
 
